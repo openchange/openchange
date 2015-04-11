@@ -32,6 +32,8 @@
  */
 
 struct exchange_asyncemsmdb_session	*asyncemsmdb_session = NULL;
+void					*openchangedb_ctx = NULL;
+static struct ldb_context		*samdb_ctx = NULL;
 
 static struct exchange_asyncemsmdb_session *dcesrv_find_asyncemsmdb_session(struct GUID *uuid)
 {
@@ -83,6 +85,397 @@ static int _get_random_port(void)
 	return port;
 }
 
+
+/**
+   \details Release the mapistore context used by the asyncemsmdb context
+
+   \param data pointer on data to destroy
+
+   \return 0 on success, otherwise -1
+ */
+static int asyncemsmdb_mapistore_destructor(void *data)
+{
+	struct mapistore_context	*mstore_ctx = (struct mapistore_context *) data;
+	enum mapistore_error		retval;
+
+	retval = mapistore_release(mstore_ctx);
+	if (retval != MAPISTORE_SUCCESS) return false;
+
+	OC_DEBUG(0, "MAPIStore context released");
+	return true;
+}
+
+
+/**
+   \details Retrieve properties from openchangedb system folder
+
+   \param mem_ctx pointer to the memory context to use to allocate returned data
+   \param p pointer to the private asyncemsmdb data
+   \param folderId the ID of the folder from which data are to be retrieved
+   \param properties pointer to the array of MAPI properties to retrieve
+   \param data_pointers pointer on pointer to the data to return
+   \param retvals pointers to the return value of each data_pointers entry to return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct asyncemsmdb_private_data *p,
+							  uint64_t folderId, struct SPropTagArray *properties,
+							  void **data_pointers, enum MAPISTATUS *retvals)
+{
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	int				i;
+	uint32_t			*obj_count;
+	uint8_t				*has_subobj;
+	time_t				unix_time;
+	NTTIME				nt_time;
+	struct FILETIME			*ft;
+	uint32_t			*folder_flags;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!p, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!properties, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!data_pointers, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!retvals, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < properties->cValues; i++) {
+		if (properties->aulPropTag[i] == PidTagFolderFlags) {
+			folder_flags = talloc_zero(data_pointers, uint32_t);
+			MAPI_RETVAL_IF(!folder_flags, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+			*folder_flags = FolderFlags_IPM|FolderFlags_Normal;
+			data_pointers[i] = folder_flags;
+		} else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			MAPI_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+			retval = openchangedb_get_folder_count(openchangedb_ctx, p->username, folderId, obj_count);
+			data_pointers[i] = obj_count;
+		} else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
+			obj_count = talloc_zero(NULL, uint32_t);
+			retval = openchangedb_get_folder_count(openchangedb_ctx, p->username, folderId, obj_count);
+			has_subobj = talloc_zero(data_pointers, uint8_t);
+			MAPI_RETVAL_IF(!has_subobj, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+			*has_subobj = (*obj_count > 0) ? 1 : 0;
+			data_pointers[i] = has_subobj;
+			talloc_free(obj_count);
+		} else if (properties->aulPropTag[i] == PR_CONTENT_COUNT
+			   || properties->aulPropTag[i] == PidTagAssociatedContentCount
+			   || properties->aulPropTag[i] == PR_CONTENT_UNREAD
+			   || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			*obj_count = 0;
+			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
+		}
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
+			/* TODO: temporary hack */
+			unix_time = time(NULL) & 0xffffff00;
+			unix_to_nt_time(&nt_time, unix_time);
+			ft = talloc_zero(data_pointers, struct FILETIME);
+			MAPI_RETVAL_IF(!ft, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+			ft->dwLowDateTime = (nt_time & 0xffffffff);
+			ft->dwHighDateTime = nt_time >> 32;
+			data_pointers[i] = ft;
+			retval = MAPI_E_SUCCESS;
+		}
+		else {
+			retval = openchangedb_get_folder_property(data_pointers, openchangedb_ctx, p->username,
+								  properties->aulPropTag[i], folderId, data_pointers + i);
+		}
+		retvals[i] = retval;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+
+/**
+   \details Process a TableModified event on a ContentsTable for row modified specific event type
+
+   \param mem_ctx pointer to the memory context
+   \param p pointer to the private asyncemsmdb data
+   \param s pointer to the array of subscriptions for this session
+   \param folderId the folder in which the tablemodified event occurred
+
+   \note This first iteration has the following limitations:
+   - Only TABLE_ROW_MODIFIED case are handled
+   - Only handle notifications within Inbox folder (openchangedb folders)
+
+   \return 0 on success, otherwise -1
+ */
+static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
+							    struct asyncemsmdb_private_data *p,
+							    struct mapistore_notification_subscription *s,
+							    uint64_t folderId)
+{
+	int				i;
+	struct EcDoRpc_MAPI_REPL	reply;
+	DATA_BLOB			payload;
+	struct SPropTagArray		SPropTagArray;
+	void				**data_pointers;
+	enum MAPISTATUS			*retvals;
+	enum MAPISTATUS			retval;
+	int				ret;
+	uint32_t			prop_idx;
+	int				flagged = 0;
+	uint32_t			property;
+	void				*data = NULL;
+	enum ndr_err_code		ndr_err_code;
+	struct ndr_push			*ndr;
+
+	/* Looking */
+	for (i = 0; i < s->v.v1.count; i++) {
+		if (s->v.v1.subscription[i].flags & sub_TableModified) {
+			if ((s->v.v1.subscription[i].flags & sub_WholeStore) ||
+			    (s->v.v1.subscription[i].fid == folderId)) {
+				memset(&reply, 0, sizeof(struct EcDoRpc_MAPI_REPL));
+				reply.opnum = op_MAPI_Notify;
+				reply.error_code = MAPI_E_SUCCESS;
+				reply.u.mapi_Notify.NotificationHandle = s->v.v1.subscription[i].handle;
+				reply.u.mapi_Notify.LogonId = 0;
+				reply.u.mapi_Notify.NotificationType = fnevMbit | fnevSbit | fnevTableModified;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.TableEvent = 0x5; /* TABLE_ROW_MODIFED */
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.FID = folderId;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.MID = 0x0;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Instance = 0x0;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.InsertAfterFID = 0x0;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.InsertAfterMID = 0x0;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.InsertAfterInstance = 0x0;
+
+				SPropTagArray.cValues = s->v.v1.subscription[i].count;
+				SPropTagArray.aulPropTag = (enum MAPITAGS *)s->v.v1.subscription[i].properties;
+
+				data_pointers = talloc_array(mem_ctx, void *, SPropTagArray.cValues);
+				if (!data_pointers) {
+					OC_DEBUG(0, "No memory available");
+					return -1;
+				}
+				memset(data_pointers, 0, sizeof(void *) * SPropTagArray.cValues);
+
+				retvals = talloc_array(mem_ctx, enum MAPISTATUS, SPropTagArray.cValues);
+				if (!retvals) {
+					OC_DEBUG(0, "No memory available");
+					return -1;
+				}
+				memset(retvals, 0, sizeof(enum MAPISTATUS) * SPropTagArray.cValues);
+
+				retval = get_properties_systemspecialfolder(mem_ctx, p, folderId, &SPropTagArray,
+									    data_pointers, retvals);
+				if (retval != MAPI_E_SUCCESS) {
+					talloc_free(data_pointers);
+					talloc_free(retvals);
+					return -1;
+				}
+
+				/* Check if any of the properties are flagged */
+				for (prop_idx = 0; prop_idx < SPropTagArray.cValues; prop_idx++) {
+					if (retvals[prop_idx] != MAPI_E_SUCCESS) {
+						flagged = 1;
+						break;
+					}
+				}
+
+				memset(&payload, 0, sizeof(DATA_BLOB));
+				if (flagged) {
+					libmapiserver_push_property(mem_ctx, 0xb, (const void *)&flagged, &payload, 0, 0, 0);
+				} else {
+					libmapiserver_push_property(mem_ctx, 0x0, (const void *)&flagged, &payload, 0, 1, 0);
+				}
+
+				/* Push properties */
+				for (prop_idx = 0; prop_idx < SPropTagArray.cValues; prop_idx++) {
+					property = SPropTagArray.aulPropTag[prop_idx];
+					retval = retvals[prop_idx];
+					if (retval == MAPI_E_NOT_FOUND) {
+						property = (property & 0xFFFF0000) + PT_ERROR;
+						data = &retval;
+					} else {
+						data = data_pointers[prop_idx];
+					}
+					libmapiserver_push_property(mem_ctx, property, data, &payload, flagged?PT_ERROR:0, flagged, 0);
+				}
+
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns = payload;
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.ColumnsSize = payload.length;
+
+				/* Pack and push */
+				ndr = ndr_push_init_ctx(mem_ctx);
+				if (!ndr) {
+					OC_DEBUG(0, "Unable to allocate memory");
+					talloc_free(data_pointers);
+					talloc_free(retvals);
+					return -1;
+				}
+				ndr->offset = 0;
+
+				ndr_err_code = ndr_push_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &reply);
+				if (ndr_err_code != NDR_ERR_SUCCESS) {
+					talloc_free(data_pointers);
+					talloc_free(retvals);
+					talloc_free(ndr);
+					OC_DEBUG(0, "Unable to push Notify response blob for newmail notification");
+					return -1;
+				}
+
+				ret = mapistore_notification_deliver_add(p->mstore_ctx, p->emsmdb_uuid, ndr->data, ndr->offset);
+				talloc_free(data_pointers);
+				talloc_free(retvals);
+				talloc_free(ndr);
+				if (ret != MAPISTORE_SUCCESS) {
+					OC_DEBUG(0, "Unable to deliver notification blob");
+					return -1;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+
+/**
+   \details Process newmail notification
+
+   \param mem_ctx pointer to the memory context
+   \param p pointer to the private asyncemsmdb data
+   \param notif pointer to the mapistore newmail notification
+   \param s pointer to the array of subscriptions for this session
+
+   \note newmail notification (popup) will only be triggered for
+   emails delivered to Inbox. However, TableModified notification
+   should be triggered in every case if the subscription exists
+
+   \todo handle tablemodified delivered in other folders but Inbox
+
+   \return 0 on success, otherwise -1
+ */
+static int process_newmail_notification(TALLOC_CTX *mem_ctx,
+					struct asyncemsmdb_private_data *p,
+					struct mapistore_notification *notif,
+					struct mapistore_notification_subscription *s)
+{
+	int				i;
+	int				index = -1;
+	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
+	int				rval;
+	struct indexing_context		*ictx;
+	uint64_t			fid;
+	uint64_t			mid;
+	char				*folder_uri = NULL;
+	char				*message_uri = NULL;
+	bool				soft_deleted;
+	struct EcDoRpc_MAPI_REPL	reply;
+	struct ndr_push			*ndr;
+	enum ndr_err_code		ndr_err_code;
+
+	/* Loop over subscriptions to find subscription for newmail notification */
+	for (i = 0; i < s->v.v1.count; i++) {
+		if (s->v.v1.subscription[i].flags & sub_NewMail) {
+			index = i;
+			break;
+		}
+	}
+	if (index == -1) {
+		OC_DEBUG(0, "No subscription found with newmail flag enabled");
+		return -1;
+	}
+
+	/* Retrieve Inbox FID */
+	retval = openchangedb_get_SystemFolderID(openchangedb_ctx, p->username, ASYNCEMSMDB_INBOX_SYSTEMIDX, &fid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(0, "Failed to retrieve Inbox FolderId for user %s", p->username);
+		return -1;
+	}
+
+	/* Fetch the Inbox folder mapistore URI */
+	retval = openchangedb_get_mapistoreURI(mem_ctx, openchangedb_ctx, p->username, fid, &folder_uri, true);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(0, "Failed to retrieve Inbox mapistore URI for user %s", p->username);
+		return -1;
+	}
+
+	/* Open connection to the indexing database */
+	ret = mapistore_indexing_add(p->mstore_ctx, p->username, &ictx);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "Failed to open connection to indexing database for user %s", p->username);
+		return -1;
+	}
+
+	/* Build the message URI: append folderID with message id */
+	message_uri = talloc_asprintf(mem_ctx, "%s%s", folder_uri, notif->v.v1.u.newmail.eml);
+	if (!message_uri) {
+		OC_DEBUG(0, "Unable to allocate memory");
+		return -1;
+	}
+
+	/* Check if the URI already exists with mapistore_indexing_record_get_fmid */
+	ret = mapistore_indexing_record_get_fmid(p->mstore_ctx, p->username, message_uri, false, &mid, &soft_deleted);
+	if (ret == MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "URL %s already registered for user %s and associated to MID 0x%"PRIx64, message_uri, p->username, mid);
+		talloc_free(message_uri);
+		goto process;
+	}
+
+	/* Allocate new mid */
+	ret = mapistore_indexing_get_new_folderID_as_user(p->mstore_ctx, p->username, &mid);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "Failed to allocate new mid for user %s", p->username);
+		talloc_free(message_uri);
+		return -1;
+	}
+
+	/* Register message */
+	ret = ictx->add_fmid(ictx, p->username, mid, message_uri);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "Unable to register 0x%"PRIx64" with URL=%s", mid, message_uri);
+		talloc_free(message_uri);
+		return -1;
+	}
+	talloc_free(message_uri);
+
+	/* Generate Notify_reply blob */
+process:
+	memset(&reply, 0, sizeof(struct EcDoRpc_MAPI_REPL));
+	reply.opnum = op_MAPI_Notify;
+	reply.error_code = MAPI_E_SUCCESS;
+	reply.u.mapi_Notify.NotificationHandle = s->v.v1.subscription[i].handle;
+	reply.u.mapi_Notify.LogonId = 0;
+	reply.u.mapi_Notify.NotificationType = fnevMbit | fnevNewMail;
+	reply.u.mapi_Notify.NotificationData.NewMessageNotification.FID = fid;
+	reply.u.mapi_Notify.NotificationData.NewMessageNotification.MID = mid;
+	reply.u.mapi_Notify.NotificationData.NewMessageNotification.MessageFlags = MSGFLAG_UNMODIFIED;
+	reply.u.mapi_Notify.NotificationData.NewMessageNotification.UnicodeFlag = false;
+	reply.u.mapi_Notify.NotificationData.NewMessageNotification.MessageClass.lpszA = "IPM.Note";
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		OC_DEBUG(0, "Unable to allocate memory");
+		return -1;
+	}
+	ndr->offset = 0;
+
+	ndr_err_code = ndr_push_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &reply);
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(ndr);
+		OC_DEBUG(0, "Unable to push Notify response blob for newmail notification");
+		return -1;
+	}
+
+	ret = mapistore_notification_deliver_add(p->mstore_ctx, p->emsmdb_uuid, ndr->data, ndr->offset);
+	talloc_free(ndr);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "Unable to deliver notification blob");
+		return -1;
+	}
+
+	rval = process_tablemodified_contentstable_notification(mem_ctx, p, s, fid);
+	if (rval != 0) {
+		OC_DEBUG(0, "TableModified notification failed");
+	}
+
+	return 0;
+}
+
 static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
@@ -92,6 +485,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 									     struct asyncemsmdb_private_data);
 	TALLOC_CTX					*mem_ctx;
 	enum mapistore_error				retval;
+	int						ret;
 	DATA_BLOB					blob;
 	char						*str = NULL;
 	int						bytes = 0;
@@ -137,6 +531,14 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 		return;
 	}
 
+	/* Sanity checks on notification payload */
+	if (n.vnum >= MAPISTORE_NOTIFICATION_VMAX) {
+		OC_DEBUG(0, "[asyncemsmdb]: Invalid version, expected at max %d but got %d",
+			 MAPISTORE_NOTIFICATION_VMAX - 1, n.vnum);
+		talloc_free(mem_ctx);
+		return;
+	}
+
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
 	if (!ndr_print) {
 		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
@@ -148,13 +550,13 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	ndr_print->no_newline = false;
 
 	ndr_print_mapistore_notification(ndr_print, "notification", &n);
-	talloc_free(ndr_pull);
 
 	OC_DEBUG(0, "Notification received for session: %s", p->emsmdb_session_str);
 
 	retval = mapistore_notification_subscription_get(mem_ctx, p->mstore_ctx, p->emsmdb_uuid, &r);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "no subscription to process");
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -162,6 +564,22 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	ndr_print_mapistore_notification_subscription(ndr_print, "subscriptions", &r);
 	talloc_free(ndr_print);
 
+	/* Process notifications */
+	switch (n.v.v1.flags) {
+	case (sub_NewMail):
+		ret = process_newmail_notification(mem_ctx, p, &n, &r);
+		if (ret) {
+			OC_DEBUG(0, "[asyncemsmdb]: Failed to process newmail notification (error=0x%x)", ret);
+			talloc_free(mem_ctx);
+			return;
+		}
+		break;
+	default:
+		OC_DEBUG(0, "[asyncemsmdb]: Unsupported notification 0x%x", n.v.v1.flags);
+		talloc_free(mem_ctx);
+		return;
+	}
+	talloc_free(ndr_pull);
 	talloc_free(mem_ctx);
 
 	p->r->out.pulFlagsOut = talloc_zero(p->dce_call, uint32_t);
@@ -237,6 +655,16 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			return NT_STATUS_OK;
 		}
 
+		retval = mapistore_set_connection_info(mstore_ctx, samdb_ctx, openchangedb_ctx,
+						       dcesrv_call_account_name(dce_call));
+		if (retval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "[asyncemsmdb]: unable to set mapistore connection info");
+			*r->out.pulFlagsOut = 0x1;
+			talloc_free(mstore_ctx);
+			return NT_STATUS_OK;
+		}
+		talloc_set_destructor((void *)mstore_ctx, (int (*)(void *))asyncemsmdb_mapistore_destructor);
+
 		retval = mapistore_notification_session_get(dce_call, mstore_ctx, r->in.async_handle->uuid, &uuid, &cn);
 		if (retval != MAPISTORE_SUCCESS) {
 			OC_DEBUG(0, "[asyncemsmdb]: unable to fetch emsmdb session data");
@@ -256,6 +684,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		p->dce_call = dce_call;
 		p->mstore_ctx = talloc_steal(p, mstore_ctx);
 		p->emsmdb_uuid = uuid;
+		p->username = (char *) dcesrv_call_account_name(dce_call);
 		p->emsmdb_session_str = GUID_string(p, (const struct GUID *)&uuid);
 		if (!p->emsmdb_session_str) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
@@ -405,10 +834,65 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 	return NT_STATUS_OK;
 }
 
+
+/**
+   \details Initialize ldb_context to samdb, creates one for all emsmdbp
+   contexts
+
+   \param lp_ctx pointer to the loadparm context
+ */
+static struct ldb_context *samdb_init(struct loadparm_context *lp_ctx)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct tevent_context	*ev;
+	const char		*samdb_url;
+	struct ldb_context	*_samdb_ctx;
+
+	if (samdb_ctx) return samdb_ctx;
+
+	mem_ctx = talloc_autofree_context();
+	ev = tevent_context_init(mem_ctx);
+	if (!ev) {
+		return NULL;
+	}
+	tevent_loop_allow_nesting(ev);
+
+	/* Retrieve samdb url (local or external) */
+	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
+
+	if (!samdb_url) {
+		_samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+	} else {
+		_samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
+					       LDB_FLG_RECONNECT, samdb_url);
+	}
+
+	return _samdb_ctx;
+}
+
+
 static NTSTATUS dcerpc_server_asyncemsmdb_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
+	if (!openchangedb_ctx) {
+		openchangedb_ctx = mapiproxy_server_openchangedb_init(dce_call->conn->dce_ctx->lp_ctx);
+		if (!openchangedb_ctx) {
+			OC_DEBUG(OC_LOG_FATAL, "Unable to initialize openchangedb");
+			abort();
+		}
+	}
+
+	if (!samdb_ctx) {
+		samdb_ctx = samdb_init(dce_call->conn->dce_ctx->lp_ctx);
+		if (!samdb_ctx) {
+			OC_DEBUG(OC_LOG_FATAL, "Unable to initialize samdb");
+			abort();
+		}
+	}
+
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	return NT_STATUS_OK;
 }
+
 
 NTSTATUS samba_init_module(void)
 {
@@ -421,7 +905,6 @@ NTSTATUS samba_init_module(void)
 	asyncemsmdb_session = talloc_zero(talloc_autofree_context(), struct exchange_asyncemsmdb_session);
 	if (!asyncemsmdb_session) return NT_STATUS_NO_MEMORY;
 	asyncemsmdb_session->data = NULL;
-
 
 	status = ndr_table_register(&ndr_table_asyncemsmdb);
 	NT_STATUS_NOT_OK_RETURN(status);

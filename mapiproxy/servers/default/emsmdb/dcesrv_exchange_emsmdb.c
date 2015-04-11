@@ -300,6 +300,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	/* Allocate mapi_response */
 	mapi_response = talloc_zero(mem_ctx, struct mapi_response);
 	mapi_response->handles = mapi_request->handles;
+	mapi_response->mapi_repl = NULL;
 
 	/* Step 1. Handle Idle requests case */
 	if (mapi_request->mapi_len <= 2) {
@@ -893,7 +894,49 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 notif:
 	/* Step 3. Notifications/Pending calls should be processed here */
 	/* Note: GetProps and GetRows are filled with flag NDR_REMAINING, which may hide the content of the following replies. */
+	{
+		DATA_BLOB		payload;
+		enum mapistore_error	ret;
+		struct ndr_pull		*ndr;
+		enum ndr_err_code	ndr_err_code;
 
+		ret = mapistore_notification_deliver_get(mem_ctx, emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid,
+							 &payload.data, &payload.length);
+		if (ret == MAPISTORE_SUCCESS) {
+			ndr = ndr_pull_init_blob(&payload, mem_ctx);
+			if (!ndr) {
+				OC_DEBUG(0, "Unable to initialize notification ndr pull blob");
+				goto end;
+			}
+			while (ndr->offset != payload.length) {
+				if (mapi_response->mapi_repl) {
+					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
+										  struct EcDoRpc_MAPI_REPL, idx + 2);
+				} else {
+					mapi_response->mapi_repl = talloc_array(mem_ctx, struct EcDoRpc_MAPI_REPL, 2);
+				}
+				if (!mapi_response->mapi_repl) {
+					OC_DEBUG(0, "No memory available");
+					goto end;
+				}
+				ndr_err_code = ndr_pull_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &(mapi_response->mapi_repl[idx]));
+				if (ndr_err_code != NDR_ERR_SUCCESS) {
+					OC_DEBUG(0, "Unable to add notification blob");
+					break;
+				}
+				size += libmapiserver_RopNotify_size(&(mapi_response->mapi_repl[idx]));
+				idx++;
+			}
+
+			ret = mapistore_notification_deliver_delete(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to delete notification key");
+			}
+			talloc_free(ndr);
+		}
+	}
+
+end:
 	if (mapi_response->mapi_repl) {
 		mapi_response->mapi_repl[idx].opnum = 0;
 	}

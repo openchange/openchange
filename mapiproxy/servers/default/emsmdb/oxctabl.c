@@ -381,6 +381,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	void				**data_pointers;
 	uint32_t			count;
 	uint32_t			handle;
+	uint16_t			flags = 0;
 	int64_t			        i = 0, end;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCTABL] QueryRows (0x15)\n");
@@ -524,6 +525,13 @@ finish:
 	/* Add notification TableModified subscription */
 	switch (object->parent_object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
+		if (table->flags & TableFlags_Depth) {
+			/* FIXME: This statement is partially incorrect. TableFlags_Depth triggers
+			 * TableModified notification for every child's table object created underneath,
+			 * while WholeStore implies everything beneath and underneath.
+			 */
+			flags = 0x1;
+		}
 		folderID = object->parent_object->object.mailbox->folderID;
 		break;
 	case EMSMDBP_OBJECT_FOLDER:
@@ -534,8 +542,9 @@ finish:
 		break;
 	}
 	if (folderID) {
+		flags |= fnevTableModified;
 		mretval = mapistore_notification_subscription_add(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid,
-								  handle, fnevTableModified, folderID, 0, table->prop_count,
+								  handle, flags, folderID, 0, table->prop_count,
 								  table->properties);
 		if (mretval != MAPISTORE_SUCCESS) {
 			OC_DEBUG(0, "Failed to add subscription");

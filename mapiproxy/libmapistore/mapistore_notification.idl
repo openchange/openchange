@@ -35,7 +35,8 @@ cpp_quote("#include <gen_ndr/ndr_misc.h>")
 interface mapistore_notification
 {
 	typedef [enum8bit] enum {
-		MAPISTORE_NOTIFICATION_V1	= 1
+		MAPISTORE_NOTIFICATION_V1	= 1,
+		MAPISTORE_NOTIFICATION_VMAX	= 2
 	} interface_vnum;
 
 	/* session */

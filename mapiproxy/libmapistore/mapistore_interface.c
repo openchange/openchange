@@ -540,27 +540,31 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_folder(struct mapistore_co
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
-   \param parent_fid the parent folder identifier
-   \param fid the folder identifier representing the folder to delete
+   \param folder the folder object
    \param flags flags that control the behaviour of the operation
+   \param mem_ctx memory context where deleted_fmids_p is allocated
+   \param deleted_fmids_p pointer to the deleted fmids array
+   \param deleted_fmids_count_p pointer to the number of deleted fmids
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, uint8_t flags)
+_PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, uint8_t flags, TALLOC_CTX *mem_ctx, uint64_t **deleted_fmids_p, uint32_t *deleted_fmids_count_p)
 {
 	struct backend_context	*backend_ctx;
 	enum mapistore_error	ret;
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX		*local_mem_ctx;
 	void			*subfolder;
-	uint64_t		*child_fmids;
+	uint64_t		*child_fmids, *deleted_fmids;
 	uint32_t		i, child_count;
-
-	/* TODO : handle the removal of entries in indexing.tdb */
+	uint32_t		deleted_count = 0;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!deleted_fmids_p, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!deleted_fmids_count_p, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -570,10 +574,15 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 	}
 
 	/* Step 2a. Handle deletion of normal messages */
-	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_MESSAGE_TABLE, mem_ctx, &child_fmids, &child_count);
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_MESSAGE_TABLE, local_mem_ctx, &child_fmids, &child_count);
 	if (ret != MAPISTORE_SUCCESS) {
 		goto end;
 	}
+
+	deleted_fmids = talloc_zero_array(mem_ctx, uint64_t, 1);
+	MAPISTORE_RETVAL_IF(!deleted_fmids, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+	*deleted_fmids_p = deleted_fmids;
+
 	if (child_count > 0) {
 		if ((flags & DEL_MESSAGES)) {
 			for (i = 0; i < child_count; i++) {
@@ -581,6 +590,12 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 				if (ret != MAPISTORE_SUCCESS) {
 					goto end;
 				}
+
+				deleted_fmids[deleted_count] = child_fmids[i];
+				deleted_count++;
+				deleted_fmids = talloc_realloc(mem_ctx, deleted_fmids, uint64_t,
+							       deleted_count + 1);
+				MAPISTORE_RETVAL_IF(!deleted_fmids, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 			}
 		}
 		else {
@@ -590,7 +605,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 	}
 
 	/* Step 2b. Handle deletion of FAI messages */
-	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FAI_TABLE, mem_ctx, &child_fmids, &child_count);
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FAI_TABLE, local_mem_ctx, &child_fmids, &child_count);
 	if (ret != MAPISTORE_SUCCESS) {
 		goto end;
 	}
@@ -601,6 +616,12 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 				if (ret != MAPISTORE_SUCCESS) {
 					goto end;
 				}
+
+				deleted_fmids[deleted_count] = child_fmids[i];
+				deleted_count++;
+				deleted_fmids = talloc_realloc(mem_ctx, deleted_fmids, uint64_t,
+							       deleted_count + 1);
+				MAPISTORE_RETVAL_IF(!deleted_fmids, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 			}
 		}
 		else {
@@ -610,14 +631,14 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 	}
 
 	/* Step 3. Handle deletion of child folders */
-	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FOLDER_TABLE, mem_ctx, &child_fmids, &child_count);
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FOLDER_TABLE, local_mem_ctx, &child_fmids, &child_count);
 	if (ret != MAPISTORE_SUCCESS) {
 		goto end;
 	}
 	if (child_count > 0) {
 		if ((flags & DEL_FOLDERS)) {
 			for (i = 0; i < child_count; i++) {
-				ret = mapistore_backend_folder_open_folder(backend_ctx, folder, mem_ctx, child_fmids[i], &subfolder);
+				ret = mapistore_backend_folder_open_folder(backend_ctx, folder, local_mem_ctx, child_fmids[i], &subfolder);
 				if (ret != MAPISTORE_SUCCESS) {
 					goto end;
 				}
@@ -626,6 +647,12 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 				if (ret != MAPISTORE_SUCCESS) {
 					goto end;
 				}
+
+				deleted_fmids[deleted_count] = child_fmids[i];
+				deleted_count++;
+				deleted_fmids = talloc_realloc(mem_ctx, deleted_fmids, uint64_t,
+							       deleted_count + 1);
+				MAPISTORE_RETVAL_IF(!deleted_fmids, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 			}
 		}
 		else {
@@ -638,7 +665,8 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 	ret = mapistore_backend_folder_delete(backend_ctx, folder);
 
 end:
-	talloc_free(mem_ctx);
+	*deleted_fmids_count_p = deleted_count;
+	talloc_free(local_mem_ctx);
 
 	return ret;
 }

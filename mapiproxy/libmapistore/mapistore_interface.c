@@ -481,8 +481,11 @@ _PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username,
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where the directory will be opened
-   \param parent_fid the parent folder identifier
+   \param folder the parent folder object
+   \param mem_ctx the memory context where child_folder is created
    \param fid folder identifier to open
+   \param [out] child_folder location where to store new mapistore
+   backend object on success
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */

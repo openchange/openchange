@@ -858,7 +858,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, folder, local_mem_ctx, childFolders[i], &subfolder);
+		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, local_mem_ctx, childFolders[i], &subfolder);
 		if (retval != MAPISTORE_SUCCESS) {
 			ret = MAPI_E_NOT_FOUND;
 			goto end;

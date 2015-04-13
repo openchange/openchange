@@ -228,7 +228,7 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	retval = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
 	if (retval != MAPI_E_SUCCESS) goto end;
 
-	// cache both account_name and organization upon success
+	/* cache both account_name and organization upon success */
 	exdn = ldb_msg_find_attr_as_string(ldb_msg, "legacyExchangeDN", NULL);
 	if (exdn == NULL) {
 		OC_DEBUG(0, "User %s doesn't have legacyExchangeDN attribute", username);
@@ -962,7 +962,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 						   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
 {
 	enum MAPISTATUS			retval;
-	struct PropertyRow_r			*aRow;
+	struct PropertyRow_r		*aRow;
 	struct PermanentEntryID		gal;
 	struct PermanentEntryID		parentPermEntryID;
 	struct PermanentEntryID		permEntryID;
@@ -1373,8 +1373,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_fetch_filter(TALLOC_CTX *mem_ctx,
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "(globalAddressList=*)");
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, NULL);
 
-		// We could have more than one GAL, but all of them are equal so
-		// it really does not matter
+		/* We could have more than one GAL, but all of them are equal so
+                   it really does not matter */
 
 		dn = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "globalAddressList", NULL);
 		OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_STORE, NULL);
@@ -1387,13 +1387,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_fetch_filter(TALLOC_CTX *mem_ctx,
 	retval = emsabp_search_dn(emsabp_ctx, dn, &ldb_msg);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPI_E_CORRUPT_STORE, NULL);
 
-	// Fetch purportedSearch
 	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg, "purportedSearch", NULL);
 	if (!purportedSearch) {
-		return MAPI_E_INVALID_BOOKMARK;
+		/* No purported search means that the container is not meant to have elements */
+		*filter = NULL;
+		return MAPI_E_SUCCESS;
 	}
 
-	// Add organization restriction
+	/* Add organization restriction */
 	return emsabp_include_organization_restriction(emsabp_ctx, purportedSearch, filter);
 }
 
@@ -1425,9 +1426,13 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 	/* Fetch AB container record */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, ContainerID, &filter_search);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPI_E_INVALID_BOOKMARK, NULL);
+	if (filter_search == NULL) {
+		/* this container is not meant to have entries */
+		*ldb_resp = NULL;
+		return MAPI_E_SUCCESS;
+	}
 
 	/* Search AD with filter_search */
-
 	ldb_res = talloc_zero(mem_ctx, struct ldb_result);
 	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 

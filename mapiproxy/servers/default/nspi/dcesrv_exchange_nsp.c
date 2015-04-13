@@ -238,7 +238,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
 /**
    \details Get the current position and the last row position as defined by the pStat argument.
-   In the case of a empty table it return 0 for both positions. The caller can discriminate between empty tables and one-row tables looking at the cValues of the PropertyTagArray_r
+   In the case of an empty table it return 0 for both positions. The caller can discriminate between empty tables and one-row tables looking at the cValues of the PropertyTagArray_r
 
 
    \param pStat pointer to struct STAT which will be used to get the positions
@@ -458,6 +458,11 @@ static void dcesrv_do_NspiQueryRows(TALLOC_CTX *mem_ctx, struct NspiQueryRows *r
 						  r->in.pStat->ContainerID, &ldb_res);
 		if (retval != MAPI_E_SUCCESS)  {
 			goto failure;
+		}
+		if (ldb_res == NULL) {
+			/* No elements in this container */
+			*r->out.ppRows = pRows;
+			DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 		}
 
 		if (r->in.pStat->Delta >= 0) {
@@ -1275,6 +1280,9 @@ static void dcesrv_do_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (retval != MAPI_E_SUCCESS) {
 		OC_DEBUG(5, "[nspi] ab_fetch_filter failed");
+		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
+	} else if (filter_search == NULL) {
+		OC_DEBUG(5, "[nspi] ab_fetch_filter called for an empty container");
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 

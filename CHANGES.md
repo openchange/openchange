@@ -13,6 +13,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Fixed `Too many connections to ldap` when openchange runs on samba as member of a domain.
 * Fixed `Mark All as Read` feature regression bug introduced by 7737bdf6
 * Address book working much better than before
+* Fixed `Invalid bookmark` error when clicking on `All address lists` entry in recipient selection dialog box
 
 ### Improvements
 * More records returned when searching for ambiguous names.

@@ -170,6 +170,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the indexing
    database to update
+   \param username the username who owns the new entry
    \param fmid the folder or message ID to add
    \param type MAPISTORE_FOLDER or MAPISTORE_MESSAGE
 
@@ -214,6 +215,49 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
 
 	talloc_free(mem_ctx);
+	return ret;
+}
+
+/**
+   \details Add a folder or message record to the indexing database
+   using the given URI
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the indexing
+   database to update
+   \param username the username who owns the new entry
+   \param fmid the folder or message ID to add
+   \param mapistore_uri the URI to map against this fmid
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, const char *username,
+								uint64_t fmid, const char *mapistore_uri)
+{
+	struct backend_context		*backend_ctx;
+	struct indexing_context		*ictx;
+	enum mapistore_error		ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Check if the fid/mid doesn't already exist within the database */
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+
+	/* Add the record given its fmid and mapistore_uri */
+	ret = ictx->add_fmid(ictx, username, fmid, mapistore_uri);
 	return ret;
 }
 

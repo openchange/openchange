@@ -389,6 +389,7 @@ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context 
 enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, const char *, uint64_t);
 enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
+enum mapistore_error mapistore_indexing_record_add_fmid_for_uri(struct mapistore_context *, uint32_t, const char *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 

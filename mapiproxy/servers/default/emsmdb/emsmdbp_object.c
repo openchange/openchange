@@ -318,10 +318,11 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		goto end;
 	}
 
-	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
 	new_folder->object.folder->contextID = context_id;
 
 	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, new_folder->object.folder->postponed_props);
+	mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
+						   mapistore_uri);
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);

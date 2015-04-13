@@ -85,6 +85,7 @@ struct openchange_user {
 	union mail_user_module_context	module_ctx;
 	enum openchange_field		fields;
 	enum openchange_event		events;
+	const char			*resolver;
 	const char			*username;
 };
 
@@ -126,10 +127,23 @@ static void openchange_mail_user_created(struct mail_user *user)
 	ocuser->fields = OPENCHANGE_DEFAULT_FIELDS;
 	ocuser->events = OPENCHANGE_DEFAULT_EVENTS;
 
-	/* strip @domain.com from username */
-	aux = i_strdup(user->username);
-	ocuser->username = i_strdup(strtok(aux, "@"));
-	free(aux);
+	str = mail_user_plugin_getenv(user, "openchange_resolver");
+	if (str == NULL) {
+		ocuser->resolver = NULL;
+	} else {
+		ocuser->resolver = i_strdup(str);
+	}
+
+	str = mail_user_plugin_getenv(user, "openchange_cn");
+	if ((str == NULL) || !strcmp(str, "username")) {
+		aux = i_strdup(user->username);
+		ocuser->username = i_strdup(strtok(aux, "@"));
+		free(aux);
+	} else if (str && !strcmp(str, "email")) {
+		ocuser->username = i_strdup(user->username);
+	} else {
+		i_fatal("Invalid openchange_cn parameter in dovecot.conf");
+	}
 }
 
 static void openchange_mail_save(void *txn, struct mail *mail)
@@ -177,6 +191,7 @@ static bool openchange_newmail(struct openchange_user *user,
 	struct loadparm_context			*lp_ctx;
 	struct mapistore_context		mstore_ctx;
 	struct mapistore_notification_context	*ctx;
+	bool					bret;
 	int					ret = false;
 	int					rc;
 	int					sock;
@@ -217,6 +232,12 @@ static bool openchange_newmail(struct openchange_user *user,
 	}
 
 	/* initialize mapistore notification */
+	if (user->resolver) {
+		bret = lpcfg_set_cmdline(lp_ctx, "notification_cache", user->resolver);
+		if (bret == false) {
+			i_fatal("unable to set resolver address '%s'", user->resolver);
+		}
+	}
 	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
 	if (retval != MAPISTORE_SUCCESS) {
 		i_debug("unable to initialize mapistore notification");

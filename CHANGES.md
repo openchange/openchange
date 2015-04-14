@@ -14,6 +14,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Fixed `Mark All as Read` feature regression bug introduced by 7737bdf6
 * Address book working much better than before
 
+### Improvements
+* More records returned when searching for ambiguous names.
+
 ### Performances
 * Fixed performance issue affecting initial synchronization of business size mailbox contents
 
@@ -21,4 +24,3 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 [//]: # (unreleased compare link should be changed to the latest release)
 [//]: # (the current hash was master when this CHANGES.md file was created)
 [unreleased]: https://github.com/openchange/openchange/compare/0460ace70d03de001de11d8fb54f0571128b0b2f...HEAD
-

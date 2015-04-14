@@ -1083,20 +1083,28 @@ _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
 		return false;
 	}
 
 	/* Step 2. Open the inbox folder */
 	mapi_object_init(&obj_src);
 	ret = mapitest_common_folder_open(mt, &obj_store, &obj_src, olFolderInbox);
-	if (ret == false) return ret;
+	if (ret == false) {
+		mapi_object_release(&obj_store);
+		mapi_object_release(&obj_src);
+		return ret;
+	}
 
 	/* Step 3. Create temporary folder */
 	mapi_object_init(&obj_folder);
 	retval = CreateFolder(&obj_src, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
 			      OPEN_IF_EXISTS, &obj_folder);
 	mapitest_print_retval(mt, "CreateFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
+		mapi_object_release(&obj_src);
+		mapi_object_release(&obj_folder);
 		return false;
 	}
 
@@ -1145,14 +1153,13 @@ _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 		}
 	}
 	
-
 	/* Release */
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_src);
 	mapi_object_release(&obj_dst);
 	mapi_object_release(&obj_store);
 
-	return true;
+	return ret;
 }
 
 

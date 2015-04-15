@@ -1108,7 +1108,10 @@ START_TEST(payload_newmail) {
 	enum mapistore_error		retval;
 	TALLOC_CTX			*mem_ctx;
 	DATA_BLOB			payload;
+	char				*backend = "python://";
 	char				*eml = "123456.eml";
+	char				*folder = "";
+	char				separator = '.';
 	struct ndr_pull			*ndr;
 	enum ndr_err_code		ndr_err_code;
 	struct mapistore_notification	r;
@@ -1117,21 +1120,28 @@ START_TEST(payload_newmail) {
 	ck_assert(mem_ctx != NULL);
 
 	/* Check sanity check compliance */
-	retval = mapistore_notification_payload_newmail(mem_ctx, NULL, &payload.data, &payload.length);
+	retval = mapistore_notification_payload_newmail(mem_ctx, NULL, eml, NULL, separator, &payload.data, &payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
-	retval = mapistore_notification_payload_newmail(mem_ctx, eml, NULL, &payload.length);
+	retval = mapistore_notification_payload_newmail(mem_ctx, backend, NULL, folder, separator, &payload.data, &payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
-	retval = mapistore_notification_payload_newmail(mem_ctx, eml, &payload.data, NULL);
+	retval = mapistore_notification_payload_newmail(mem_ctx, backend, eml, folder, separator, NULL, &payload.length);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, backend, eml, NULL, separator, &payload.data, &payload.length);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, backend, eml, folder, separator, &payload.data, NULL);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
 	/* Build newmail payload */
-	retval = mapistore_notification_payload_newmail(mem_ctx, eml, &payload.data, &payload.length);
+	retval = mapistore_notification_payload_newmail(mem_ctx, backend, eml, folder, separator, &payload.data, &payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	ndr = ndr_pull_init_blob(&payload, mem_ctx);
 	ck_assert(ndr != NULL);
+
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	ndr_err_code = ndr_pull_mapistore_notification(ndr, NDR_SCALARS, &r);
 	ck_assert_int_eq(ndr_err_code, NDR_ERR_SUCCESS);
@@ -1139,7 +1149,9 @@ START_TEST(payload_newmail) {
 	/* newmail v1 checks */
 	ck_assert_int_eq(r.vnum, 1);
 	ck_assert_int_eq(r.v.v1.flags, sub_NewMail);
+	ck_assert_str_eq(r.v.v1.u.newmail.backend, backend);
 	ck_assert_str_eq(r.v.v1.u.newmail.eml, eml);
+	ck_assert_int_eq(r.v.v1.u.newmail.separator, separator);
 
 	talloc_free(mem_ctx);
 

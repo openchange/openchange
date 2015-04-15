@@ -37,7 +37,10 @@
 
 struct ocnotify_private {
 	struct mapistore_context	mstore_ctx;
+	char				*backend;
 	const char			*username;
+	char				*dstfolder;
+	char				sep;
 	bool				flush;
 };
 
@@ -68,7 +71,13 @@ static void ocnotify_newmail(TALLOC_CTX *mem_ctx, struct ocnotify_private ocnoti
 	uint8_t			*blob = NULL;
 	size_t			msglen;
 
-	retval = mapistore_notification_payload_newmail(mem_ctx, (char *)data, &blob, &msglen);
+	if (ocnotify.backend == NULL) {
+		oc_log(OC_LOG_ERROR, "No backend specified");
+		exit (1);
+	}
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, ocnotify.backend, (char *)data, ocnotify.dstfolder,
+							ocnotify.sep, &blob, &msglen);
 	if (retval != MAPISTORE_SUCCESS) {
 		oc_log(OC_LOG_ERROR, "unable to generate newmail payload");
 		exit (1);
@@ -118,15 +127,19 @@ int main(int argc, const char *argv[])
 	bool					ret;
 	int					verbosity = 0;
 	char					*debuglevel = NULL;
+	const char				*sep = NULL;
 	uint32_t				i = 0;
 	uint32_t				count = 0;
 	const char				**hosts = NULL;
 
-	enum { OPT_USERNAME=1000, OPT_SERVER, OPT_SERVER_LIST, OPT_FLUSH, OPT_NEWMAIL, OPT_VERBOSE };
+	enum { OPT_USERNAME=1000, OPT_BACKEND, OPT_DSTFOLDER, OPT_SEPARATOR, OPT_SERVER, OPT_SERVER_LIST, OPT_FLUSH, OPT_NEWMAIL, OPT_VERBOSE };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "username", 'U', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the username", NULL },
+		{ "backend", 'b', POPT_ARG_STRING, NULL, OPT_BACKEND, "set the mapistore backend", NULL },
+		{ "dstfolder", 0, POPT_ARG_STRING, NULL, OPT_DSTFOLDER, "set the destination folder", NULL },
+		{ "sep", 0, POPT_ARG_STRING, NULL, OPT_SEPARATOR, "set the folder separator", NULL },
 		{ "server", 'H', POPT_ARG_STRING, NULL, OPT_SERVER, "set the resolver address", NULL },
 		{ "list", 0, POPT_ARG_NONE, NULL, OPT_SERVER_LIST, "list notification service instances", NULL },
 		{ "flush", 0, POPT_ARG_NONE, NULL, OPT_FLUSH, "flush notification cache for the user", NULL },
@@ -150,6 +163,16 @@ int main(int argc, const char *argv[])
 		switch (opt) {
 		case OPT_USERNAME:
 			ocnotify.username = poptGetOptArg(pc);
+			break;
+		case OPT_BACKEND:
+			ocnotify.backend = poptGetOptArg(pc);
+			break;
+		case OPT_DSTFOLDER:
+			ocnotify.dstfolder = poptGetOptArg(pc);
+			break;
+		case OPT_SEPARATOR:
+			sep = poptGetOptArg(pc);
+			ocnotify.sep = sep[0];
 			break;
 		case OPT_SERVER:
 			opt_server = poptGetOptArg(pc);

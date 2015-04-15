@@ -1307,14 +1307,20 @@ _PUBLIC_ enum mapistore_error mapistore_notification_deliver_delete(struct mapis
    the service referenced by resolver entries.
 
    \param mem_ctx pointer to the memory context
+   \param backend the mapistore backend consuming this url
    \param eml the eml message to index
+   \param folder the destination folder
+   \param separator the folder separator
    \param data pointer on pointer to the generated blob to return
    \param length pointer to the length of the generated blob returned
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 _PUBLIC_ enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX *mem_ctx,
+								     char *backend,
 								     char *eml,
+								     char *folder,
+								     char separator,
 								     uint8_t **data,
 								     size_t *length)
 {
@@ -1323,7 +1329,9 @@ _PUBLIC_ enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX 
 	enum ndr_err_code		ndr_err_code;
 
 	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!eml, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!length, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -1333,7 +1341,10 @@ _PUBLIC_ enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX 
 
 	r.vnum = 1;
 	r.v.v1.flags = sub_NewMail;
+	r.v.v1.u.newmail.backend = backend;
 	r.v.v1.u.newmail.eml = eml;
+	r.v.v1.u.newmail.folder = folder;
+	r.v.v1.u.newmail.separator = separator;
 
 	ndr_err_code = ndr_push_mapistore_notification(ndr, NDR_SCALARS, &r);
 	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, ndr);

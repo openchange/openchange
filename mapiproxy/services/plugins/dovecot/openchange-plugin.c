@@ -87,6 +87,7 @@ struct openchange_user {
 	enum openchange_event		events;
 	const char			*resolver;
 	const char			*username;
+	const char			*backend;
 };
 
 struct openchange_message {
@@ -94,12 +95,14 @@ struct openchange_message {
 	struct openchange_message	*next;
 	enum openchange_event		event;
 	uint32_t			uid;
+	char				sep;
 	const char			*destination_folder;
 };
 
 struct openchange_mail_txn_context {
 	pool_t				pool;
 	struct mail_namespace		*ns;
+	char				sep;
 	struct openchange_message	*messages;
 	struct openchange_message	*messages_tail;
 };
@@ -144,6 +147,13 @@ static void openchange_mail_user_created(struct mail_user *user)
 	} else {
 		i_fatal("Invalid openchange_cn parameter in dovecot.conf");
 	}
+
+	str = mail_user_plugin_getenv(user, "openchange_backend");
+	if (str == NULL) {
+		ocuser->backend = i_strdup("sogo");
+	} else {
+		ocuser->backend = i_strdup(str);
+	}
 }
 
 static void openchange_mail_save(void *txn, struct mail *mail)
@@ -164,6 +174,7 @@ static void openchange_mail_copy(void *txn, struct mail *src, struct mail *dst)
 		msg = p_new(ctx->pool, struct openchange_message, 1);
 		msg->event = OPENCHANGE_EVENT_COPY;
 		msg->uid = 0;
+		msg->sep = ctx->sep;
 		msg->destination_folder = p_strdup(ctx->pool, mailbox_get_name(dst->box));
 		DLLIST2_APPEND(&ctx->messages, &ctx->messages_tail, msg);
 	}
@@ -178,6 +189,7 @@ static void *openchange_mail_transaction_begin(struct mailbox_transaction_contex
 	ctx = p_new(pool, struct openchange_mail_txn_context, 1);
 	ctx->pool = pool;
 	ctx->ns = mailbox_get_namespace(t->box);
+	ctx->sep = mailbox_list_get_hierarchy_sep(t->box->list);
 
 	return ctx;
 }
@@ -223,7 +235,9 @@ static bool openchange_newmail(struct openchange_user *user,
 		i_debug("unable to allocate memory");
 		goto end;
 	}
-	retval = mapistore_notification_payload_newmail(mem_ctx, data, &blob, &msglen) ;
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, (char *) user->backend, data, (char *) msg->destination_folder,
+							msg->sep, &blob, &msglen);
 	talloc_free(data);
 	if (retval) {
 		i_debug("unable to generate newmail payload for user %s with msg uid=%d",

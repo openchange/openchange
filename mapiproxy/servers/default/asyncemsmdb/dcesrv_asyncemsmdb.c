@@ -107,6 +107,166 @@ static int asyncemsmdb_mapistore_destructor(void *data)
 
 
 /**
+   \details The SOGo backend does not hold the FolderID of the parent
+   folder object within its property list and relies on the parent
+   sogo container to fetch this information. The problem is that
+   dcesrv_asyncemsmdb creates a mapistore context directly over the
+   destination folder and therefore has no parent. Trying to fetch
+   this information return 0x0 as opening a mailbox would in SOGo.
+
+   This function works around this problem by guessing parent folder
+   container from mapistoreURI and retrieving its folder id from
+   mapistore indexing database.
+
+   SOGo URI for folders entries typically end with a trailing '/'
+   which explains why we seek 2 slash (count == 2) to proceed. e.g.:
+   sogo://msft:msft@mail/folderINBOX/folderone/foldertwo/
+
+   \param mem_ctx pointer to the memory context
+   \param p pointer to the private asyncemsmdb data
+   \param uri the sogo string to parse
+   \param fid pointer to the fid to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error get_mapistore_sogo_PidTagParentFolderId(TALLOC_CTX *mem_ctx, struct asyncemsmdb_private_data *p,
+								    char *uri, uint64_t *fid)
+{
+	enum mapistore_error	retval;
+	int			i;
+	uint32_t		count = 0;
+	uint64_t		parent_fid;
+	char			*parent_uri;
+	bool			soft_deleted;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!parent_fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = strlen(uri); i; i--) {
+		if (uri[i] == '/') {
+			count++;
+		}
+		if (count == 2) {
+			parent_uri = talloc_strndup(mem_ctx, uri, i + 1);
+			MAPISTORE_RETVAL_IF(!parent_uri, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+			retval = mapistore_indexing_record_get_fmid(p->mstore_ctx, p->username, parent_uri, false, &parent_fid, &soft_deleted);
+			talloc_free(parent_uri);
+			MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+			*fid = parent_fid;
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
+
+/**
+   \details Retrieve properties from mapisore object
+
+   \param mem_ctx pointer to the memory context to use for returned data memory allocation
+   \param p pointer to the private asyncemsmdb data
+   \param folderId the ID of the folder from which data are to be retrieved
+   \param properties pointer to the array of MAPI properties to retrieve
+   \param data_pointers pointer on pointer to the data to return
+   \param retvals pointers to the return valud of each data_pointers entry to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error get_properties_mapistore(TALLOC_CTX *mem_ctx, struct asyncemsmdb_private_data *p,
+						     uint64_t folderId, struct SPropTagArray *properties,
+						     void **data_pointers, enum MAPISTATUS *retvals)
+{
+	uint32_t			contextID;
+	enum mapistore_error		retval;
+	void				*context_object;
+	char				*uri = NULL;
+	bool				soft_deleted;
+	struct mapistore_property_data	*prop_data;
+	int				i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!p, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!properties, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!data_pointers, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!retvals, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the mapistore folder URI */
+	retval = mapistore_indexing_record_get_uri(p->mstore_ctx, p->username, mem_ctx, folderId, &uri, &soft_deleted);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Set or add context */
+	retval = mapistore_search_context_by_uri(p->mstore_ctx, uri, &contextID, &context_object);
+	if (retval == MAPISTORE_SUCCESS) {
+		retval = mapistore_add_context_ref_count(p->mstore_ctx, contextID);
+	} else {
+		retval = mapistore_add_context(p->mstore_ctx, p->username, uri, folderId, &contextID, &context_object);
+	}
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	prop_data = talloc_array(NULL, struct mapistore_property_data, properties->cValues);
+	MAPISTORE_RETVAL_IF(!prop_data, MAPISTORE_ERR_NO_MEMORY, NULL);
+	memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
+
+	retval = mapistore_properties_get_properties(p->mstore_ctx, contextID, context_object, mem_ctx, properties->cValues,
+						     properties->aulPropTag, prop_data);
+	MAPISTORE_RETVAL_IF(retval, retval, prop_data);
+
+	for (i = 0; i < properties->cValues; i++) {
+		if (prop_data[i].error) {
+				if (properties->aulPropTag[i] == PidTagFolderFlags) {
+					prop_data[i].data = talloc_zero(prop_data, uint32_t);
+					*((uint32_t *)prop_data[i].data) = FolderFlags_IPM|FolderFlags_Normal;
+					data_pointers[i] = prop_data[i].data;
+					retvals[i] = MAPI_E_SUCCESS;
+				} else {
+					retvals[i] = mapistore_error_to_mapi(prop_data[i].error);
+				}
+		} else {
+			if (prop_data[i].data == NULL) {
+				if (properties->aulPropTag[i] == PidTagFolderFlags) {
+					*(uint32_t *)prop_data[i].data = FolderFlags_IPM|FolderFlags_Normal;
+					data_pointers[i] = prop_data[i].data;
+					retvals[i] = MAPI_E_SUCCESS;
+				} else {
+					retvals[i] = MAPI_E_NOT_FOUND;
+				}
+			} else {
+				if (properties->aulPropTag[i] == PidTagParentFolderId) {
+					if (*(uint64_t *)prop_data[i].data == 0x0) {
+						uint64_t	parent_fid;
+
+						retval = get_mapistore_sogo_PidTagParentFolderId(mem_ctx, p, uri, &parent_fid);
+						if (retval == MAPISTORE_SUCCESS) {
+							*(uint64_t *)(prop_data[i].data) = parent_fid;
+							retvals[i] = MAPI_E_SUCCESS;
+						}
+					}
+				} else if (properties->aulPropTag[i] == PidTagFolderFlags) {
+					prop_data[i].data = talloc_zero(prop_data, uint32_t);
+					*(uint32_t *)prop_data[i].data = FolderFlags_IPM|FolderFlags_Normal;
+					data_pointers[i] = prop_data[i].data;
+					retvals[i] = MAPI_E_SUCCESS;
+				}
+				data_pointers[i] = prop_data[i].data;
+				(void) talloc_reference(data_pointers, prop_data[i].data);
+			}
+		}
+	}
+
+	/* Delete mapistore context */
+	retval = mapistore_del_context(p->mstore_ctx, contextID);
+	MAPISTORE_RETVAL_IF(retval, retval, prop_data);
+
+	talloc_free(prop_data);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Retrieve properties from openchangedb system folder
 
    \param mem_ctx pointer to the memory context to use to allocate returned data
@@ -221,6 +381,7 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 	void				*data = NULL;
 	enum ndr_err_code		ndr_err_code;
 	struct ndr_push			*ndr;
+	char				*mapistoreURI = NULL;
 
 	/* Looking */
 	for (i = 0; i < s->v.v1.count; i++) {
@@ -258,8 +419,22 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 				}
 				memset(retvals, 0, sizeof(enum MAPISTATUS) * SPropTagArray.cValues);
 
-				retval = get_properties_systemspecialfolder(mem_ctx, p, folderId, &SPropTagArray,
-									    data_pointers, retvals);
+				retval = openchangedb_get_mapistoreURI(mem_ctx, openchangedb_ctx,
+								       p->username, folderId,
+								       &mapistoreURI, true);
+				if (retval == MAPI_E_SUCCESS) {
+					retval = get_properties_systemspecialfolder(mem_ctx, p, folderId, &SPropTagArray,
+										    data_pointers, retvals);
+				} else {
+					retval = MAPI_E_SUCCESS;
+					ret = get_properties_mapistore(mem_ctx, p, folderId, &SPropTagArray,
+								       data_pointers, retvals);
+					if (ret != MAPISTORE_SUCCESS) {
+						OC_DEBUG(0, "Unable to set mapistore properties: %s", mapistore_errstr(ret));
+						retval = MAPISTORE_ERROR;
+					}
+				}
+
 				if (retval != MAPI_E_SUCCESS) {
 					talloc_free(data_pointers);
 					talloc_free(retvals);
@@ -380,18 +555,77 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/* Retrieve Inbox FID */
-	retval = openchangedb_get_SystemFolderID(openchangedb_ctx, p->username, ASYNCEMSMDB_INBOX_SYSTEMIDX, &fid);
-	if (retval != MAPI_E_SUCCESS) {
-		OC_DEBUG(0, "Failed to retrieve Inbox FolderId for user %s", p->username);
-		return -1;
-	}
+	/* Check if we need to register message in a different folder than Inbox */
+	if (notif->v.v1.u.newmail.folder && (notif->v.v1.u.newmail.folder[0] == '\0')) {
+		/* Retrieve Inbox FID */
+		retval = openchangedb_get_SystemFolderID(openchangedb_ctx, p->username, ASYNCEMSMDB_INBOX_SYSTEMIDX, &fid);
+		if (retval != MAPI_E_SUCCESS) {
+			OC_DEBUG(0, "Failed to retrieve Inbox FolderId for user %s", p->username);
+			return -1;
+		}
 
-	/* Fetch the Inbox folder mapistore URI */
-	retval = openchangedb_get_mapistoreURI(mem_ctx, openchangedb_ctx, p->username, fid, &folder_uri, true);
-	if (retval != MAPI_E_SUCCESS) {
-		OC_DEBUG(0, "Failed to retrieve Inbox mapistore URI for user %s", p->username);
-		return -1;
+		/* Fetch the Inbox folder mapistore URI */
+		retval = openchangedb_get_mapistoreURI(mem_ctx, openchangedb_ctx, p->username, fid, &folder_uri, true);
+		if (retval != MAPI_E_SUCCESS) {
+			OC_DEBUG(0, "Failed to retrieve Inbox mapistore URI for user %s", p->username);
+			return -1;
+		}
+	} else {
+		/* handle sogo url case here */
+		if (!strcmp(notif->v.v1.u.newmail.backend, "sogo")) {
+			char	*folder;
+			char	*partial_uri = NULL;
+			char	*token = NULL;
+			char	*sep;
+			bool	soft_deletep;
+
+			/* Generate pseudo sogo URL */
+			/* FIXME: This should *REALLY* be handled by the backend */
+			/* FIXME2: special and unicode characters are not handled properly */
+			partial_uri = talloc_asprintf(mem_ctx, "%s://%s:%s@mail/", notif->v.v1.u.newmail.backend,
+						      p->username, p->username);
+			if (!partial_uri) {
+				OC_DEBUG(0, "Unable to allocate memory");
+				return -1;
+			}
+
+			folder = strchr(notif->v.v1.u.newmail.folder, notif->v.v1.u.newmail.separator);
+			if (folder == NULL) {
+				partial_uri = talloc_asprintf_append(partial_uri, "folder%s/", notif->v.v1.u.newmail.folder);
+				if (!partial_uri) {
+					OC_DEBUG(0, "Unable to allocate memory");
+					return -1;
+				}
+			} else {
+				sep = talloc_asprintf(mem_ctx, "%c", (char)notif->v.v1.u.newmail.separator);
+				if (!sep) {
+					OC_DEBUG(0, "Unable to allocate memory");
+					return -1;
+				}
+				folder = (char *) notif->v.v1.u.newmail.folder;
+				while ((token = strtok_r(folder, sep, &folder))) {
+					partial_uri = talloc_asprintf_append(partial_uri, "folder%s/", token);
+					if (!partial_uri) {
+						talloc_free(sep);
+						OC_DEBUG(0, "Unable to allocate memory");
+						return -1;
+					}
+				}
+				talloc_free(sep);
+			}
+
+			ret = mapistore_indexing_record_get_fmid(p->mstore_ctx, p->username,
+								 partial_uri, true, &fid,
+								 &soft_deletep);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to find FolderId from uri='%s'", partial_uri);
+				talloc_free(partial_uri);
+				return -1;
+			} else {
+				folder_uri = talloc_strdup(mem_ctx, partial_uri);
+				talloc_free(partial_uri);
+			}
+		}
 	}
 
 	/* Open connection to the indexing database */
@@ -403,6 +637,7 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 
 	/* Build the message URI: append folderID with message id */
 	message_uri = talloc_asprintf(mem_ctx, "%s%s", folder_uri, notif->v.v1.u.newmail.eml);
+	talloc_free(folder_uri);
 	if (!message_uri) {
 		OC_DEBUG(0, "Unable to allocate memory");
 		return -1;

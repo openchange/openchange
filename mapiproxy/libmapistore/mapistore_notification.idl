@@ -113,7 +113,10 @@ interface mapistore_notification
 
 	/* External notifications */
 	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
-		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string eml;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	backend;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	eml;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	folder;
+		uint8								separator;
 	} newmail_v1;
 
 	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {

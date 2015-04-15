@@ -436,7 +436,7 @@ enum mapistore_error mapistore_notification_deliver_exist(struct mapistore_conte
 enum mapistore_error mapistore_notification_deliver_get(TALLOC_CTX *, struct mapistore_context *, struct GUID, uint8_t **, size_t *);
 enum mapistore_error mapistore_notification_deliver_delete(struct mapistore_context *, struct GUID);
 
-enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX *, char *, uint8_t **, size_t *);
+enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX *, char *, char *, char *, char, uint8_t **, size_t *);
 
 __END_DECLS
 

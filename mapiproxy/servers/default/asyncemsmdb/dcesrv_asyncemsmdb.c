@@ -221,6 +221,7 @@ static enum mapistore_error get_properties_mapistore(TALLOC_CTX *mem_ctx, struct
 					prop_data[i].data = talloc_zero(prop_data, uint32_t);
 					*((uint32_t *)prop_data[i].data) = FolderFlags_IPM|FolderFlags_Normal;
 					data_pointers[i] = prop_data[i].data;
+					(void) talloc_reference(data_pointers, prop_data[i].data);
 					retvals[i] = MAPI_E_SUCCESS;
 				} else {
 					retvals[i] = mapistore_error_to_mapi(prop_data[i].error);
@@ -228,8 +229,10 @@ static enum mapistore_error get_properties_mapistore(TALLOC_CTX *mem_ctx, struct
 		} else {
 			if (prop_data[i].data == NULL) {
 				if (properties->aulPropTag[i] == PidTagFolderFlags) {
+					prop_data[i].data = talloc_zero(prop_data, uint32_t);
 					*(uint32_t *)prop_data[i].data = FolderFlags_IPM|FolderFlags_Normal;
 					data_pointers[i] = prop_data[i].data;
+					(void) talloc_reference(data_pointers, prop_data[i].data);
 					retvals[i] = MAPI_E_SUCCESS;
 				} else {
 					retvals[i] = MAPI_E_NOT_FOUND;

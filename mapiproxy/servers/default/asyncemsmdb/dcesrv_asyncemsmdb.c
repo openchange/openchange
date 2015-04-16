@@ -163,6 +163,118 @@ static enum mapistore_error get_mapistore_sogo_PidTagParentFolderId(TALLOC_CTX *
 	return MAPISTORE_ERR_NOT_FOUND;
 }
 
+/**
+   \details build a SOGo URL
+
+   \param _mem_ctx pointer to the memory context to use data to return
+   \param type the sogo element type (mail, calendar, task etc.)
+   \param username the name of the user
+   \param folder the IMAP folder
+   \param separator the IMAP separator
+   \param uri pointer on pointer to the string to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+
+static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char *type, char *username,
+						     const char *folder, char separator, char **uri)
+{
+	TALLOC_CTX	*mem_ctx;
+	char		*url_tmp = NULL;
+	char		*_uri = NULL;
+	size_t		baselen = 0;
+	size_t		len = 0;
+	char		*folder_tmp = NULL;
+	char		*sep = NULL;
+	char		*token = NULL;
+	int		i, j;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!type, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	url_tmp = talloc_asprintf(mem_ctx, "sogo://%s:%s@%s/", username, username, type);
+	MAPISTORE_RETVAL_IF(!url_tmp, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	baselen = strlen(url_tmp);
+
+	if ((folder_tmp = strchr(folder, separator))) {
+		sep = talloc_asprintf(mem_ctx, "%c", separator);
+		MAPISTORE_RETVAL_IF(!sep, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+		folder_tmp = (char *)folder;
+		while ((token = strtok_r(folder_tmp, sep, &folder_tmp))) {
+			url_tmp = talloc_asprintf_append(url_tmp, "folder%s/", token);
+			MAPISTORE_RETVAL_IF(!url_tmp, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+		}
+		talloc_free(sep);
+	} else {
+		url_tmp = talloc_asprintf_append(url_tmp, "folder%s/", folder);
+		MAPISTORE_RETVAL_IF(!url_tmp, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	}
+
+	/* Replace following characters:
+	* ' ' with '_SP_',
+	* '_' with '_U_',
+	* '@' with '_A_'
+	*/
+	len = strlen(url_tmp);
+	for (i = baselen; i < strlen(url_tmp); i++) {
+		switch (url_tmp[i]) {
+		case ASYNCEMSMDB_SPACE:
+			len += ASYNCEMSMDB_SOGO_SPACE_LEN;
+			break;
+		case ASYNCEMSMDB_UNDERSCORE:
+			len += ASYNCEMSMDB_SOGO_UNDERSCORE_LEN;
+			break;
+		case ASYNCEMSMDB_AT:
+			len += ASYNCEMSMDB_SOGO_AT_LEN;
+			break;
+		default:
+			len += 1;
+		}
+	}
+
+	_uri = talloc_array(mem_ctx, char, len + 1);
+	MAPISTORE_RETVAL_IF(!_uri, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	memset(_uri, 0, len + 1);
+
+	/* copy baselen */
+	memcpy(_uri, url_tmp, baselen);
+
+	/* build remaining part */
+	for (i = baselen, j = baselen; i < strlen(url_tmp); i++) {
+		switch (url_tmp[i]) {
+		case ASYNCEMSMDB_SPACE:
+			memcpy(&_uri[j], ASYNCEMSMDB_SOGO_SPACE, ASYNCEMSMDB_SOGO_SPACE_LEN);
+			j += ASYNCEMSMDB_SOGO_SPACE_LEN;
+			break;
+		case ASYNCEMSMDB_UNDERSCORE:
+			memcpy(&_uri[j], ASYNCEMSMDB_SOGO_UNDERSCORE, ASYNCEMSMDB_SOGO_UNDERSCORE_LEN);
+			j += ASYNCEMSMDB_SOGO_UNDERSCORE_LEN;
+			break;
+		case ASYNCEMSMDB_AT:
+			memcpy(&_uri[j], ASYNCEMSMDB_SOGO_AT, ASYNCEMSMDB_SOGO_AT_LEN);
+			j += ASYNCEMSMDB_SOGO_AT_LEN;
+			break;
+		default:
+			_uri[j] = url_tmp[i];
+			j += 1;
+			break;
+		}
+	}
+	talloc_free(url_tmp);
+	*uri = talloc_strdup(_mem_ctx, _uri);
+	MAPISTORE_RETVAL_IF(!*uri, MAPISTORE_ERR_NO_MEMORY, NULL);
+	talloc_free(_uri);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Retrieve properties from mapisore object
@@ -576,57 +688,22 @@ static int process_newmail_notification(TALLOC_CTX *mem_ctx,
 	} else {
 		/* handle sogo url case here */
 		if (!strcmp(notif->v.v1.u.newmail.backend, "sogo")) {
-			char	*folder;
-			char	*partial_uri = NULL;
-			char	*token = NULL;
-			char	*sep;
 			bool	soft_deletep;
 
-			/* Generate pseudo sogo URL */
-			/* FIXME: This should *REALLY* be handled by the backend */
-			/* FIXME2: special and unicode characters are not handled properly */
-			partial_uri = talloc_asprintf(mem_ctx, "%s://%s:%s@mail/", notif->v.v1.u.newmail.backend,
-						      p->username, p->username);
-			if (!partial_uri) {
-				OC_DEBUG(0, "Unable to allocate memory");
+			ret = build_mapistore_sogo_url(mem_ctx, "mail", p->username, notif->v.v1.u.newmail.folder,
+						       notif->v.v1.u.newmail.separator, &folder_uri);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to generate sogo URL");
 				return -1;
-			}
-
-			folder = strchr(notif->v.v1.u.newmail.folder, notif->v.v1.u.newmail.separator);
-			if (folder == NULL) {
-				partial_uri = talloc_asprintf_append(partial_uri, "folder%s/", notif->v.v1.u.newmail.folder);
-				if (!partial_uri) {
-					OC_DEBUG(0, "Unable to allocate memory");
-					return -1;
-				}
-			} else {
-				sep = talloc_asprintf(mem_ctx, "%c", (char)notif->v.v1.u.newmail.separator);
-				if (!sep) {
-					OC_DEBUG(0, "Unable to allocate memory");
-					return -1;
-				}
-				folder = (char *) notif->v.v1.u.newmail.folder;
-				while ((token = strtok_r(folder, sep, &folder))) {
-					partial_uri = talloc_asprintf_append(partial_uri, "folder%s/", token);
-					if (!partial_uri) {
-						talloc_free(sep);
-						OC_DEBUG(0, "Unable to allocate memory");
-						return -1;
-					}
-				}
-				talloc_free(sep);
 			}
 
 			ret = mapistore_indexing_record_get_fmid(p->mstore_ctx, p->username,
-								 partial_uri, true, &fid,
+								 folder_uri, true, &fid,
 								 &soft_deletep);
 			if (ret != MAPISTORE_SUCCESS) {
-				OC_DEBUG(0, "Unable to find FolderId from uri='%s'", partial_uri);
-				talloc_free(partial_uri);
+				OC_DEBUG(0, "Unable to find FolderId from uri='%s'", folder_uri);
+				talloc_free(folder_uri);
 				return -1;
-			} else {
-				folder_uri = talloc_strdup(mem_ctx, partial_uri);
-				talloc_free(partial_uri);
 			}
 		}
 	}

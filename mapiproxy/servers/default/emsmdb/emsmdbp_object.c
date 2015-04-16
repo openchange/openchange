@@ -1539,12 +1539,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			goto end;
 		}
 
-		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
-		if (retval != MAPI_E_SUCCESS) {
-			ret = MAPISTORE_ERR_NOT_FOUND;
-			goto end;
-		}
-
 		if (mapistoreURL) {	/* fid is mapistore root */
 			ret = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, mapistoreURL, &context_id, &subfolder);
 			if (ret == MAPISTORE_SUCCESS) {
@@ -1573,6 +1567,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			if (ret != MAPISTORE_SUCCESS) {
 				goto end;
 			}
+		}
+
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
 		}
 	}
 

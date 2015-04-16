@@ -2601,7 +2601,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
                 }
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
+			unix_time = time(NULL);
 			unix_to_nt_time(&nt_time, unix_time);
 			ft = talloc_zero(data_pointers, struct FILETIME);
 			ft->dwLowDateTime = (nt_time & 0xffffffff);

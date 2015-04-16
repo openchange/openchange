@@ -330,7 +330,7 @@ static enum MAPISTATUS get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, s
 		}
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
+			unix_time = time(NULL);
 			unix_to_nt_time(&nt_time, unix_time);
 			ft = talloc_zero(data_pointers, struct FILETIME);
 			MAPI_RETVAL_IF(!ft, MAPI_E_NOT_ENOUGH_MEMORY, NULL);

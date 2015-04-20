@@ -282,6 +282,29 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
 }
 
 /**
+   \details Store the system index associated to a mailbox system folder.
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username current user
+   \param fid the Folder identifier to search for
+   \param system_idx the system index
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_set_system_idx(struct openchangedb_context *oc_ctx,
+                                                     const char *username,
+                                                     uint64_t fid,
+                                                     int system_idx)
+{
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(system_idx < -1, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->set_system_idx(oc_ctx, username, fid, system_idx);
+}
+
+/**
    \details Retrieve the parent fid associated to a mailbox system
    folder.
 

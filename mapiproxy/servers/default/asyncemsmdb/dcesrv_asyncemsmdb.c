@@ -277,7 +277,7 @@ static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char 
 }
 
 /**
-   \details Retrieve properties from mapisore object
+   \details Retrieve properties from mapistore object
 
    \param mem_ctx pointer to the memory context to use for returned data memory allocation
    \param p pointer to the private asyncemsmdb data

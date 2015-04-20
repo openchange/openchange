@@ -543,7 +543,7 @@ bool convert_string_to_ull(const char *str, uint64_t *ret)
 	bool retval = false;
 	char *aux = NULL;
 
-	if (ret != NULL) {
+	if (ret != NULL && str != NULL) {
 		*ret = strtoull(str, &aux, 10);
 		if (aux != NULL && *aux == '\0') {
 			retval = true;

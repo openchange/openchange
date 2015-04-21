@@ -21,6 +21,7 @@
 
 #include "dcesrv_asyncemsmdb.h"
 #include "utils/dlinklist.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
 
@@ -1191,16 +1192,14 @@ static NTSTATUS dcerpc_server_asyncemsmdb_bind(struct dcesrv_call_state *dce_cal
 	if (!openchangedb_ctx) {
 		openchangedb_ctx = mapiproxy_server_openchangedb_init(dce_call->conn->dce_ctx->lp_ctx);
 		if (!openchangedb_ctx) {
-			OC_DEBUG(OC_LOG_FATAL, "Unable to initialize openchangedb");
-			abort();
+			OC_PANIC(true, ("Unable to initialize openchangedb"));
 		}
 	}
 
 	if (!samdb_ctx) {
 		samdb_ctx = samdb_init(dce_call->conn->dce_ctx->lp_ctx);
 		if (!samdb_ctx) {
-			OC_DEBUG(OC_LOG_FATAL, "Unable to initialize samdb");
-			abort();
+			OC_PANIC(true, ("Unable to initialize samdb"));
 		}
 	}
 

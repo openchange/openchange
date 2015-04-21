@@ -1213,7 +1213,6 @@ _PUBLIC_ enum mapistore_error mapistore_notification_deliver_exist(struct mapist
 	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
 	rc = memcached_exist(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key));
-	talloc_free(key);
 	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
 
 	talloc_free(mem_ctx);

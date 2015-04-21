@@ -283,8 +283,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 
 static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
 							 struct emsmdbp_context *emsmdbp_ctx,
-							 struct mapi_request *mapi_request,
-							 struct GUID uuid)
+							 struct mapi_request *mapi_request)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_response	*mapi_response;
@@ -992,7 +991,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Process EcDoRpc requests */
 	mapi_request = r->in.mapi_request;
-	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi_request, r->in.handle->uuid);
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi_request);
 
 	/* Step 2. Fill EcDoRpc reply */
 	r->out.handle = r->in.handle;
@@ -1445,7 +1444,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 		return ecRpcFormat;
 	}
 
-	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request, r->in.handle->uuid);
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
 	talloc_free(mapi2k7_request.mapi_request);
 
 	/* Fill EcDoRpcExt2 reply */

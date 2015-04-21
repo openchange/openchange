@@ -544,7 +544,7 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 					ret = get_properties_mapistore(mem_ctx, p, folderId, &SPropTagArray,
 								       data_pointers, retvals);
 					if (ret != MAPISTORE_SUCCESS) {
-						OC_DEBUG(0, "Unable to set mapistore properties: %s", mapistore_errstr(ret));
+						OC_DEBUG(0, "Unable to get mapistore properties: %s", mapistore_errstr(ret));
 						retval = MAPISTORE_ERROR;
 					}
 				}

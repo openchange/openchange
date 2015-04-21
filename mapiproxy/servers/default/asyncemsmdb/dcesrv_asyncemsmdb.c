@@ -510,7 +510,7 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 				reply.u.mapi_Notify.NotificationHandle = s->v.v1.subscription[i].handle;
 				reply.u.mapi_Notify.LogonId = 0;
 				reply.u.mapi_Notify.NotificationType = fnevMbit | fnevSbit | fnevTableModified;
-				reply.u.mapi_Notify.NotificationData.ContentsTableChange.TableEvent = 0x5; /* TABLE_ROW_MODIFED */
+				reply.u.mapi_Notify.NotificationData.ContentsTableChange.TableEvent = TABLE_ROW_MODIFIED;
 				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.FID = folderId;
 				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.MID = 0x0;
 				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Instance = 0x0;

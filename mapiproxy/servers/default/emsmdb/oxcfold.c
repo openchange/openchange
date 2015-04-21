@@ -141,7 +141,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object = NULL;
 	void			*data;
-	uint64_t		folderID;
 	uint32_t		handle;
 	uint32_t		count = 0;
 
@@ -176,15 +175,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (parent_object->type) {
-	case EMSMDBP_OBJECT_MAILBOX:
-		folderID = parent_object->object.mailbox->folderID;
-		break;
-	case EMSMDBP_OBJECT_FOLDER:
-		folderID = parent_object->object.folder->folderID;
-		break;
-	default:
-		OC_DEBUG(5, "  unsupported object type\n");
+	if ((parent_object->type != EMSMDBP_OBJECT_MAILBOX) &&
+	    (parent_object->type != EMSMDBP_OBJECT_FOLDER)) {
+		OC_DEBUG(5, "unsupported object type");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}

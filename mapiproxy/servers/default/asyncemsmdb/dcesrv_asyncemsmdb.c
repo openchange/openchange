@@ -521,19 +521,17 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 				SPropTagArray.cValues = s->v.v1.subscription[i].count;
 				SPropTagArray.aulPropTag = (enum MAPITAGS *)s->v.v1.subscription[i].properties;
 
-				data_pointers = talloc_array(mem_ctx, void *, SPropTagArray.cValues);
+				data_pointers = talloc_zero_array(mem_ctx, void *, SPropTagArray.cValues);
 				if (!data_pointers) {
 					OC_DEBUG(0, "No memory available");
 					return -1;
 				}
-				memset(data_pointers, 0, sizeof(void *) * SPropTagArray.cValues);
 
-				retvals = talloc_array(mem_ctx, enum MAPISTATUS, SPropTagArray.cValues);
+				retvals = talloc_zero_array(mem_ctx, enum MAPISTATUS, SPropTagArray.cValues);
 				if (!retvals) {
 					OC_DEBUG(0, "No memory available");
 					return -1;
 				}
-				memset(retvals, 0, sizeof(enum MAPISTATUS) * SPropTagArray.cValues);
 
 				retval = openchangedb_get_mapistoreURI(mem_ctx, openchangedb_ctx,
 								       p->username, folderId,

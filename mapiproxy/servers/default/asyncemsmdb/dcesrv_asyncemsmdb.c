@@ -935,7 +935,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 	char					*bind_addr = NULL;
 	int					port = 0;
 
-	OC_DEBUG(0, "exchange_asyncemsmdb: EcDoAsyncWaitEx (0x0)");
+	OC_DEBUG(3, "exchange_asyncemsmdb: EcDoAsyncWaitEx (0x0)");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {

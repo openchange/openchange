@@ -1,13 +1,8 @@
 .deps
 .libs
-AUTHORS
-COPYING
-ChangeLog
 INSTALL
 Makefile
 Makefile.in
-NEWS
-README
 autom4te.cache/
 compile
 config.guess

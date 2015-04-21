@@ -988,7 +988,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		}
 
 		/* we're allowed to reply async */
-		p = talloc(dce_call->event_ctx, struct asyncemsmdb_private_data);
+		p = talloc_zero(dce_call->event_ctx, struct asyncemsmdb_private_data);
 		if (!p) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
 			talloc_free(mstore_ctx);
@@ -1089,7 +1089,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 
 	/* Register session  */
 	if (!session) {
-		session = talloc(asyncemsmdb_session, struct exchange_asyncemsmdb_session);
+		session = talloc_zero(asyncemsmdb_session, struct exchange_asyncemsmdb_session);
 		if (!session) {
 		failure:
 			OC_DEBUG(0, "[asyncemsmdb][ERR]: No more memory");

@@ -251,7 +251,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object;
 	void			*data;
-	uint64_t		folderID;
 	uint32_t		handle;
 	uint8_t			table_type;
 
@@ -298,7 +297,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	folderID = parent_object->object.folder->folderID;
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
 		OC_DEBUG(5, "  table is FAI table\n");
 		table_type = MAPISTORE_FAI_TABLE;

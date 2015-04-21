@@ -866,7 +866,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 
 	ndr_print_mapistore_notification(ndr_print, "notification", &n);
 
-	OC_DEBUG(0, "Notification received for session: %s", p->emsmdb_session_str);
+	OC_DEBUG(5, "Notification received for session: %s", p->emsmdb_session_str);
 
 	retval = mapistore_notification_subscription_get(mem_ctx, p->mstore_ctx, p->emsmdb_uuid, &r);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -875,7 +875,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 		return;
 	}
 
-	OC_DEBUG(0, "%d subscriptions available:", r.v.v1.count);
+	OC_DEBUG(5, "%d subscriptions available:", r.v.v1.count);
 	ndr_print_mapistore_notification_subscription(ndr_print, "subscriptions", &r);
 	talloc_free(ndr_print);
 

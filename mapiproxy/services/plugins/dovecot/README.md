@@ -82,7 +82,7 @@ plugin {
 
   * __openchange_resolver = STRING__ This option specifies the
     connection string used by the dovecot server to access the
-    mapisore notification resolver service. This string is currently
+    mapistore notification resolver service. This string is currently
     used to connect to a memcached server and its format must be
     compliant with
     http://docs.libmemcached.org/libmemcached_configuration.html. If

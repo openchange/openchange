@@ -358,10 +358,16 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 	talloc_free(ndr);
 	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
 
-	*uuid = r.v.v1.uuid;
-	*cnp = talloc_strdup(mem_ctx, r.v.v1.cn);
-	MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
-
+	switch (r.vnum) {
+	case MAPISTORE_NOTIFICATION_V1:
+		*uuid = r.v.v1.uuid;
+		*cnp = talloc_strdup(mem_ctx, r.v.v1.cn);
+		MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+		break;
+	default:
+		talloc_free(local_mem_ctx);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
 	talloc_free(local_mem_ctx);
 
 	return MAPISTORE_SUCCESS;

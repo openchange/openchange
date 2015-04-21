@@ -1127,13 +1127,13 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 	enum mapistore_error			retval;
 	struct exchange_asyncemsmdb_session	*session = (struct exchange_asyncemsmdb_session *) context->private_data;
 
-	OC_DEBUG(0, "dcerpc_server_asyncemsmdb_unbind");
+	OC_DEBUG(3, "dcerpc_server_asyncemsmdb_unbind");
 
 	if (!session) {
 		return NT_STATUS_OK;
 	}
 
-	OC_DEBUG(0, "[asyncemsmdb] unbind %s", session->bind_addr);
+	OC_DEBUG(5, "[asyncemsmdb] unbind %s", session->bind_addr);
 	retval = mapistore_notification_resolver_delete(session->mstore_ctx, session->cn, session->bind_addr);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "[asyncemsmdb] unable to delete resolver entry %s from record %s", session->bind_addr, session->cn);

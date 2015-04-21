@@ -240,9 +240,8 @@ static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char 
 		}
 	}
 
-	_uri = talloc_array(mem_ctx, char, len + 1);
+	_uri = talloc_zero_array(mem_ctx, char, len + 1);
 	MAPISTORE_RETVAL_IF(!_uri, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-	memset(_uri, 0, len + 1);
 
 	/* copy baselen */
 	memcpy(_uri, url_tmp, baselen);
@@ -320,9 +319,8 @@ static enum mapistore_error get_properties_mapistore(TALLOC_CTX *mem_ctx, struct
 	}
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	prop_data = talloc_array(NULL, struct mapistore_property_data, properties->cValues);
+	prop_data = talloc_zero_array(NULL, struct mapistore_property_data, properties->cValues);
 	MAPISTORE_RETVAL_IF(!prop_data, MAPISTORE_ERR_NO_MEMORY, NULL);
-	memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
 
 	retval = mapistore_properties_get_properties(p->mstore_ctx, contextID, context_object, mem_ctx, properties->cValues,
 						     properties->aulPropTag, prop_data);

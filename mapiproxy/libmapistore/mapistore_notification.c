@@ -396,6 +396,12 @@ static enum mapistore_error mapistore_notification_resolver_set_key(TALLOC_CTX *
 	MAPISTORE_RETVAL_IF(!strlen(cn), MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!_key, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	/* memcached does not allow key with space */
+	if (strchr(cn, ' ')) {
+		OC_DEBUG(0, "space not allowed in cn field: '%s'", cn);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
 	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_RESOLVER, cn);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
 
@@ -446,12 +452,6 @@ _PUBLIC_ enum mapistore_error mapistore_notification_resolver_add(struct mapisto
 	MAPISTORE_RETVAL_IF(!host, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
-
-	/* memcached does not allow key with space */
-	if (strchr(cn, ' ')) {
-		OC_DEBUG(0, "space not allowed in cn field: '%s'", cn);
-		return MAPISTORE_ERR_INVALID_DATA;
-	}
 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);

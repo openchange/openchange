@@ -206,7 +206,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
  */
 _PUBLIC_ bool emsmdbp_set_session_uuid(struct emsmdbp_context *emsmdbp_ctx, struct GUID uuid)
 {
-  if (!emsmdbp_ctx) return false;
+	if (!emsmdbp_ctx) return false;
 
   emsmdbp_ctx->session_uuid = uuid;
   return true;

@@ -23,7 +23,7 @@
 import os
 import os.path
 import samba
-from samba import Ldb, unix2nttime
+from samba import Ldb
 import ldb
 from urlparse import urlparse
 import uuid
@@ -550,3 +550,30 @@ class NamedPropertiesWithMysqlBackend(MysqlBackendMixin):
         self.url = url
         self._connect_to_mysql()
         self.migration_app = 'named_properties'
+
+
+class Directory(MysqlBackendMixin):
+    """
+    The directory itself does not use mysql but we have this class for ease the migrations
+    """
+
+    def __init__(self, url):
+        self.url = url
+        self._connect_to_mysql()
+        self.migration_app = 'directory'
+
+    def migrate(self, version=None, **kwargs):
+        """Migrate directory schema and data
+
+        :param int version: indicating which version to migrate. None migrates
+                            to the lastest version.
+        :param named lp: samba Loadparm context
+        :param named cred: samba credentials
+        :param named names: samba provision name
+        :param named setup_path: method to get the setup ldif files path
+        :rtype bool:
+        :returns: True if any migration has been performed
+        """
+        self.db.select_db(self.db_name)
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.migrate(self.migration_app, version, **kwargs)

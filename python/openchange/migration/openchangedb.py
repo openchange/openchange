@@ -30,7 +30,7 @@ class InitialOCDBMigration(Migration):
     description = 'initial'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, **kwargs):
         try:
             cur.execute('SELECT COUNT(*) FROM `organizational_units`')
             return False

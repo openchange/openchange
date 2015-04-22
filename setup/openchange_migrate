@@ -22,13 +22,16 @@ Tool to migrate DB schemas using MySQL backend
 # TODO: Use argparse when we deprecate python 2.6
 import optparse
 import sys
+import os
 
 # To allow running from the source directory
 sys.path.append("python")
 
 from openchange import provision
 from openchange.migration import MigrationManager
+import samba
 from samba.getopt import SambaOptions
+from samba.getopt import CredentialsOptions
 
 
 parser = optparse.OptionParser("openchange_migrate [options] [apps]")
@@ -54,24 +57,58 @@ parser.add_option("--fake", action="store_true",
 
 apps = []
 opts, args = parser.parse_args()
+
+all_apps = MigrationManager.apps()
 if len(args) == 0:
-    apps = MigrationManager.apps()
+    apps = all_apps
 else:
     apps = args
 
 
 lp = samba_opts.get_loadparm()
 
-
 if not apps:
     sys.stderr.write("No defined OpenChange app to migrate\n")
     sys.exit(1)
-
+else:
+    for app in apps:
+        if not app in all_apps:
+            sys.stderr.write(app + " is not a registered application\n")
+            sys.stderr.write("Registered applications: " + ', '.join(all_apps) + "\n")
+            sys.exit(1)
 
 # Checks over args
 if opts.fake and opts.target_version is None:
     sys.stderr.write("No defined --target-version to fake\n")
     sys.exit(2)
+
+if 'directory' in apps:
+    print "=== OpenChange Directory ==="
+    if opts.list:
+        provision.directory_list_migrations(lp, opts.openchangedb_uri)
+    elif opts.fake:
+        provision.directory_fake_migration(lp, opts.openchangedb_uri, opts.target_version)
+    else:
+        credopts = CredentialsOptions(parser)
+        creds = credopts.get_credentials(lp)
+        provisionnames = provision.guess_names_from_smbconf(lp, creds)
+
+        _setupdir = os.path.dirname(__file__)
+        if not os.path.exists(os.path.join(_setupdir, "AD")):
+            _setupdir = samba.param.setup_dir()
+
+        def setup_path(*args):
+            global _setupdir
+            return os.path.join(_setupdir, *args)
+        kwargs = {
+            'lp': lp,
+            'credopts': credopts,
+            'creds': creds,
+            'names': provisionnames,
+            'setup_path': setup_path,
+        }
+
+        provision.directory_migrate(opts.openchangedb_uri, opts.target_version, **kwargs)
 
 
 if 'openchangedb' in apps:

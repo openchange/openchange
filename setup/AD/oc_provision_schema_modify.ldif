@@ -1,7 +1,6 @@
 #
 # ms-Exch-Configuration-Container class: see oc_provision_schema.ldif
 #
-
 dn: CN=Address-Book-Container,${SCHEMADN}
 changetype: modify
 add: mayContain
@@ -41,8 +40,6 @@ mayContain: securityProtocol
 mayContain: trackingLogPathName
 mayContain: type
 
-
-
 #
 # Container Class
 # Used to hold other classes
@@ -59,18 +56,14 @@ mayContain: msExchTemplateRDNs
 mayContain: x500RDN
 mayContain: msExchExportContainersBL
 
-
-
 #
 # Domain-DNS
-# Windows NT domain with DNS-based (DC=) naming. 
+# Windows NT domain with DNS-based (DC=) naming.
 #
 dn: CN=Domain-DNS,${SCHEMADN}
 changetype: modify
 add: mayContain
 mayContain: msExchPolicyList
-
-
 
 #
 # Group
@@ -91,8 +84,6 @@ mayContain: reportToOwner
 mayContain: dLMemberRule
 mayContain: owner
 mayContain: msExchOriginatingForest
-
-
 
 #
 # Mail-Recipient
@@ -154,16 +145,16 @@ mayContain: msExchPoliciesExcluded
 mayContain: msExchPoliciesIncluded
 mayContain: msExchPolicyEnabled
 mayContain: msExchPolicyOptionList
+mayContain: msExchRecipientDisplayType
+mayContain: msExchRecipientTypeDetails
 
 #dn: CN=Mail-Recipient,${SCHEMADN}
 #changetype: modify
 #add: mayContain
-#mayContain: msExchUserAccountControl 
-#mayContain: msExchProxyCustomProxy 
-#mayContain: msExchMailboxFolderSet 
-#mayContain: msExchRequireAuthToSendTo 
-
-
+#mayContain: msExchUserAccountControl
+#mayContain: msExchProxyCustomProxy
+#mayContain: msExchMailboxFolderSet
+#mayContain: msExchRequireAuthToSendTo
 
 #
 # NTDS-DSA
@@ -174,8 +165,6 @@ changetype: modify
 add: mayContain
 mayContain: deliveryMechanism
 mayContain: diagnosticRegKey
-
-
 
 #
 # Organizational-Person
@@ -190,9 +179,6 @@ mayContain: telephoneAssistant
 mayContain: personalPager
 mayContain: employeeNumber
 
-
-
-
 #
 # Organizational-Unit
 # A container for storing users, computers, and other account objects.
@@ -204,8 +190,6 @@ auxiliaryClass: msExchBaseClass
 add: mayContain
 mayContain: msExchPolicyList
 
-
-
 #
 # Sam-Domain
 # Auxiliary class holding common properties for Windows NT domains.
@@ -214,8 +198,6 @@ dn: CN=Sam-Domain,${SCHEMADN}
 changetype: modify
 add: mayContain
 mayContain: msExchAddGroupsToToken
-
-
 
 #
 # Server
@@ -229,7 +211,6 @@ mayContain: activationStyle
 mayContain: type
 mayContain: networkAddress
 
-
 #
 # Site
 # A container for storing server objects. Represents a physical
@@ -240,7 +221,6 @@ changetype: modify
 add: mayContain
 mayContain: msExchConferenceZoneBL
 mayContain: msExchMCUHostsSitesBL
-
 
 #
 # User
@@ -269,12 +249,9 @@ mayContain: kMServer
 mayContain: msExchIMAPOWAURLPrefixOverride
 mayContain: msExchOriginatingForest
 
-
-
 ##################################################################
 # Attributes
 ##################################################################
-
 
 #
 # Address
@@ -285,7 +262,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
 #
 # Admin-Display-Name
 # The name to be displayed on administrator screens.
@@ -294,7 +270,6 @@ dn: CN=Admin-Display-Name,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
 
 #
 # Attribute-Syntax
@@ -305,8 +280,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Comment
 # The user's comments. Can be a null string.
@@ -315,8 +288,6 @@ dn: CN=Comment,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Company
@@ -327,8 +298,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Department
 # Contains the name for the department in which the user works.
@@ -337,8 +306,6 @@ dn: CN=Department,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Display-Name-Printable
@@ -351,8 +318,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # E-mail-Addresses
 # The list of e-mail addresses for a contact.
@@ -362,8 +327,6 @@ changetype: modify
 replace: searchFlags
 searchFlags: 5
 
-
-
 #
 # Facsimile-Telephone-Number
 # Contains the telephone number of the user's business fax machine.
@@ -372,8 +335,6 @@ dn: CN=Facsimile-Telephone-Number,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Garbage-Coll-Period
@@ -388,18 +349,14 @@ isMemberOfPartialAttributeSet: TRUE
 replace: searchFlags
 searchFlags: 16
 
-
-
 #
 # Given-Name
-# Contains the given name (first name) of the user. 
+# Contains the given name (first name) of the user.
 #
 #dn: CN=Given-Name,${SCHEMADN}
 #changetype: modify
 #add: isMemberOfPartialAttributeSet
 #isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Initials
@@ -411,8 +368,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Managed-By
 # The distinguished name of the user that is assigned to manage this
@@ -422,8 +377,6 @@ dn: CN=Managed-By,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Network-Address
@@ -435,8 +388,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # NT-Mixed-Domain
 # Indicates that the domain is in native mode or mixed mode. Found in
@@ -447,29 +398,23 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # OM-Syntax
-# A number representing the OM type for the attribute. 
+# A number representing the OM type for the attribute.
 #
 dn: CN=OM-Syntax,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Phone-Fax-Other
-# A list of alternate facsimile numbers. 
+# A list of alternate facsimile numbers.
 #
 dn: CN=Phone-Fax-Other,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Phone-Home-Other
@@ -480,8 +425,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Phone-Mobile-Other
 # A list of alternate cell phone numbers.
@@ -490,8 +433,6 @@ dn: CN=Phone-Mobile-Other,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Phone-Mobile-Primary
@@ -502,8 +443,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Phone-Office-Other
 # A list of alternate office phone numbers
@@ -512,8 +451,6 @@ dn: CN=Phone-Office-Other,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Phone-Pager-Other
@@ -524,8 +461,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Phone-Pager-Primary
 # The primary pager number
@@ -534,8 +469,6 @@ dn: CN=Phone-Pager-Primary,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Physical-Delivery-Office-Name
@@ -546,29 +479,23 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Postal-Code
-# The postal or zip code for mail delivery. 
+# The postal or zip code for mail delivery.
 #
 dn: CN=Postal-Code,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Post-Office-Box
-# The post office box number for this object. 
+# The post office box number for this object.
 #
 dn: CN=Post-Office-Box,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Proxy-Addresses
@@ -584,17 +511,13 @@ isMemberOfPartialAttributeSet: TRUE
 replace: searchFlags
 searchFlags: 13
 
-
-
 #
 # Show-In-Address-Book
-# 
+#
 dn: CN=Show-In-Address-Book,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Sub-Class-Of
@@ -605,8 +528,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # Text-Country
 # The country/region in which the user is located.
@@ -615,8 +536,6 @@ dn: CN=Text-Country,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-
-
 
 #
 # Text-Encoded-Or-Address
@@ -629,8 +548,6 @@ replace: searchFlags
 searchFlags: 1
 replace: attributeSecurityGuid
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
-
-
 
 #
 # Title
@@ -646,8 +563,6 @@ isMemberOfPartialAttributeSet: TRUE
 replace: searchFlags
 searchFlags: 16
 
-
-
 #
 # Version-Number
 # A general-purpose version number.
@@ -656,8 +571,6 @@ dn: CN=Version-Number,${SCHEMADN}
 changetype: modify
 replace: searchFlags
 searchFlags: 8
-
-
 
 #
 # WWW-Home-Page
@@ -668,8 +581,6 @@ changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
 
-
-
 #
 # WWW-Page-Other
 # A list of alternate Web pages
@@ -678,4 +589,3 @@ dn: CN=WWW-Page-Other,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
 isMemberOfPartialAttributeSet: TRUE
-

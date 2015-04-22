@@ -5,6 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2008
    Copyright (C) Brad Hards 2009-2010
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -558,6 +559,173 @@ cleanup:
 	mapi_object_release(&obj_top3);
 	mapi_object_release(&obj_top2);
 	mapi_object_release(&obj_top1);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
+
+/**
+   \details Test the DeleteFolder (0x1c) operations
+
+   This tests different combinations of folder deletion.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the top information folder
+	-# Create a test directory (or open the directory if it already exists)
+	-# Create two messages in it
+	-# Create a generic child subfolder
+	-# Create a generic grandchild subfolder
+	-# Try to delete the child subfolder without flags
+	-# Try to delete the child subfolder without DEL_FOLDERS flag
+	-# Delete the child subfolder
+	-# Try to delete the generic folder without flags
+	-# Try to delete the generic folder without DEL_MESSAGES flag
+	-# Delete the generic subfolder
+	-# Delete the test directory
+   \param mt the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_DeleteFolderVariants(struct mapitest *mt)
+{
+	bool			ret = true;
+	bool			common_result, partial_completion;
+	int			i;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_top, obj_child, obj_grandchild;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_folder;
+	enum MAPISTATUS		retval;
+
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_top);
+	mapi_object_init(&obj_child);
+	mapi_object_init(&obj_grandchild);
+
+	/* Step 1. Logon */
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Open Top Information Store folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	mapitest_print_retval_clean(mt, "GetDefaultFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval_clean(mt, "OpenFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create the top test folder */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_top);
+	mapitest_print_retval_clean(mt, "CreateFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Create two messages in it */
+	for (i = 0; i < 2; i++) {
+		mapi_object_init(&obj_message);
+		common_result = mapitest_common_message_create(mt, &obj_top, &obj_message, MT_MAIL_SUBJECT);
+		if (!common_result) {
+			mapitest_print(mt, "* mapitest_common_message_create() failed\n");
+			ret = false;
+		} else {
+			retval = SaveChangesMessage(&obj_top, &obj_message, KeepOpenReadOnly);
+			mapitest_print_retval(mt, "SaveChangesMessage");
+			if (retval != MAPI_E_SUCCESS) {
+				ret = false;
+			}
+		}
+		mapi_object_release(&obj_message);
+	}
+
+	/* Step 5. Create child folder */
+	mapitest_print(mt, "* Create GENERIC child folder\n");
+	retval = CreateFolder(&obj_top, FOLDER_GENERIC, "MT Child folder", NULL,
+			      0, &obj_child);
+	mapitest_print_retval_clean(mt, "CreateFolder - child", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 6. Create grandchild folder */
+	mapitest_print(mt, "* Create GENERIC grandchild folder\n");
+	retval = CreateFolder(&obj_child, FOLDER_GENERIC, "MT Grand Child folder", NULL,
+			      0, &obj_grandchild);
+	mapitest_print_retval_clean(mt, "CreateFolder - grandchild", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 7. Delete child folder without flags */
+	retval = DeleteFolder(&obj_top, mapi_object_get_id(&obj_child),
+			      0, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - child no flags", retval);
+	if (retval != MAPI_E_SUCCESS || !partial_completion) {
+		ret = false;
+	}
+
+	/* Step 8. Delete child folder without DEL_FOLDERS flag */
+	retval = DeleteFolder(&obj_top, mapi_object_get_id(&obj_child),
+			      DEL_MESSAGES, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - child DEL_MESSAGES flag", retval);
+	if (retval != MAPI_E_SUCCESS || !partial_completion) {
+		ret = false;
+	}
+
+	/* Step 9. Delete the child folder*/
+	retval = DeleteFolder(&obj_top, mapi_object_get_id(&obj_child),
+			      DELETE_HARD_DELETE|DEL_MESSAGES|DEL_FOLDERS, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - child", retval);
+	if (retval != MAPI_E_SUCCESS || partial_completion) {
+		ret = false;
+	}
+
+	/* Step 10. Delete folder without flags */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
+			      0, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top no flags", retval);
+	if (retval != MAPI_E_SUCCESS || !partial_completion) {
+		ret = false;
+	}
+
+	/* Step 11. Delete folder without DEL_MESSAGES flag */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
+			      DEL_FOLDERS, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top DEL_FOLDERS flag", retval);
+	if (retval != MAPI_E_SUCCESS || !partial_completion) {
+		ret = false;
+	}
+
+	/* Step 12. DeleteFolder on the top folder */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, &partial_completion);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS || partial_completion) {
+		ret = false;
+	}
+
+cleanup:
+	/* Release */
+	mapi_object_release(&obj_grandchild);
+	mapi_object_release(&obj_child);
+	mapi_object_release(&obj_top);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 

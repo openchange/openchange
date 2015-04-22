@@ -328,7 +328,7 @@ enum mapistore_error mapistore_create_root_folder(const char *, enum mapistore_c
 
 enum mapistore_error mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 enum mapistore_error mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
-enum mapistore_error mapistore_folder_delete(struct mapistore_context *, uint32_t, void *, uint8_t);
+enum mapistore_error mapistore_folder_delete(struct mapistore_context *, uint32_t, void *, uint8_t, TALLOC_CTX *, uint64_t **, uint32_t *);
 enum mapistore_error mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, bool, void **);
 enum mapistore_error mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 enum mapistore_error mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);

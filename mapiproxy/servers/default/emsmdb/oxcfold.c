@@ -771,11 +771,12 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		ret = MAPI_E_SUCCESS;
 	void                    *folder_priv;
-	struct emsmdbp_object   *folder_object = NULL;
-	uint32_t                context_id;
+	char			*owner;
+	struct emsmdbp_object	*folder_object = NULL;
+	uint32_t		context_id;
 	enum mapistore_error	retval;
-	uint64_t		*childFolders;
-	uint32_t		childFolderCount;
+	uint64_t		*childFolders, *deleted_fmids;
+	uint32_t		childFolderCount, deleted_fmids_count;
 	uint32_t		i;
 	uint8_t			flags = DELETE_HARD_DELETE| DEL_MESSAGES | DEL_FOLDERS;
 	TALLOC_CTX		*local_mem_ctx;
@@ -814,9 +815,22 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 
-		retval = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		owner = emsmdbp_get_owner(folder_object);
+		retval = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+						 subfolder, flags, local_mem_ctx,
+						 &deleted_fmids, &deleted_fmids_count);
 		if (retval) {
 			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval);
+			ret = MAPI_E_NOT_FOUND;
+			goto end;
+		}
+
+		/* Update indexing entries */
+		retval = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+								owner, childFolders[i], deleted_fmids,
+								deleted_fmids_count, flags);
+		if (retval) {
+			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete indexing entries for fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval);
 			ret = MAPI_E_NOT_FOUND;
 			goto end;
 		}

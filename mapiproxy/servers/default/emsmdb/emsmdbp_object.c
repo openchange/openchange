@@ -1456,15 +1456,63 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	return ret;
 }
 
+/**
+   \details  Delete the fmids from a folder in the indexing database.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier
+   \param username the owner of the folder to delete its entries
+   \param fid the folder identifier
+   \param deleted_fmid the array of child fmids from the folder
+   \param deleted_fmid_count the number of deleted_fmids
+   \param flags the delete flags. See emsmdbp_folder_delete for details.
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapistore_context *mstore_ctx, uint32_t context_id, char *username, uint64_t fid, uint64_t *deleted_fmids, uint32_t deleted_fmids_count, uint8_t flags)
+{
+        enum mapistore_error    ret;
+        uint8_t                 delete_type_flag;
+        uint32_t                i;
+
+        delete_type_flag = (flags & DELETE_HARD_DELETE) ? MAPISTORE_PERMANENT_DELETE : MAPISTORE_SOFT_DELETE;
+        ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username, fid, delete_type_flag);
+        MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+        for (i = 0; i < deleted_fmids_count; i++) {
+                ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username,
+                                                        deleted_fmids[i], delete_type_flag);
+                MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+        }
+
+        return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Delete a folder.
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param parent_folder the parent folder
+   \param fid the folder identifier to delete from parent_folder
+   \param flags the delete flags.
+
+   Possible values for flags are:
+   -# DEL_MESSAGES Delete all the messages in the folder
+   -# DEL_FOLDERS Delete the subfolder and all of its subfolders
+   -# DELETE_HARD_DELETE Hard delete the folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
 _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
 {
 	enum mapistore_error	ret;
-	enum MAPISTATUS		mapiret;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			mailboxstore;
-	uint32_t		context_id;
+	uint32_t		context_id, deleted_fmids_count;
 	void			*subfolder;
 	char			*mapistoreURL;
+	uint64_t		*deleted_fmids;
 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
@@ -1480,20 +1528,23 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			goto end;
 		}
 
-		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags, mem_ctx, &deleted_fmids, &deleted_fmids_count);
+		if (ret != MAPISTORE_SUCCESS) {
+			goto end;
+		}
+
+		/* Update indexing entries */
+		ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+							     emsmdbp_get_owner(parent_folder),
+							     fid, deleted_fmids, deleted_fmids_count,
+							     flags);
 		if (ret != MAPISTORE_SUCCESS) {
 			goto end;
 		}
 	}
 	else {
-		mapiret = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
-		if (mapiret != MAPI_E_SUCCESS) {
-			ret = MAPISTORE_ERR_NOT_FOUND;
-			goto end;
-		}
-
-		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
-		if (mapiret != MAPI_E_SUCCESS) {
+		retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
+		if (retval != MAPI_E_SUCCESS) {
 			ret = MAPISTORE_ERR_NOT_FOUND;
 			goto end;
 		}
@@ -1509,12 +1560,29 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 				}
 			}
 
-			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+						      subfolder, flags, mem_ctx, &deleted_fmids,
+						      &deleted_fmids_count);
 			if (ret != MAPISTORE_SUCCESS) {
 				goto end;
 			}
 
-			 mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+
+			/* Update indexing entries */
+			ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+								     emsmdbp_get_owner(parent_folder),
+								     fid, deleted_fmids, deleted_fmids_count,
+								     flags);
+			if (ret != MAPISTORE_SUCCESS) {
+				goto end;
+			}
+		}
+
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
 		}
 	}
 

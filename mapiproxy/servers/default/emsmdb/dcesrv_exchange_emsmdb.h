@@ -57,6 +57,7 @@ struct emsmdbp_context {
 	struct mapi_handles_context		*handles_ctx;
 
 	TALLOC_CTX				*mem_ctx;
+	struct GUID				session_uuid;
 };
 
 struct exchange_emsmdb_session {
@@ -112,7 +113,7 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_TABLE		= 0x4,
 	EMSMDBP_OBJECT_STREAM		= 0x5,
 	EMSMDBP_OBJECT_ATTACHMENT	= 0x6,
-        EMSMDBP_OBJECT_SUBSCRIPTION     = 0x7,
+	EMSMDBP_OBJECT_SUBSCRIPTION	= 0x7,
 	EMSMDBP_OBJECT_FTCONTEXT	= 0x8, /* Fast Transfer */
 	EMSMDBP_OBJECT_SYNCCONTEXT	= 0x9
 };
@@ -147,8 +148,8 @@ struct emsmdbp_object_table {
 	enum MAPITAGS				*properties;
 	uint32_t				numerator;
 	uint32_t				denominator;
-        struct mapistore_subscription_list	*subscription_list;
 	uint8_t					flags;
+	bool					subscription;
 };
 
 struct emsmdbp_object_stream {
@@ -170,8 +171,7 @@ struct emsmdbp_object_attachment {
 };
 
 struct emsmdbp_object_subscription {
-	uint32_t				handle;
-        struct mapistore_subscription_list	*subscription_list;
+	uint32_t			handle;
 };
 
 struct emsmdbp_object_synccontext {
@@ -296,6 +296,7 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *, struct tevent_context *, str
 
 /* definitions from emsmdbp.c */
 struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, const char *, void *);
+bool			emsmdbp_set_session_uuid(struct emsmdbp_context *, struct GUID);
 void			*emsmdbp_openchangedb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);

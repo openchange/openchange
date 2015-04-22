@@ -699,6 +699,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 static int emsmdbp_object_destructor(void *data)
 {
 	struct emsmdbp_object	*object = (struct emsmdbp_object *) data;
+	enum mapistore_error	mretval;
 	int			ret = MAPISTORE_SUCCESS;
 	uint32_t		contextID;
 	unsigned int		missing_objects;
@@ -719,22 +720,30 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_TABLE:
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
-			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
+			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+							  object->backend_object, object->object.table->handle);
 		}
-                if (object->object.table->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
-			talloc_free(object->object.table->subscription_list);
-			/* talloc_unlink(object->emsmdbp_ctx, object->object.table->subscription_list); */
-                }
+		if (object->object.table->handle && (object->object.table->subscription == true)) {
+			mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+										       object->emsmdbp_ctx->session_uuid,
+										       object->object.table->handle);
+			if (mretval != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to delete table notification subscription with handle=0x%x",
+					 object->object.table->handle);
+			}
+		}
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
 		break;
-        case EMSMDBP_OBJECT_SUBSCRIPTION:
-                if (object->object.subscription->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
-			talloc_free(object->object.subscription->subscription_list);
-                }
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+								     object->emsmdbp_ctx->session_uuid,
+								     object->object.subscription->handle);
+		if (mretval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "Unable to delete notification subscription with handle=0x%x",
+				 object->object.subscription->handle);
+		}
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		gettimeofday(&request_end, NULL);
@@ -787,6 +796,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->object.folder = NULL;
 	object->object.message = NULL;
 	object->object.stream = NULL;
+	object->object.subscription = NULL;
 	object->backend_object = NULL;
 	object->parent_object = parent_object;
 	(void) talloc_reference(object, parent_object);
@@ -1670,8 +1680,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->denominator = 0;
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
-	object->object.table->subscription_list = NULL;
 	object->object.table->flags = 0;
+	object->object.table->subscription = false;
 
 	return object;
 }
@@ -2499,19 +2509,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 	return object;
 }
 
-/**
-   \details Initialize a notification subscription object
 
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
-   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
-   \param folderID the folder identifier
-   \param messageID the message identifier
-   \param parent emsmdbp object of the parent
- */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
-                                                                 struct emsmdbp_context *emsmdbp_ctx,
-                                                                 struct emsmdbp_object *parent)
+								 struct emsmdbp_context *emsmdbp_ctx,
+								 struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;
 
@@ -2529,7 +2530,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	}
 
 	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
-        object->object.subscription->subscription_list = NULL;
+	object->object.subscription->handle = 0;
 
 	return object;
 }
@@ -2601,7 +2602,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
                 }
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
+			unix_time = time(NULL);
 			unix_to_nt_time(&nt_time, unix_time);
 			ft = talloc_zero(data_pointers, struct FILETIME);
 			ft->dwLowDateTime = (nt_time & 0xffffffff);

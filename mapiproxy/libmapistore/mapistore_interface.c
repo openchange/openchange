@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Julien Kerihuel 2009-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,6 +96,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
+	mstore_ctx->notification_ctx = NULL;
 
 	indexing_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_backend");
 	mapistore_set_default_indexing_url(indexing_url);
@@ -108,17 +109,15 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
-	cache_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_cache");
-	mapistore_set_default_cache_url(cache_url);
-
-#if 0
-	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
-	if (mstore_ctx->mq_ipc == -1) {
-		OC_DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
+	retval = mapistore_notification_init(mstore_ctx, lp_ctx, &(mstore_ctx->notification_ctx));
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[mapistore]: Unable to initialize mapistore notification subsystem: %s\n", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
-#endif
+
+	cache_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_cache");
+	mapistore_set_default_cache_url(cache_url);
 
 	return mstore_ctx;
 }
@@ -450,6 +449,10 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Error receiving message";
 	case MAPISTORE_ERR_DENIED:
 		return "Insufficient rights to perform the operation";
+	case MAPISTORE_ERR_CONN_REFUSED:
+		return "Connection refused";
+	case MAPISTORE_ERR_NOT_AVAILABLE:
+		return "Not available";
 	case MAPISTORE_ERR_NOT_IMPLEMENTED:
 		return "Not implemented";
 	}

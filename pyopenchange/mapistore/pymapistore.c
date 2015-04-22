@@ -191,23 +191,6 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
-{
-	PyMAPIStoreMGMTObject	*obj;
-
-	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
-	obj->mgmt_ctx = mapistore_mgmt_init(self->mstore_ctx);
-	if (obj->mgmt_ctx == NULL) {
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
-		return NULL;
-	}
-	obj->mem_ctx = self->mem_ctx;
-	obj->parent = self;
-	Py_INCREF(obj->parent);
-
-	return (PyObject *) obj;
-}
-
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
 	int				ret;
@@ -417,7 +400,6 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 /* } */
 
 static PyMethodDef mapistore_methods[] = {
-	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */
 	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
@@ -510,7 +492,6 @@ void initmapistore(void)
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 
-	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);
 	initmapistore_freebusy_properties(m);

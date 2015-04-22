@@ -1,0 +1,17 @@
+.deps
+.libs
+INSTALL
+Makefile
+Makefile.in
+autom4te.cache/
+compile
+config.guess
+config.sub
+depcomp
+install-sh
+*.la
+libtool
+ltmain.sh
+m4/
+missing
+*.lo

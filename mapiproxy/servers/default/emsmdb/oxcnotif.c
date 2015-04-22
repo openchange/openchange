@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "mapiproxy/libmapistore/gen_ndr/mapistore_notification.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 
@@ -54,15 +55,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 							 uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	mretval;
+	struct emsmdbp_object	*parent_object;
+	struct emsmdbp_object	*subscription_object;
 	struct mapi_handles	*parent_rec = NULL;
 	struct mapi_handles	*subscription_rec = NULL;
 	uint32_t		handle;
-        struct emsmdbp_object   *parent_object;
-        struct emsmdbp_object   *subscription_object;
-        struct mapistore_subscription *subscription;
-        struct mapistore_subscription_list *subscription_list;
-        struct mapistore_object_subscription_parameters subscription_parameters;
         void                    *data;
+	uint16_t		flags;
+	uint64_t		fid = 0;
+	uint64_t		mid = 0;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n");
 
@@ -91,6 +93,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
+
 	parent_object = (struct emsmdbp_object *) data;
 
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &subscription_rec);
@@ -98,29 +101,35 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		goto end;
 	}
+	/* Notification subscriptions */
+	flags = mapi_req->u.mapi_RegisterNotification.NotificationFlags;
+	if (mapi_req->u.mapi_RegisterNotification.WantWholeStore) {
+		flags |= sub_WholeStore;
+	} else {
+		fid = mapi_req->u.mapi_RegisterNotification.FolderId.ID;
+		mid = mapi_req->u.mapi_RegisterNotification.MessageId.ID;
+	}
+
+	mretval = mapistore_notification_subscription_add(emsmdbp_ctx->mstore_ctx,
+							  emsmdbp_ctx->session_uuid,
+							  subscription_rec->handle,
+							  flags, fid, mid, 0, NULL);
+	if (mretval != MAPISTORE_SUCCESS) {
+		/* MS-OXCROPS section 2.2.14.1 does not describe a
+		 * failure response buffer for RegisterNotification
+		 * Rop */
+		OC_DEBUG(0, "Failed to add subscription: %s", mapistore_errstr(mretval));
+	}
+
 	handles[mapi_repl->handle_idx] = subscription_rec->handle;
 
-        /* emsmdb_object */
-        subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
-        mapi_handles_set_private_data(subscription_rec, subscription_object);
-
-        /* we attach the subscription to the session object.
-           note: a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-        subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-        DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-
-        subscription_parameters.folder_id = mapi_req->u.mapi_RegisterNotification.FolderId.ID;
-        subscription_parameters.object_id = mapi_req->u.mapi_RegisterNotification.MessageId.ID;
-        subscription_parameters.whole_store = mapi_req->u.mapi_RegisterNotification.WantWholeStore;
-
-        subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-						  emsmdbp_ctx->username, 
-						  subscription_rec->handle,
-						  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
-						  &subscription_parameters);
-        subscription_list->subscription = subscription;
-
-        subscription_object->object.subscription->subscription_list = subscription_list;
+	/* Create emsmdbp subscription object */
+	subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
+	if (!subscription_object) {
+		OC_DEBUG(0, "Unable to create subscription object");
+	}
+	mapi_handles_set_private_data(subscription_rec, subscription_object);
+	subscription_object->object.subscription->handle = subscription_rec->handle;
 
 end:
 	*size += libmapiserver_RopRegisterNotification_size();

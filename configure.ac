@@ -290,6 +290,13 @@ AC_SUBST(CHECK_LIBS)
 OC_RULE_ADD(testsuite, TESTSUITE)
 
 dnl ---------------------------------------------------------------------------
+dnl Check for nanomsg library (server notification)
+dnl ---------------------------------------------------------------------------
+PKG_CHECK_MODULES(NANOMSG, libnanomsg, [], [AC_MSG_ERROR(Install nanomsg library >= 0.5)])
+AC_SUBST(NANOMSG_CFLAGS)
+AC_SUBST(NANO_LIBS)
+
+dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
 dnl ---------------------------------------------------------------------------
 AC_LANG_COMPILER_SUNCC 
@@ -671,6 +678,7 @@ if test x"$enable_libpopt" = x"yes"; then
 	MAPISTORE_TEST=mapistore_test
 	mapiprofile=1
 	mapipropsdump=1
+	ocnotify=1
 	openchangemapidump=1
 	schemaIDGUID=1
 	check_fasttransfer=1
@@ -680,6 +688,7 @@ AC_SUBST(MAPISTORE_TEST)
 OC_RULE_ADD(openchangeclient, TOOLS)
 #OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
 OC_RULE_ADD(mapipropsdump, TOOLS)
+OC_RULE_ADD(ocnotify, TOOLS)
 OC_RULE_ADD(exchange2ical, TOOLS)
 OC_RULE_ADD(rpcextract, TOOLS)
 OC_RULE_ADD(openchangepfadmin, TOOLS)
@@ -722,19 +731,7 @@ dnl ##########################################################################
 dnl libmapistore dependencies
 dnl ##########################################################################
 
-AC_CHECK_LIB([rt], [mq_open],
-	    [
-		 	RT_LIBS="-lrt"
-			AC_SUBST(RT_LIBS)
-		],
-		[
-			AC_CHECK_FUNCS(mq_open, [
-				RT_LIBS=""
-				AC_SUBST(RT_LIBS)
-			], [
-				AC_MSG_ERROR([unable to find mq_open])
-		 	])
-		])
+
 
 dnl ##########################################################################
 dnl libmapistore backends dependencies
@@ -913,6 +910,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
+	     - ocnotify:		$enable_ocnotify
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical

@@ -77,7 +77,7 @@ lda` section of your dovecot.conf*
 
 ```
 protocol lda {
-       mail_plugins = notify
+       mail_plugins = notify openchange
 }
 ```
 

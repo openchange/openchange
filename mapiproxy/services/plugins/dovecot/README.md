@@ -61,7 +61,6 @@ The openchange dovecot plugin relies on the following libraries:
  * libmapistore > 2.2 (and its deps)
  * libnanomsg > 0.5 (http://nanomsg.org/)
 
-
 The notification system is not implementing any authentication
 mechanism. It is furthermore assumed openchange server and dovecot
 service to be working in a trusted environment.
@@ -69,6 +68,18 @@ service to be working in a trusted environment.
 
 Configuration options
 ---------------------
+
+The plugin is relying on the lda protocol to intercept email
+operations and triggers the newmail notification payload.
+
+*You MUST add `notify` to the list of `mail_plugins` in the `protocol
+lda` section of your dovecot.conf*
+
+```
+protocol lda {
+       mail_plugins = notify
+}
+```
 
 The following configuration options can be defined in your dovecot
 configuration file inside the plugin section:

@@ -782,7 +782,7 @@ NTSTATUS samba_init_module(void)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Configuration hooks are only supported in Samba >= 4.3 */
-#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR > 3
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 3
 	/* Step4. Register configuration default hook */
 	if (!lpcfg_register_defaults_hook("dcesrv_mapiproxy", dcesrv_mapiproxy_lp_defaults)) {
 		return NT_STATUS_UNSUCCESSFUL;

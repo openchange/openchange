@@ -136,7 +136,7 @@ re:: clean install
 # IDL compilation rules
 #################################################################
 
-idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h
+idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h
 
 exchange.idl: properties_enum.h mapicodes_enum.h
 
@@ -191,7 +191,9 @@ ifneq ($(SNAPSHOT), no)
 	rm -f mapicodes_enum.h
 endif
 	rm -f gen_ndr/ndr_exchange*
+	rm -f gen_ndr/ndr_asyncemsmdb*
 	rm -f gen_ndr/exchange.h
+	rm -f gen_ndr/asyncemsmdb.h
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
@@ -251,6 +253,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/ndr_exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/ndr_property.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/asyncemsmdb.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_asyncemsmdb.h $(DESTDIR)$(includedir)/gen_ndr/
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/*.h
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/socket/*.h
 	@$(SED) $(DESTDIR)$(includedir)/gen_ndr/*.h
@@ -268,6 +272,7 @@ libmapi-uninstalllib:
 libmapi-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
+	rm -f $(DESTDIR)$(includedir)/gen_ndr/asyncemsmdb.h
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/property.h
 
 libmapi-uninstallscript:
@@ -315,6 +320,8 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
+	gen_ndr/ndr_asyncemsmdb.po			\
+	gen_ndr/ndr_asyncemsmdb_c.po			\
 	gen_ndr/ndr_property.po				\
 	libmapi/socket/interface.po			\
 	libmapi/socket/netif.po				
@@ -328,9 +335,9 @@ libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION
 libmapi/version.h: VERSION
 	@./script/mkversion.sh VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
-libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h gen_ndr/ndr_asyncemsmdb_c.h
 
-libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h gen_ndr/ndr_asyncemsmdb_c.h
 
 libmapi/mapicode.c mapicodes_enum.h: libmapi/conf/mparse.pl libmapi/conf/mapi-codes
 	libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi/ libmapi/conf/mapi-codes
@@ -688,6 +695,7 @@ mapiproxy: 		idl 					\
 			libmapiserver				\
 			libmapistore				\
 			mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
+			mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT)\
 			mapiproxy-modules			\
 			mapiproxy-servers
 
@@ -700,6 +708,7 @@ mapiproxy-install: 	mapiproxy				\
 			libmapistore-install
 	$(INSTALL) -d $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 
 mapiproxy-uninstall: 	mapiproxy-modules-uninstall		\
 			mapiproxy-servers-uninstall		\
@@ -718,6 +727,7 @@ mapiproxy-clean:: 	mapiproxy-modules-clean			\
 	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/*.gcno mapiproxy/*.gcda
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
+	rm -f mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT)
 
 clean:: mapiproxy-clean
 
@@ -734,6 +744,14 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
+
+mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT):	mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.po	\
+						gen_ndr/ndr_asyncemsmdb.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) $(NANOMSG_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+
+
+mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.c: gen_ndr/ndr_asyncemsmdb_s.c gen_ndr/ndr_asyncemsmdb.c
 
 ###############
 # libmapiproxy
@@ -854,25 +872,26 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 LIBMAPISTORE_SO_VERSION = 0
 
-mapiproxy/libmapistore/mgmt/mapistore_mgmt.idl: mapiproxy/libmapistore/mgmt/gen_ndr
+mapiproxy/libmapistore/mapistore_notification.idl: mapiproxy/libmapistore/gen_ndr
 
-mapiproxy/libmapistore/mgmt/gen_ndr/%.h: mapiproxy/libmapistore/mgmt/mapistore_mgmt.idl
+mapiproxy/libmapistore/gen_ndr/%.h: mapiproxy/libmapistore/mapistore_notification.idl
 	@echo "Generating $@"
-	@$(PIDL) --outputdir=mapiproxy/libmapistore/mgmt/gen_ndr --header -- $<
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/gen_ndr --header -- $<
 
-mapiproxy/libmapistore/mgmt/gen_ndr:
-	@echo "Creating gen_ndr directory for libmapistore mgmt IDL"
-	@mkdir -p mapiproxy/libmapistore/mgmt/gen_ndr
+mapiproxy/libmapistore/gen_ndr:
+	@echo "Creating gen_ndr directory for libmapistore IDL"
+	@mkdir -p mapiproxy/libmapistore/gen_ndr
 
-mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.h mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.c: mapiproxy/libmapistore/mgmt/%.idl mapiproxy/libmapistore/mgmt/gen_ndr/%.h
+mapiproxy/libmapistore/gen_ndr/ndr_%.h mapiproxy/libmapistore/gen_ndr/ndr_%.c: mapiproxy/libmapistore/%.idl mapiproxy/libmapistore/gen_ndr/%.h
 	@echo "Generating $@"
-	@$(PIDL) --outputdir=mapiproxy/libmapistore/mgmt/gen_ndr --ndr-parser -- $<
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/gen_ndr --ndr-parser -- $<
 
-libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
-		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)	\
-		setup/mapistore/mapistore_namedprops.ldif		\
-		$(OC_MAPISTORE)						\
+libmapistore:	mapiproxy/libmapistore/gen_ndr/mapistore_notification.h		\
+		mapiproxy/libmapistore/mapistore_nameid.h			\
+		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)		\
+		setup/mapistore/mapistore_namedprops.ldif			\
+		$(OC_MAPISTORE)							\
 		$(MAPISTORE_TEST)
 
 mapiproxy/libmapistore/mapistore_nameid.h: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
@@ -905,14 +924,13 @@ endif
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
-	rm -f mapiproxy/libmapistore/mgmt/*.po mapiproxy/libmapistore/mgmt/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
 	rm -f setup/mapistore/mapistore_namedprops_v2.ldif
 	-rmdir setup/mapistore
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
-	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
+	rm -rf mapiproxy/libmapistore/gen_ndr
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*
@@ -925,11 +943,7 @@ libmapistore-distclean: libmapistore-clean
 
 distclean:: libmapistore-distclean
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
-							mapiproxy/libmapistore/mapistore_interface.po			\
-							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\
-							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po		\
-							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/mapistore_interface.po			\
 							mapiproxy/libmapistore/mapistore_processing.po			\
 							mapiproxy/libmapistore/mapistore_backend.po			\
 							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
@@ -937,6 +951,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
+							mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.po	\
 							mapiproxy/libmapistore/mapistore_notification.po		\
 							mapiproxy/libmapistore/backends/namedprops_ldb.po		\
 							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
@@ -1052,6 +1067,7 @@ provision-install: python-install
 	$(INSTALL) -m 0755 setup/openchange_migrate $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_neworganization $(DESTDIR)$(sbindir)/
+	$(INSTALL) -m 0755 setup/openchange_group $(DESTDIR)$(sbindir)/
 	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
@@ -1192,6 +1208,32 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+
+###################
+# rpcextract
+###################
+
+ocnotify: libmapistore bin/ocnotify
+
+ocnotify-install: ocnotify
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/ocnotify $(DESTDIR)$(bindir)
+
+ocnotify-uninstall:
+	rm -f $(DESTDIR)$(bindir)/ocnotify
+
+ocnotify-clean::
+	rm -f bin/ocnotify
+	rm -f utils/ocnotify.o
+
+clean:: ocnotify-clean
+
+bin/ocnotify:		utils/ocnotify.o					\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) $(NANOMSG_CFLAGS) -o $@ $^ $(LDFLAGS) $(NANOMSG_LIBS) $(LIBS) -lpopt
 
 ###################
 # rpcextract
@@ -1385,18 +1427,19 @@ testsuite-clean:
 clean:: testsuite-clean
 
 bin/openchange-testsuite: 	testsuite/testsuite.o					\
-				testsuite/testsuite_common.o						\
+				testsuite/testsuite_common.o				\
 				testsuite/libmapistore/mapistore_namedprops.c		\
 				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
-				testsuite/libmapistore/mapistore_indexing.c			\
-				testsuite/libmapiproxy/openchangedb.c				\
+				testsuite/libmapistore/mapistore_indexing.c		\
+				testsuite/libmapistore/mapistore_notification.c		\
+				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
-				testsuite/mapiproxy/util/mysql.c					\
+				testsuite/mapiproxy/util/mysql.c			\
 				testsuite/mapiproxy/util/schema_migration.c		\
 				testsuite/libmapiproxy/openchangedb_logger.c		\
-				mapiproxy/libmapiproxy/backends/openchangedb_logger.c \
-				testsuite/libmapi/mapi_property.c					\
+				mapiproxy/libmapiproxy/backends/openchangedb_logger.c	\
+				testsuite/libmapi/mapi_property.c			\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -1662,7 +1705,6 @@ $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 # 	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_LIBS) $(LIBS)
 
 $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
-							pyopenchange/mapistore/mgmt.c				\
 							pyopenchange/mapistore/context.c			\
 							pyopenchange/mapistore/folder.c				\
 							pyopenchange/mapistore/freebusy_properties.c		\
@@ -1772,7 +1814,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.c mapiproxy/libmapistore/mgmt/gen_ndr/mapistore_mgmt.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
 
 test:: check
 

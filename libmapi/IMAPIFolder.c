@@ -863,7 +863,8 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF((!(DeleteFolderFlags & 0x1)) &&
 			     (!(DeleteFolderFlags & 0x4)) &&
-			     (!(DeleteFolderFlags & 0x10)), 
+			     (!(DeleteFolderFlags & 0x10)) &&
+			     DeleteFolderFlags,
 			     MAPI_E_INVALID_PARAMETER, NULL);
 
 	if ((retval = mapi_object_get_logon_id(obj_parent, &logon_id)) != MAPI_E_SUCCESS)

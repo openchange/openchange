@@ -318,10 +318,11 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		goto end;
 	}
 
-	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
 	new_folder->object.folder->contextID = context_id;
 
 	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, new_folder->object.folder->postponed_props);
+	mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
+						   mapistore_uri);
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
@@ -698,6 +699,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 static int emsmdbp_object_destructor(void *data)
 {
 	struct emsmdbp_object	*object = (struct emsmdbp_object *) data;
+	enum mapistore_error	mretval;
 	int			ret = MAPISTORE_SUCCESS;
 	uint32_t		contextID;
 	unsigned int		missing_objects;
@@ -718,22 +720,30 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_TABLE:
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
-			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
+			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+							  object->backend_object, object->object.table->handle);
 		}
-                if (object->object.table->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
-			talloc_free(object->object.table->subscription_list);
-			/* talloc_unlink(object->emsmdbp_ctx, object->object.table->subscription_list); */
-                }
+		if (object->object.table->handle && (object->object.table->subscription == true)) {
+			mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+										       object->emsmdbp_ctx->session_uuid,
+										       object->object.table->handle);
+			if (mretval != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to delete table notification subscription with handle=0x%x",
+					 object->object.table->handle);
+			}
+		}
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
 		break;
-        case EMSMDBP_OBJECT_SUBSCRIPTION:
-                if (object->object.subscription->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
-			talloc_free(object->object.subscription->subscription_list);
-                }
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+								     object->emsmdbp_ctx->session_uuid,
+								     object->object.subscription->handle);
+		if (mretval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "Unable to delete notification subscription with handle=0x%x",
+				 object->object.subscription->handle);
+		}
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		gettimeofday(&request_end, NULL);
@@ -786,6 +796,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->object.folder = NULL;
 	object->object.message = NULL;
 	object->object.stream = NULL;
+	object->object.subscription = NULL;
 	object->backend_object = NULL;
 	object->parent_object = parent_object;
 	(void) talloc_reference(object, parent_object);
@@ -1445,15 +1456,63 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	return ret;
 }
 
+/**
+   \details  Delete the fmids from a folder in the indexing database.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier
+   \param username the owner of the folder to delete its entries
+   \param fid the folder identifier
+   \param deleted_fmid the array of child fmids from the folder
+   \param deleted_fmid_count the number of deleted_fmids
+   \param flags the delete flags. See emsmdbp_folder_delete for details.
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapistore_context *mstore_ctx, uint32_t context_id, char *username, uint64_t fid, uint64_t *deleted_fmids, uint32_t deleted_fmids_count, uint8_t flags)
+{
+        enum mapistore_error    ret;
+        uint8_t                 delete_type_flag;
+        uint32_t                i;
+
+        delete_type_flag = (flags & DELETE_HARD_DELETE) ? MAPISTORE_PERMANENT_DELETE : MAPISTORE_SOFT_DELETE;
+        ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username, fid, delete_type_flag);
+        MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+        for (i = 0; i < deleted_fmids_count; i++) {
+                ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username,
+                                                        deleted_fmids[i], delete_type_flag);
+                MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+        }
+
+        return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Delete a folder.
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param parent_folder the parent folder
+   \param fid the folder identifier to delete from parent_folder
+   \param flags the delete flags.
+
+   Possible values for flags are:
+   -# DEL_MESSAGES Delete all the messages in the folder
+   -# DEL_FOLDERS Delete the subfolder and all of its subfolders
+   -# DELETE_HARD_DELETE Hard delete the folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
 _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
 {
 	enum mapistore_error	ret;
-	enum MAPISTATUS		mapiret;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			mailboxstore;
-	uint32_t		context_id;
+	uint32_t		context_id, deleted_fmids_count;
 	void			*subfolder;
 	char			*mapistoreURL;
+	uint64_t		*deleted_fmids;
 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
@@ -1469,20 +1528,23 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			goto end;
 		}
 
-		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags, mem_ctx, &deleted_fmids, &deleted_fmids_count);
+		if (ret != MAPISTORE_SUCCESS) {
+			goto end;
+		}
+
+		/* Update indexing entries */
+		ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+							     emsmdbp_get_owner(parent_folder),
+							     fid, deleted_fmids, deleted_fmids_count,
+							     flags);
 		if (ret != MAPISTORE_SUCCESS) {
 			goto end;
 		}
 	}
 	else {
-		mapiret = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
-		if (mapiret != MAPI_E_SUCCESS) {
-			ret = MAPISTORE_ERR_NOT_FOUND;
-			goto end;
-		}
-
-		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
-		if (mapiret != MAPI_E_SUCCESS) {
+		retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
+		if (retval != MAPI_E_SUCCESS) {
 			ret = MAPISTORE_ERR_NOT_FOUND;
 			goto end;
 		}
@@ -1498,12 +1560,29 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 				}
 			}
 
-			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+						      subfolder, flags, mem_ctx, &deleted_fmids,
+						      &deleted_fmids_count);
 			if (ret != MAPISTORE_SUCCESS) {
 				goto end;
 			}
 
-			 mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+
+			/* Update indexing entries */
+			ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+								     emsmdbp_get_owner(parent_folder),
+								     fid, deleted_fmids, deleted_fmids_count,
+								     flags);
+			if (ret != MAPISTORE_SUCCESS) {
+				goto end;
+			}
+		}
+
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
 		}
 	}
 
@@ -1669,8 +1748,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->denominator = 0;
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
-	object->object.table->subscription_list = NULL;
 	object->object.table->flags = 0;
+	object->object.table->subscription = false;
 
 	return object;
 }
@@ -2498,19 +2577,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 	return object;
 }
 
-/**
-   \details Initialize a notification subscription object
 
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
-   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
-   \param folderID the folder identifier
-   \param messageID the message identifier
-   \param parent emsmdbp object of the parent
- */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
-                                                                 struct emsmdbp_context *emsmdbp_ctx,
-                                                                 struct emsmdbp_object *parent)
+								 struct emsmdbp_context *emsmdbp_ctx,
+								 struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;
 
@@ -2528,7 +2598,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	}
 
 	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
-        object->object.subscription->subscription_list = NULL;
+	object->object.subscription->handle = 0;
 
 	return object;
 }
@@ -2600,7 +2670,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
                 }
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
+			unix_time = time(NULL);
 			unix_to_nt_time(&nt_time, unix_time);
 			ft = talloc_zero(data_pointers, struct FILETIME);
 			ft->dwLowDateTime = (nt_time & 0xffffffff);

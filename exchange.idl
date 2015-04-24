@@ -4698,20 +4698,6 @@ System Attendant Private Interface
 }
 
 [
-  uuid("5261574a-4572-206e-b268-6b199213b4e4"),
-  pointer_default(unique),
-  endpoint("ncacn_ip_tcp:"),
-  version(0.01)
-] interface exchange_async_emsmdb
-{
-	[public] MAPISTATUS EcDoAsyncWaitEx(
-		[in] policy_handle	*async_handle,
-		[in] uint32		ulFlagsIn,
-		[out] uint32		*pulFlagsOut
-		);
-}
-
-[
   uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
   pointer_default(unique),
   helpstring("Unknown")

@@ -22,6 +22,8 @@
 #include "libmapi/libmapi_private.h"
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
+#include "gen_ndr/ndr_asyncemsmdb.h"
+#include "gen_ndr/ndr_asyncemsmdb_c.h"
 #include <param.h>
 
 #define TEVENT_DEPRECATED 1
@@ -294,7 +296,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 
 		if (server_version_at_least((struct emsmdb_context *)provider->ctx, 8, 0, 835, 0)){
 		  struct emsmdb_context *prov_ctx = (struct emsmdb_context *)provider->ctx;
-			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_exchange_async_emsmdb);
+			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_asyncemsmdb);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), ecRpcFailed, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), ecRpcFailed, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), ecRpcFailed, NULL);

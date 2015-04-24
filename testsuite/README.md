@@ -44,7 +44,7 @@ for more detailed leak report.
 
 ----------
 
-**List of "known" memory leaks (comming from Samba)**
+**List of "known" memory leaks (coming from Samba)**
 
  - struct tevent_ops_list
  - struct ldb_hooks

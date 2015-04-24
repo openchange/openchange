@@ -255,6 +255,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	private->ndrdump = ndrdump;
 
 	dce_call->context->private_data = private;
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
 
 	if (server_mode == false) {
 	  return mapiproxy_op_bind_proxy(dce_call, iface, if_version);
@@ -285,8 +286,6 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 		talloc_free(private->c_pipe);
 		talloc_free(private);
 	}
-
-	talloc_free(context);
 
 	return;
 }
@@ -783,7 +782,7 @@ NTSTATUS samba_init_module(void)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Configuration hooks are only supported in Samba >= 4.3 */
-#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR > 3
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 3
 	/* Step4. Register configuration default hook */
 	if (!lpcfg_register_defaults_hook("dcesrv_mapiproxy", dcesrv_mapiproxy_lp_defaults)) {
 		return NT_STATUS_UNSUCCESSFUL;

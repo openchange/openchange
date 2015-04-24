@@ -197,6 +197,22 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 
 /**
+   \details Associate the session uuid to the emsmdb context
+
+   \param emsmdbp_ctx pointer to the emsmdb context
+   \param uuid the uuid to associate
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool emsmdbp_set_session_uuid(struct emsmdbp_context *emsmdbp_ctx, struct GUID uuid)
+{
+	if (!emsmdbp_ctx) return false;
+
+  emsmdbp_ctx->session_uuid = uuid;
+  return true;
+}
+
+/**
    \details Open openchange.ldb database
 
    \param lp_ctx pointer on the loadparm_context

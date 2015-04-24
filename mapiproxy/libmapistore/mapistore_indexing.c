@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,7 +25,7 @@
    \file mapistore_indexing.c
 
    \brief MAPISTORE internal indexing functions
-   
+
    This file contains functionality to map between folder / message
    identifiers and backend URI strings.
  */
@@ -122,7 +122,7 @@ struct indexing_context *mapistore_indexing_search(struct mapistore_context *mst
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
+_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 						     const char *username,
 						     struct indexing_context **ictxp)
 {
@@ -326,7 +326,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore
 {
 	struct indexing_context	*ictx;
 	int			ret;
-	
+
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -351,7 +351,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-
 
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
@@ -393,7 +392,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t fid, 
+								uint32_t context_id, const char *username, uint64_t fid,
 								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags, MAPISTORE_FOLDER);
@@ -443,14 +442,18 @@ static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_con
 							    const char *username,
 							    uint64_t range_len, uint64_t *fid)
 {
-	enum mapistore_error ret;
+	enum mapistore_error	ret;
 	struct indexing_context	*ictx;
 
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ictx = mapistore_indexing_search(mstore_ctx, username);
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	if (!ictx) {
+		ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+		MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, NULL);
+		MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	}
 
 	ret = ictx->allocate_fmids(ictx, username, range_len, fid);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);

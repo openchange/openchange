@@ -429,7 +429,7 @@ AC_SUBST(MYSQL_LIBS)
 dnl ----------------------------------------------------------------------------
 dnl Check for memcached
 dnl ----------------------------------------------------------------------------
-PKG_CHECK_MODULES([MEMCACHED], [libmemcached >= 1.0.8], [], [AC_MSG_ERROR(memcached >= 1.0.8 required to build mapistore library)])
+PKG_CHECK_MODULES([MEMCACHED], [libmemcached >= 1.0.18], [], [AC_MSG_ERROR(memcached >= 1.0.18 required to build mapistore library)])
 
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex

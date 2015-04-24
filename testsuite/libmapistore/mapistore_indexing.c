@@ -26,6 +26,7 @@
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/backends/indexing_tdb.h"
 #include "mapiproxy/util/mysql.h"
+//#include "mapiproxy/libmapiproxy/backends/openchangedb_backends.h" //XXX
 
 #undef MAPISTORE_LDIF
 #define MAPISTORE_LDIF "setup/mapistore"
@@ -54,11 +55,16 @@ static char * _make_connection_string(TALLOC_CTX *mem_ctx,
 				      const char *user, const char *pass,
 				      const char *host, const char *db)
 {
+	char *connection_string;
 	if (!pass || strlen(pass) == 0) {
 		return talloc_asprintf(mem_ctx, "mysql://%s@%s/%s", user, host, db);
 	}
 
-	return talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s", user, pass, host, db);
+	connection_string =  talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s", user, pass, host, db);
+	if (!connection_string) {
+		ck_abort_msg("Out of memory");
+	}
+	return connection_string;
 }
 
 /* backend initialization */
@@ -450,6 +456,80 @@ START_TEST (test_allocate_fmid) {
 	ck_assert(fmid1 != fmid2);
 } END_TEST
 
+
+
+char *_indexing_url;
+static enum MAPISTATUS get_indexing_url(struct openchangedb_context *self,
+					const char *username,
+					const char **indexing_url)
+{
+	*indexing_url = _indexing_url;
+	return MAPI_E_SUCCESS;
+}
+
+static struct openchangedb_context *mock_openchange_context(TALLOC_CTX *mem_ctx)
+{
+	struct openchangedb_context	*oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
+	if (!oc_ctx) {
+		ck_abort_msg("Out of memory");
+	}
+
+
+	oc_ctx->backend_type = talloc_strdup(oc_ctx, "mocked_backend");
+	if (!oc_ctx) {
+		ck_abort_msg("Out of memory");
+	}
+
+
+	/* We only set up the functions pointer we will need in the code path. Other calls will be fail we a NULL pointer deferrence */
+	_indexing_url =  _make_connection_string(mem_ctx,
+					      INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
+					      INDEXING_MYSQL_HOST, INDEXING_MYSQL_DB);
+
+	oc_ctx->get_indexing_url = get_indexing_url;
+
+	return oc_ctx;
+}
+
+
+START_TEST (test_mapistore_allocate_fmid) {
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	ret;
+	uint64_t		fmid1 = 222;
+	uint64_t		fmid2 = 222;
+	const char*		no_indexed_username = "no_indexed_user";
+
+	mem_ctx = talloc_named(NULL, 0, "test_mapistore_allocate_fmid");
+	if (!mem_ctx) {
+		ck_abort_msg("Out of memory");
+	}
+
+	struct openchangedb_context *oc_ctx = mock_openchange_context(mem_ctx);
+	g_mstore_ctx->conn_info =  talloc_zero(mem_ctx, struct mapistore_connection_info);
+	g_mstore_ctx->conn_info->oc_ctx = oc_ctx;
+
+	ret = mapistore_indexing_get_new_folderID_as_user(g_mstore_ctx, g_test_username, &fmid1);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = mapistore_indexing_get_new_folderID_as_user(g_mstore_ctx, g_test_username, &fmid2);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ck_assert(fmid1 != fmid2);
+
+	fmid1 = fmid2 = 333;
+	ret = mapistore_indexing_get_new_folderID_as_user(g_mstore_ctx, no_indexed_username, &fmid1);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = mapistore_indexing_get_new_folderID_as_user(g_mstore_ctx, no_indexed_username, &fmid2);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ck_assert(fmid1 != fmid2);
+
+	g_mstore_ctx->conn_info = NULL;
+	_indexing_url = NULL;
+	talloc_free(mem_ctx);
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
@@ -542,6 +622,7 @@ static TCase *create_test_case_indexing_interface(const char *name, SFun setup,
 	tcase_add_test(tc_interface, test_get_fmid);
 	tcase_add_test(tc_interface, test_get_fmid_with_wildcard);
 	tcase_add_test(tc_interface, test_allocate_fmid);
+	tcase_add_test(tc_interface, test_mapistore_allocate_fmid);
 
 	return tc_interface;
 }

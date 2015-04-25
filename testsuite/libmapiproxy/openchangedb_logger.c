@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "testsuite.h"
+#include "testsuite/testsuite.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_logger.h"
 #include "libmapi/libmapi.h"

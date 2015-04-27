@@ -939,7 +939,7 @@ START_TEST(deliver_add) {
 	retval = mapistore_notification_deliver_get(mem_ctx, &mstore_ctx, gl_uuid,
 						    &payload.data, &payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
-	ck_assert_str_eq(payload.data, gl_deliver_1);
+	ck_assert_str_eq((char *) payload.data, gl_deliver_1);
 	ck_assert_int_eq(payload.length, strlen(gl_deliver_1) + 1);
 	talloc_free(payload.data);
 
@@ -1052,8 +1052,8 @@ START_TEST(deliver_get) {
 	/* Try to get existing key */
 	retval = mapistore_notification_deliver_get(mem_ctx, &mstore_ctx, gl_uuid, &payload.data, &payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
-	ck_assert_str_eq(payload.data, gl_deliver_1);
-	ck_assert_str_eq(payload.data + strlen(gl_deliver_1) + 1, gl_deliver_2);
+	ck_assert_str_eq((char *) payload.data, gl_deliver_1);
+	ck_assert_str_eq((char *)(payload.data + strlen(gl_deliver_1) + 1), gl_deliver_2);
 
 	talloc_free(lp_ctx);
 	talloc_free(mem_ctx);

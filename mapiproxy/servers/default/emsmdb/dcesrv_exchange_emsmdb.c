@@ -1540,6 +1540,8 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	enum mapistore_error		retval;
 	struct emsmdbp_context		*emsmdbp_ctx;
 	struct dcesrv_handle		*handle;
+	struct dcesrv_endpoint		*item;
+	bool				found;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe)\n");
 
@@ -1550,6 +1552,23 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Ensure asyncemsmdb endpoint is loaded */
+	item = dce_call->context->conn->dce_ctx->endpoint_list;
+	for (found = false; item; item = item->next) {
+		if (item->interface_list->iface.name &&
+		    !strcmp(item->interface_list->iface.name, "asyncemsmdb")) {
+			found = true;
+		}
+	}
+
+	if (found == false) {
+		OC_DEBUG(3, "exchange_emsmdb: asyncemsmdb endpoint missing\n");
+		r->out.result = ecRejected;
+		DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+
+		return MAPI_E_SUCCESS;
 	}
 
 	/* Step 1. Retrieve the existing session */

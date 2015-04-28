@@ -156,8 +156,5 @@ def load_environment(global_conf, app_conf):
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])
     config['mapistore'] = mstore
-    config['management'] = mstore.management()
-    if config['ocsmanager']['main']['debug'] == "yes":
-        config['management'].verbose = True
 
     return config

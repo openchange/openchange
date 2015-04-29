@@ -428,6 +428,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	if (ret == MAPISTORE_SUCCESS) {
 		if (request->ulFlags != OPEN_IF_EXISTS) {
 			mapi_repl->error_code = MAPI_E_COLLISION;
+			if (emsmdbp_is_mapistore(parent_object)) {
+				OC_DEBUG(5, "Folder %s exists in MAPIStore", request->FolderName.lpszW);
+			} else {
+				OC_DEBUG(5, "Folder %s exists in OpenChangeDB", request->FolderName.lpszW);
+			}
 			goto end;
 		}
 		response->IsExistingFolder = true;
@@ -469,7 +474,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		cnValue.value.d = cn;
 		SRow_addprop(aRow, cnValue);
 
-		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
+		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid,
+						      aRow, true, &object);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(5, "folder creation failed\n");
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);

@@ -6,8 +6,11 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [Unreleased]
 
+### Added
+* Automatic Outlook inbox refresh when receiving new emails
+
 ### Fixes
-* Address book working much better than before
+* Fixed creation of root folders on online mode and some special folders such as Sync Issues.
 * Fixed `Invalid bookmark` error when clicking on `All address lists` entry in recipient selection dialog box
 
 ### Improvements

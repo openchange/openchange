@@ -1135,6 +1135,7 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
 						mapiproxy/servers/default/emsmdb/oxomsg.po			\
+						mapiproxy/servers/default/emsmdb/oxosfld.po			\
 						mapiproxy/servers/default/emsmdb/oxorule.po			\
 						mapiproxy/servers/default/emsmdb/oxcperm.po
 	@echo "Linking $@"
@@ -1496,6 +1497,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcfold.o		\
 		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxomsg.o		\
+		utils/mapitest/modules/module_oxosfld.o		\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
 		utils/mapitest/modules/module_oxctable.o	\
@@ -1524,6 +1526,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxcfold.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxomsg.c		\
+	utils/mapitest/modules/module_oxosfld.c		\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\

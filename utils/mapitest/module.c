@@ -43,6 +43,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_mapidump_init(mt);
 	ret += module_lzxpress_init(mt);
 	ret += module_zentyal_init(mt);
+	ret += module_oxosfld_init(mt);
 
 	return ret;
 }
@@ -512,6 +513,29 @@ _PUBLIC_ uint32_t module_lzxpress_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "LZXPRESS", "lzxpress algorithm test suite", false);
 
 	mapitest_suite_add_test_flagged(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001, ExpectedFail);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+/**
+   \details Register the Special Folders Protocol test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_oxosfld_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "OXOSFLD", "Special Folders Protocol", true);
+
+	mapitest_suite_add_test(suite, "CREATE-FOLDER", "Create special folders",
+				mapitest_oxosfld_CreateFolder);
+	mapitest_suite_add_test(suite, "DELETE-FOLDER", "Delete special folders",
+				mapitest_oxosfld_DeleteFolder);
 
 	mapitest_suite_register(mt, suite);
 

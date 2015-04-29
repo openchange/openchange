@@ -2454,7 +2454,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	uint32_t				i;
 	int						ret;
 
-	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] SyncImportDeletes (0x74)\n");
+	OC_DEBUG(4, "exchange_emsmdb: [OXCFXICS] SyncImportDeletes (0x74)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -3231,7 +3231,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	DATA_BLOB				guid_blob = { .length = 16, .data = NULL };
 	uint8_t					flag;
 
-	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] SyncImportReadStateChanges (0x80)\n");
+	OC_DEBUG(4, "exchange_emsmdb: [OXCFXICS] SyncImportReadStateChanges (0x80)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -3648,7 +3648,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetLocalReplicaMidsetDeleted(TALLOC_CTX *mem
 								 struct EcDoRpc_MAPI_REPL *mapi_repl,
 								 uint32_t *handles, uint16_t *size)
 {
-	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] SetLocalReplicaMidsetDeleted (0x93) - stub\n");
+	OC_DEBUG(4, "exchange_emsmdb: [OXCFXICS] SetLocalReplicaMidsetDeleted (0x93) - stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

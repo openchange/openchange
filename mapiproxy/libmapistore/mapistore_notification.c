@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include <ctype.h>
 #include "mapiproxy/libmapistore/mapistore_notification.h"
 
 /**
@@ -390,6 +390,8 @@ static enum mapistore_error mapistore_notification_resolver_set_key(TALLOC_CTX *
 								    char **_key)
 {
 	char	*key = NULL;
+	char	*_cn = NULL;
+	int	idx;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -402,7 +404,16 @@ static enum mapistore_error mapistore_notification_resolver_set_key(TALLOC_CTX *
 		return MAPISTORE_ERR_INVALID_DATA;
 	}
 
-	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_RESOLVER, cn);
+	/* lower case cn */
+	_cn = talloc_strdup(mem_ctx, cn);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	for (idx = 0; idx < strlen(_cn); idx++) {
+		_cn[idx] = tolower(_cn[idx]);
+	}
+
+	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_RESOLVER, _cn);
+	talloc_free(_cn);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	*_key = key;

@@ -129,6 +129,7 @@ enum MAPISTATUS		GetLoadparmContext(struct mapi_context *, struct loadparm_conte
 /* The following public definitions come from libmapi/simple_mapi.c */
 enum MAPISTATUS		GetDefaultPublicFolder(mapi_object_t *, uint64_t *, const uint32_t);
 enum MAPISTATUS		GetDefaultFolder(mapi_object_t *, uint64_t *, const uint32_t);
+enum MAPISTATUS		GetSpecialAdditionalFolder(mapi_object_t *, uint64_t *, const uint32_t);
 bool			IsMailboxFolder(mapi_object_t *, uint64_t, uint32_t *);
 enum MAPISTATUS		GetFolderItemsCount(mapi_object_t *, uint32_t *, uint32_t *);
 enum MAPISTATUS		AddUserPermission(mapi_object_t *, const char *, enum ACLRIGHTS);

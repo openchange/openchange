@@ -96,6 +96,11 @@ typedef struct mapi_obj_store
 	uint64_t		fid_note;
 	uint64_t		fid_task;
 	uint64_t		fid_drafts;
+	uint64_t		fid_sync_issues;
+	uint64_t		fid_conflicts;
+	uint64_t		fid_local_failures;
+	uint64_t		fid_server_failures;
+	uint64_t		fid_junk_email;
 	/* GUID */
 	struct GUID		guid;
 } mapi_object_store_t;

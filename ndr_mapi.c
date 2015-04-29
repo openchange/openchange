@@ -2641,3 +2641,141 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull
 	}
 	return NDR_ERR_SUCCESS;
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_PersistDataArray(struct ndr_push *ndr, int ndr_flags, const struct PersistDataArray *r)
+{
+	uint32_t cntr_lpPersistData_1;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			for (cntr_lpPersistData_1 = 0; cntr_lpPersistData_1 < r->cValues; cntr_lpPersistData_1++) {
+				NDR_CHECK(ndr_push_PersistData(ndr, NDR_SCALARS|NDR_BUFFERS,
+							       &r->lpPersistData[cntr_lpPersistData_1]));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_PersistDataArray(struct ndr_pull *ndr, int ndr_flags, struct PersistDataArray *r)
+{
+	uint32_t cntr_lpPersistData_0;
+	TALLOC_CTX *_mem_save_lpPersistData_0;
+	bool sentinel_reached = false;
+	uint32_t current_size;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_PULL_ALLOC(ndr, r->lpPersistData);
+			if (r->lpPersistData) {
+				_mem_save_lpPersistData_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->lpPersistData, 0);
+				NDR_CHECK(ndr_token_store(ndr, &ndr->array_size_list,
+							  &r->lpPersistData, ndr->data_size));
+				NDR_PULL_ALLOC_N(ndr, r->lpPersistData, 1);
+				cntr_lpPersistData_0 = 0;
+				current_size = 0;
+				while (!sentinel_reached && current_size < ndr->data_size) {
+					NDR_CHECK(ndr_pull_PersistData(ndr, NDR_SCALARS|NDR_BUFFERS, &r->lpPersistData[cntr_lpPersistData_0]));
+					sentinel_reached = (r->lpPersistData[cntr_lpPersistData_0].PersistID == PERSIST_SENTINEL);
+					current_size += r->lpPersistData[cntr_lpPersistData_0].DataElementsSize + 2 + 2;
+					cntr_lpPersistData_0++;
+					r->lpPersistData = talloc_realloc(ndr->current_mem_ctx,
+									  r->lpPersistData,
+									  struct PersistData,
+									  cntr_lpPersistData_0 + 1);
+					if (!r->lpPersistData) {
+						return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+								      "Alloc failed: %s\n",
+								      __location__);
+					}
+				}
+				if (current_size > 0 && cntr_lpPersistData_0 == 0 && !sentinel_reached) {
+					/* TODO: Use NDR_ERR_INCOMPLETE_BUFFER */
+					return NDR_ERR_BUFSIZE;
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lpPersistData_0, 0);
+				r->cValues = cntr_lpPersistData_0;
+			}
+			if (r->lpPersistData) {
+				NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->lpPersistData, ndr->data_size));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_PersistElementArray(struct ndr_push *ndr, int ndr_flags, const struct PersistElementArray *r)
+{
+	uint32_t cntr_lpPersistElement_1;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			for (cntr_lpPersistElement_1 = 0; cntr_lpPersistElement_1 < r->cValues; cntr_lpPersistElement_1++) {
+				NDR_CHECK(ndr_push_PersistElement(ndr, NDR_SCALARS|NDR_BUFFERS,
+								  &r->lpPersistElement[cntr_lpPersistElement_1]));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_PersistElementArray(struct ndr_pull *ndr, int ndr_flags, struct PersistElementArray *r)
+{
+	uint32_t cntr_lpPersistElement_0;
+	TALLOC_CTX *_mem_save_lpPersistElement_0;
+	bool sentinel_reached = false;
+	uint32_t current_size;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_PULL_ALLOC(ndr, r->lpPersistElement);
+			if (r->lpPersistElement) {
+				_mem_save_lpPersistElement_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->lpPersistElement, 0);
+				NDR_CHECK(ndr_token_store(ndr, &ndr->array_size_list,
+							  &r->lpPersistElement, ndr->data_size));
+				NDR_PULL_ALLOC_N(ndr, r->lpPersistElement, 1);
+				cntr_lpPersistElement_0 = 0;
+				current_size = 0;
+				while (!sentinel_reached && current_size < ndr->data_size) {
+					NDR_CHECK(ndr_pull_PersistElement(ndr, NDR_SCALARS, &r->lpPersistElement[cntr_lpPersistElement_0]));
+					sentinel_reached = (r->lpPersistElement[cntr_lpPersistElement_0].ElementID == ELEMENT_SENTINEL);
+					current_size += r->lpPersistElement[cntr_lpPersistElement_0].ElementDataSize + 2 + 2;
+					cntr_lpPersistElement_0++;
+					r->lpPersistElement = talloc_realloc(ndr->current_mem_ctx,
+									     r->lpPersistElement,
+									     struct PersistElement,
+									     cntr_lpPersistElement_0 + 1);
+					if (!r->lpPersistElement) {
+						return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+								      "Alloc failed: %s\n",
+								      __location__);
+					}
+				}
+				if (current_size > 0 && cntr_lpPersistElement_0 == 0 && !sentinel_reached) {
+					/* TODO: Use NDR_ERR_INCOMPLETE_BUFFER */
+					return NDR_ERR_BUFSIZE;
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lpPersistElement_0, 0);
+				r->cValues = cntr_lpPersistElement_0;
+			}
+			if (r->lpPersistElement) {
+				NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->lpPersistElement, ndr->data_size));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}

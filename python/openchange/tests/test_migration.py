@@ -77,7 +77,7 @@ class MigrationDBTests(unittest.TestCase):
         class DoNothingMigration(Migration):
 
             @classmethod
-            def apply(cls, cur):
+            def apply(cls, cur, **kwargs):
                 cur.execute('SELECT 1 FROM test_migrations')
 
             @classmethod

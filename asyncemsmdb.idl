@@ -1,0 +1,18 @@
+#include "idl_types.h"
+
+cpp_quote("#include <gen_ndr/ndr_misc.h>")
+
+[
+  uuid("5261574a-4572-206e-b268-6b199213b4e4"),
+  pointer_default(unique),
+  endpoint("ncacn_ip_tcp:"),
+  version(0.01),
+  helpstring("Exchange Asynchronous EMSMDB")
+] interface asyncemsmdb
+{
+	[public] NTSTATUS EcDoAsyncWaitEx(
+		[in] policy_handle	*async_handle,
+		[in] uint32		ulFlagsIn,
+		[out] uint32		*pulFlagsOut
+		);
+}

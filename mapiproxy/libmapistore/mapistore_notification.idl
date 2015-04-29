@@ -1,0 +1,141 @@
+/*
+   OpenChange Storage Abstraction Layer library
+
+   OpenChange Project
+
+   Copyright (C) Julien Kerihuel 2015
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+cpp_quote("#include <util/debug.h>")
+cpp_quote("#include <gen_ndr/ndr_misc.h>")
+
+[
+ pointer_default(unique)
+]
+
+/**
+   Internal mapistore interface used to share information about
+   session, subscription and notification data between emsmdb and
+   asyncemsmdb ednpoints
+ */
+
+interface mapistore_notification
+{
+	typedef [enum8bit] enum {
+		MAPISTORE_NOTIFICATION_V1	= 1,
+		MAPISTORE_NOTIFICATION_VMAX	= 2
+	} interface_vnum;
+
+	/* session */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		GUID								uuid;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	cn;
+	} session_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] session_v1 v1;
+		[default];
+	} session_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum			vnum;
+		[switch_is(vnum)] session_ver	v;
+	} mapistore_notification_session;
+
+
+	/* resolver */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[range(0, 100000)] uint32 count;
+		[size_is(count),flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string hosts[];
+	} resolver_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] resolver_v1 v1;
+		[default];
+	} resolver_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum			vnum;
+		[switch_is(vnum)] resolver_ver	v;
+	} mapistore_notification_resolver;
+
+
+	/* subscriptions */
+	typedef [public,bitmap16bit] bitmap {
+		sub_WholeStore		= 0x0001,
+		sub_NewMail		= 0x0002,
+		sub_ObjectCreated	= 0x0004,
+		sub_ObjectDeleted	= 0x0008,
+		sub_ObjectModified	= 0x0010,
+		sub_ObjectMoved		= 0x0020,
+		sub_ObjectCopied	= 0x0040,
+		sub_SearchCompleted	= 0x0080,
+		sub_TableModified	= 0x0100,
+		sub_Reserved		= 0x0400
+	} sub_NotificationFlags;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		uint32			handle;
+		sub_NotificationFlags	flags;
+		hyper			fid;
+		hyper			mid;
+		uint16			count;
+		uint32			properties[count];
+	} subscription_object_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[range(0, 100)] uint32				count;
+		[size_is(count)] subscription_object_v1		subscription[];
+	} subscription_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] subscription_v1 v1;
+		[default];
+	} subscription_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum				vnum;
+		[switch_is(vnum)] subscription_ver	v;
+	} mapistore_notification_subscription;
+
+	/* External notifications */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	backend;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	eml;
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	folder;
+		uint8								separator;
+	} newmail_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(sub_NewMail)] newmail_v1		newmail;
+		[default];
+	} notification_data_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		sub_NotificationFlags			flags;
+		[switch_is(flags)] notification_data_v1	u;
+	} notification_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] notification_v1 v1;
+		[default];
+	} notification_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum				vnum;
+		[switch_is(vnum)] notification_ver	v;
+	} mapistore_notification;
+}

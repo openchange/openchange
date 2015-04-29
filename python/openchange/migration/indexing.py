@@ -30,7 +30,7 @@ class InitialIndexingMigration(Migration):
     description = 'initial'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, **kwargs):
         try:
             cur.execute('SELECT COUNT(*) FROM `mapistore_indexing`')
             return False
@@ -68,7 +68,7 @@ class IndexesMigration(Migration):
     description = 'Indexes on indexing tables'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, **kwargs):
         cur.execute("CREATE INDEX `mapistore_indexing_username_idx` ON `mapistore_indexing` (`username`(255) ASC)")
         cur.execute("CREATE INDEX `mapistore_indexing_username_url_idx` ON `mapistore_indexing` (`username`(255) ASC, `url`(255) ASC)")
         cur.execute("CREATE INDEX `mapistore_indexing_username_fmid_idx` ON `mapistore_indexing` (`username`(255) ASC, `fmid` ASC)")

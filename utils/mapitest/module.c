@@ -94,6 +94,8 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "CREATE-DELETE", "Do a basic create / delete cycle on a folder", mapitest_oxcfold_CreateDeleteFolder);
 	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_oxcfold_CreateFolder);
 	mapitest_suite_add_test(suite, "CREATE-VARIANTS", "More folder creation variations", mapitest_oxcfold_CreateFolderVariants);
+	mapitest_suite_add_test(suite, "DELETE-VARIANTS", "More folder deletion variations", mapitest_oxcfold_DeleteFolderVariants);
+	mapitest_suite_add_test(suite, "CREATE-SIMPLE", "Simple folder creation", mapitest_oxcfold_CreateDeleteSimpleFolder);
 	mapitest_suite_add_test(suite, "GET-HIERARCHY-TABLE", "Retrieve the hierarchy table", mapitest_oxcfold_GetHierarchyTable);
 	mapitest_suite_add_test(suite, "GET-CONTENTS-TABLE", "Retrieve the contents table", mapitest_oxcfold_GetContentsTable);
 	mapitest_suite_add_test(suite, "SET-SEARCHCRITERIA", "Set a search criteria on a container", mapitest_oxcfold_SetSearchCriteria);

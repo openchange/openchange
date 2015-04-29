@@ -308,20 +308,21 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PidTagChangeNumber);
 	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parent_fid, fid, value->value.d, mapistore_uri, -1);
 	if (retval != MAPI_E_SUCCESS) {
-		if (retval == MAPI_E_COLLISION) {
-			ret = MAPISTORE_ERR_EXIST;
-		}
-		else {
-			ret = MAPISTORE_ERR_NOT_FOUND;
-		}
-		OC_DEBUG(0, "openchangedb folder creation failed: 0x%.8x\n", retval);
+		OC_DEBUG(0, "OpenChangeDB folder creation failed: %s\n", mapi_get_errstr(retval));
+		ret = mapi_error_to_mapistore(retval);
 		goto end;
 	}
 
-	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
-	new_folder->object.folder->contextID = context_id;
+	retval = openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, new_folder->object.folder->postponed_props);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(0, "OpenChangeDB folder set properties failed: %s", mapi_get_errstr(retval));
+		ret = mapi_error_to_mapistore(retval);
+		goto end;
+	}
 
-	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, new_folder->object.folder->postponed_props);
+	mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
+						   mapistore_uri);
+
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
@@ -335,7 +336,23 @@ end:
 	return ret;
 }
 
-_PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
+
+/**
+   \details Create a folder
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param parent_folder pointer to parent folder where to create the new folder
+   \param mem_ctx pointer to the memory context
+   \param fid Folder Identifier to assign the new folder object
+   \param rowp the properties to set to the new folder
+   \param force_container_class force the usage of Fallback role if we are
+          creating a mapistore root folder and the container class is not
+          available at rowp parameter
+   \param [out] new_folderp location to store new emsmdbp object on success
+
+   \return MAPISTATUS error code
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, bool force_container_class, struct emsmdbp_object **new_folderp)
 {
 	uint64_t			parentFolderID, testFolderID;
 	struct SPropValue		*value;
@@ -355,6 +372,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			talloc_free(new_folder);
 			return mapistore_error_to_mapi(retval);
 		}
+		/* FIXME: Add indexing entry */
 	}
 	else {
 		parentFolderID = parent_folder->object.folder->folderID;
@@ -383,7 +401,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			new_folder->object.folder->postponed_props = postponed_props;
 			new_folder->object.folder->mapistore_root = true;
 
-			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
+			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, force_container_class);
 			if (retval != MAPISTORE_SUCCESS) {
 				talloc_free(new_folder);
 				return mapistore_error_to_mapi(retval);
@@ -698,6 +716,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 static int emsmdbp_object_destructor(void *data)
 {
 	struct emsmdbp_object	*object = (struct emsmdbp_object *) data;
+	enum mapistore_error	mretval;
 	int			ret = MAPISTORE_SUCCESS;
 	uint32_t		contextID;
 	unsigned int		missing_objects;
@@ -718,22 +737,30 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_TABLE:
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
-			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
+			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+							  object->backend_object, object->object.table->handle);
 		}
-                if (object->object.table->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
-			talloc_free(object->object.table->subscription_list);
-			/* talloc_unlink(object->emsmdbp_ctx, object->object.table->subscription_list); */
-                }
+		if (object->object.table->handle && (object->object.table->subscription == true)) {
+			mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+										       object->emsmdbp_ctx->session_uuid,
+										       object->object.table->handle);
+			if (mretval != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to delete table notification subscription with handle=0x%x",
+					 object->object.table->handle);
+			}
+		}
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
 		break;
-        case EMSMDBP_OBJECT_SUBSCRIPTION:
-                if (object->object.subscription->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
-			talloc_free(object->object.subscription->subscription_list);
-                }
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+								     object->emsmdbp_ctx->session_uuid,
+								     object->object.subscription->handle);
+		if (mretval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "Unable to delete notification subscription with handle=0x%x",
+				 object->object.subscription->handle);
+		}
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		gettimeofday(&request_end, NULL);
@@ -786,6 +813,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->object.folder = NULL;
 	object->object.message = NULL;
 	object->object.stream = NULL;
+	object->object.subscription = NULL;
 	object->backend_object = NULL;
 	object->parent_object = parent_object;
 	(void) talloc_reference(object, parent_object);
@@ -1445,15 +1473,63 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	return ret;
 }
 
+/**
+   \details  Delete the fmids from a folder in the indexing database.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier
+   \param username the owner of the folder to delete its entries
+   \param fid the folder identifier
+   \param deleted_fmid the array of child fmids from the folder
+   \param deleted_fmid_count the number of deleted_fmids
+   \param flags the delete flags. See emsmdbp_folder_delete for details.
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete_indexing_records(struct mapistore_context *mstore_ctx, uint32_t context_id, char *username, uint64_t fid, uint64_t *deleted_fmids, uint32_t deleted_fmids_count, uint8_t flags)
+{
+        enum mapistore_error    ret;
+        uint8_t                 delete_type_flag;
+        uint32_t                i;
+
+        delete_type_flag = (flags & DELETE_HARD_DELETE) ? MAPISTORE_PERMANENT_DELETE : MAPISTORE_SOFT_DELETE;
+        ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username, fid, delete_type_flag);
+        MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+        for (i = 0; i < deleted_fmids_count; i++) {
+                ret = mapistore_indexing_record_del_fid(mstore_ctx, context_id, username,
+                                                        deleted_fmids[i], delete_type_flag);
+                MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+        }
+
+        return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Delete a folder.
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param parent_folder the parent folder
+   \param fid the folder identifier to delete from parent_folder
+   \param flags the delete flags.
+
+   Possible values for flags are:
+   -# DEL_MESSAGES Delete all the messages in the folder
+   -# DEL_FOLDERS Delete the subfolder and all of its subfolders
+   -# DELETE_HARD_DELETE Hard delete the folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+*/
 _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
 {
 	enum mapistore_error	ret;
-	enum MAPISTATUS		mapiret;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			mailboxstore;
-	uint32_t		context_id;
+	uint32_t		context_id, deleted_fmids_count;
 	void			*subfolder;
 	char			*mapistoreURL;
+	uint64_t		*deleted_fmids;
 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
@@ -1469,20 +1545,23 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			goto end;
 		}
 
-		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags, mem_ctx, &deleted_fmids, &deleted_fmids_count);
+		if (ret != MAPISTORE_SUCCESS) {
+			goto end;
+		}
+
+		/* Update indexing entries */
+		ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+							     emsmdbp_get_owner(parent_folder),
+							     fid, deleted_fmids, deleted_fmids_count,
+							     flags);
 		if (ret != MAPISTORE_SUCCESS) {
 			goto end;
 		}
 	}
 	else {
-		mapiret = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
-		if (mapiret != MAPI_E_SUCCESS) {
-			ret = MAPISTORE_ERR_NOT_FOUND;
-			goto end;
-		}
-
-		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
-		if (mapiret != MAPI_E_SUCCESS) {
+		retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &mapistoreURL, mailboxstore);
+		if (retval != MAPI_E_SUCCESS) {
 			ret = MAPISTORE_ERR_NOT_FOUND;
 			goto end;
 		}
@@ -1498,12 +1577,29 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 				}
 			}
 
-			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+						      subfolder, flags, mem_ctx, &deleted_fmids,
+						      &deleted_fmids_count);
 			if (ret != MAPISTORE_SUCCESS) {
 				goto end;
 			}
 
-			 mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+
+			/* Update indexing entries */
+			ret = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+								     emsmdbp_get_owner(parent_folder),
+								     fid, deleted_fmids, deleted_fmids_count,
+								     flags);
+			if (ret != MAPISTORE_SUCCESS) {
+				goto end;
+			}
+		}
+
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
 		}
 	}
 
@@ -1532,7 +1628,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->postponed_props) {
 		ret = emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
 		if (ret != MAPISTORE_SUCCESS) {
-			OC_DEBUG(0, "folder_commit_creatin failed with error: 0x%.8X", ret);
+			OC_DEBUG(0, "folder_commit_creation failed with error: 0x%.8X", ret);
 			return NULL;
 		}
 	}
@@ -1669,8 +1765,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->denominator = 0;
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
-	object->object.table->subscription_list = NULL;
 	object->object.table->flags = 0;
+	object->object.table->subscription = false;
 
 	return object;
 }
@@ -2498,19 +2594,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 	return object;
 }
 
-/**
-   \details Initialize a notification subscription object
 
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
-   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
-   \param folderID the folder identifier
-   \param messageID the message identifier
-   \param parent emsmdbp object of the parent
- */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
-                                                                 struct emsmdbp_context *emsmdbp_ctx,
-                                                                 struct emsmdbp_object *parent)
+								 struct emsmdbp_context *emsmdbp_ctx,
+								 struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;
 
@@ -2528,7 +2615,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	}
 
 	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
-        object->object.subscription->subscription_list = NULL;
+	object->object.subscription->handle = 0;
 
 	return object;
 }
@@ -2600,7 +2687,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
                 }
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
+			unix_time = time(NULL);
 			unix_to_nt_time(&nt_time, unix_time);
 			ft = talloc_zero(data_pointers, struct FILETIME);
 			ft->dwLowDateTime = (nt_time & 0xffffffff);
@@ -3013,15 +3100,93 @@ end:
         return data_pointers;
 }
 
+/* Delete a mapistore root folder, create again with new role and
+   update the mapistoreURI in OpenChange DB */
+static enum mapistore_error emsmdbp_object_root_mapistore_folder_set(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, struct SRow *rowp, const char *container_class)
+{
+	char				*mapistore_uri;
+	char				*folder_name, *owner;
+	enum MAPISTATUS			retval;
+	enum mapistore_context_role	role;
+	enum mapistore_error		ret;
+	TALLOC_CTX			*local_mem_ctx;
+	uint32_t			context_id, deleted_fmids_count;
+	uint64_t			fid, *deleted_fmids;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rowp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!container_class, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* 1. Delete current mapistore folder */
+	context_id = emsmdbp_get_contextID(folder);
+	owner = emsmdbp_get_owner(folder);
+	ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+				      folder->backend_object, DELETE_HARD_DELETE,
+				      local_mem_ctx, &deleted_fmids, &deleted_fmids_count);
+	if (ret == MAPISTORE_ERR_EXIST) {
+		/* Known limitation */
+		OC_DEBUG(1, "There are messages or subfolders while changing the role of a mapistore root folder which is unsupported");
+	}
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+	ret = mapistore_indexing_record_del_fid(emsmdbp_ctx->mstore_ctx, context_id,
+						owner, folder->object.folder->folderID,
+						MAPISTORE_PERMANENT_DELETE);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+	/* 2. Create the mapistore folder with the new role */
+	role = emsmdbp_container_class_to_role(container_class);
+
+	fid = folder->object.folder->folderID;
+
+	retval = openchangedb_get_folder_property(local_mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+						  PR_DISPLAY_NAME, fid, (void **)&folder_name);
+	MAPISTORE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
+
+	/* 3. Create mapistore root folder */
+	ret = mapistore_create_root_folder(owner, role, fid, folder_name, local_mem_ctx, &mapistore_uri);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &folder->backend_object);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_PANIC(false,
+			 ("mapistore_add_context() failed with 0x%.8x, mapistore_uri = [%s].\n",
+			  ret, mapistore_uri));
+		goto end;
+	}
+	folder->object.folder->contextID = context_id;
+
+	/* 4. Set the new MAPIStore URI in OpenChangeDB */
+	retval = openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, mapistore_uri);
+	MAPISTORE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
+
+	/* 5. Set indexing */
+	ret = mapistore_indexing_record_add_fmid_for_uri(emsmdbp_ctx->mstore_ctx, context_id, owner, fid,
+							 mapistore_uri);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+end:
+	talloc_free(local_mem_ctx);
+	return ret;
+}
+
 /* TODO: handling of "property problems" */
 _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SRow *rowp)
 {
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		contextID, new_cvalues;
+	char			*db_container_class;
 	char			*mapistore_uri, *new_uri;
 	size_t			mapistore_uri_len, new_uri_len;
 	bool			mapistore;
+	enum MAPISTATUS		retval;
 	enum mapistore_error	ret;
+	struct SPropValue	*container_class;
 	struct SRow		*postponed_props;
 	bool			soft_deleted;
 
@@ -3064,8 +3229,39 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 		mem_ctx = talloc_new(NULL);
 		OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
+		/* Check if we have to change the type of MAPIStore folder
+		   as now we have a container class or it has changed.
+		   This is happening when CreateFolder + SetProps ROPs are done */
+		retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+							  PR_CONTAINER_CLASS_UNICODE, object->object.folder->folderID,
+							  (void **)&db_container_class);
+		if (retval == MAPI_E_NOT_FOUND) {
+			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+								  PR_CONTAINER_CLASS, object->object.folder->folderID,
+								  (void **)&db_container_class);
+		}
+		container_class = get_SPropValue_SRow(rowp, PR_CONTAINER_CLASS_UNICODE);
+		if (!container_class) {
+			/* Sometimes Outlook does pass non-unicode values. */
+			container_class = get_SPropValue_SRow(rowp, PR_CONTAINER_CLASS);
+		}
+
+		if (container_class
+		    && (retval == MAPI_E_NOT_FOUND
+                        || strncmp(db_container_class, container_class->value.lpszW, strlen(db_container_class)) != 0)) {
+			/* Replace the MAPIStore folder now we have a role to set for it */
+			ret = emsmdbp_object_root_mapistore_folder_set(emsmdbp_ctx, object, rowp, container_class->value.lpszW);
+			/* MAPISTORE_ERR_EXIST happens when the folder was set with the right role in the
+			   provisioning code so we have to let the current flow work. This happens with
+			   special folders such as INBOX, Sent, Personal Calendar, RSS Feeds, Conversation
+			   Action Settings, etc... */
+			OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS && ret != MAPISTORE_ERR_EXIST,
+					     mapistore_error_to_mapi(ret), mem_ctx);
+		}
+
 		mapistore_uri = NULL;
 		openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, &mapistore_uri, true);
+
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, rowp);
 		contextID = emsmdbp_get_contextID(object);
 		mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, rowp);

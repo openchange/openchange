@@ -140,11 +140,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object = NULL;
-	struct mapistore_subscription_list *subscription_list;
-	struct mapistore_subscription *subscription;
-	struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
-	uint64_t		folderID;
 	uint32_t		handle;
 	uint32_t		count = 0;
 
@@ -179,15 +175,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (parent_object->type) {
-	case EMSMDBP_OBJECT_MAILBOX:
-		folderID = parent_object->object.mailbox->folderID;
-		break;
-	case EMSMDBP_OBJECT_FOLDER:
-		folderID = parent_object->object.folder->folderID;
-		break;
-	default:
-		OC_DEBUG(5, "  unsupported object type\n");
+	if ((parent_object->type != EMSMDBP_OBJECT_MAILBOX) &&
+	    (parent_object->type != EMSMDBP_OBJECT_FOLDER)) {
+		OC_DEBUG(5, "unsupported object type");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -219,21 +209,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	/* notifications */
 	if ((mapi_req->u.mapi_GetHierarchyTable.TableFlags & TableFlags_NoNotifications)) {
 		OC_DEBUG(5, "  notifications skipped\n");
-	}
-	else {
-		/* we attach the subscription to the session object */
-		subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-		DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-
-		subscription_parameters.table_type = MAPISTORE_FOLDER_TABLE;
-		subscription_parameters.folder_id = folderID;
-
-		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-							  emsmdbp_ctx->username,
-							  rec->handle, fnevTableModified, &subscription_parameters);
-		subscription_list->subscription = subscription;
-		object->object.table->subscription_list = subscription_list;
 	}
 
 end:
@@ -268,11 +243,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object;
-        struct mapistore_subscription_list *subscription_list;
-        struct mapistore_subscription *subscription;
-        struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
-	uint64_t		folderID;
 	uint32_t		handle;
 	uint8_t			table_type;
 
@@ -319,7 +290,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	folderID = parent_object->object.folder->folderID;
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
 		OC_DEBUG(5, "  table is FAI table\n");
 		table_type = MAPISTORE_FAI_TABLE;
@@ -350,26 +320,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_NoNotifications)) {
 		OC_DEBUG(5, "  notifications skipped\n");
 	}
-	else {
-		/* we attach the subscription to the session object */
-		subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-		DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-		
-		if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
-			subscription_parameters.table_type = MAPISTORE_FAI_TABLE;
-		}
-		else {
-			subscription_parameters.table_type = MAPISTORE_MESSAGE_TABLE;
-		}
-		subscription_parameters.folder_id = folderID; 
-                
-		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-							  emsmdbp_ctx->username,
-							  rec->handle, fnevTableModified, &subscription_parameters);
-		subscription_list->subscription = subscription;
-		object->object.table->subscription_list = subscription_list;
-        }
 
 end:
 	
@@ -478,6 +428,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	if (ret == MAPISTORE_SUCCESS) {
 		if (request->ulFlags != OPEN_IF_EXISTS) {
 			mapi_repl->error_code = MAPI_E_COLLISION;
+			if (emsmdbp_is_mapistore(parent_object)) {
+				OC_DEBUG(5, "Folder %s exists in MAPIStore", request->FolderName.lpszW);
+			} else {
+				OC_DEBUG(5, "Folder %s exists in OpenChangeDB", request->FolderName.lpszW);
+			}
 			goto end;
 		}
 		response->IsExistingFolder = true;
@@ -519,7 +474,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		cnValue.value.d = cn;
 		SRow_addprop(aRow, cnValue);
 
-		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
+		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid,
+						      aRow, true, &object);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(5, "folder creation failed\n");
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
@@ -821,11 +777,12 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		ret = MAPI_E_SUCCESS;
 	void                    *folder_priv;
-	struct emsmdbp_object   *folder_object = NULL;
-	uint32_t                context_id;
+	char			*owner;
+	struct emsmdbp_object	*folder_object = NULL;
+	uint32_t		context_id;
 	enum mapistore_error	retval;
-	uint64_t		*childFolders;
-	uint32_t		childFolderCount;
+	uint64_t		*childFolders, *deleted_fmids;
+	uint32_t		childFolderCount, deleted_fmids_count;
 	uint32_t		i;
 	uint8_t			flags = DELETE_HARD_DELETE| DEL_MESSAGES | DEL_FOLDERS;
 	TALLOC_CTX		*local_mem_ctx;
@@ -858,15 +815,28 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, folder, local_mem_ctx, childFolders[i], &subfolder);
+		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, local_mem_ctx, childFolders[i], &subfolder);
 		if (retval != MAPISTORE_SUCCESS) {
 			ret = MAPI_E_NOT_FOUND;
 			goto end;
 		}
 
-		retval = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		owner = emsmdbp_get_owner(folder_object);
+		retval = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id,
+						 subfolder, flags, local_mem_ctx,
+						 &deleted_fmids, &deleted_fmids_count);
 		if (retval) {
 			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval);
+			ret = MAPI_E_NOT_FOUND;
+			goto end;
+		}
+
+		/* Update indexing entries */
+		retval = emsmdbp_folder_delete_indexing_records(emsmdbp_ctx->mstore_ctx, context_id,
+								owner, childFolders[i], deleted_fmids,
+								deleted_fmids_count, flags);
+		if (retval) {
+			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete indexing entries for fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval);
 			ret = MAPI_E_NOT_FOUND;
 			goto end;
 		}

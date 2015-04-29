@@ -238,7 +238,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
 /**
    \details Get the current position and the last row position as defined by the pStat argument.
-   In the case of a empty table it return 0 for both positions. The caller can discriminate between empty tables and one-row tables looking at the cValues of the PropertyTagArray_r
+   In the case of an empty table it return 0 for both positions. The caller can discriminate between empty tables and one-row tables looking at the cValues of the PropertyTagArray_r
 
 
    \param pStat pointer to struct STAT which will be used to get the positions
@@ -458,6 +458,11 @@ static void dcesrv_do_NspiQueryRows(TALLOC_CTX *mem_ctx, struct NspiQueryRows *r
 						  r->in.pStat->ContainerID, &ldb_res);
 		if (retval != MAPI_E_SUCCESS)  {
 			goto failure;
+		}
+		if (ldb_res == NULL) {
+			/* No elements in this container */
+			*r->out.ppRows = pRows;
+			DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 		}
 
 		if (r->in.pStat->Delta >= 0) {
@@ -1209,152 +1214,14 @@ static void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call,
 
 
 /**
-   \details exchange_nsp NspiResolveNames (0x13) function
+   \details common code called by NspiResolveNames and NspiResolveNamesW functions
+            NspiResolveNames should before copy the values of its struct NspiResolveNames to a
+            NspiResolveNamesW struct since const char* is used to both 8-bits and Unicode strings
+            it could be done without problems.
 
-   \param dce_call pointer to the session context
-   \param mem_ctx pointer to the memory context
-   \param r pointer to the NspiResolveNames request data
-
-   \return MAPI_E_SUCCESS on success
-
- */
-static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
-				    TALLOC_CTX *mem_ctx,
-				    struct NspiResolveNames *r)
-{
-	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
-	struct emsabp_context		*emsabp_ctx = NULL;
-	struct SPropTagArray		*pPropTags;
-	char				*filter_search = NULL;
-	struct PropertyTagArray_r	*pMIds = NULL;
-	struct PropertyRowSet_r		*pRows = NULL;
-	struct StringsArray_r		*paStr;
-	uint32_t			i;
-	int				ret;
-	const char * const		recipient_attrs[] = { "*", NULL };
-	const char * const		search_attr[] = { "mailNickName", "mail", "name",
-							  "displayName", "givenName",
-							  "sAMAccountName", "proxyAddresses" };
-
-	OC_DEBUG(3, "exchange_nsp: NspiResolveNames (0x13)");
-
-	if (!dcesrv_call_authenticated(dce_call)) {
-		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-	}
-
-	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
-
-	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
-
-	/* Step 1. Prepare in/out data */
-	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
-	if (retval != MAPI_E_SUCCESS) {
-		OC_DEBUG(5, "[nspi] ab_fetch_filter failed");
-		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
-	}
-
-	/* Set the default list of property tags if none were provided in input */
-	if (!r->in.pPropTags) {
-		pPropTags = set_SPropTagArray(mem_ctx, 0x7,
-					      PR_EMS_AB_CONTAINERID,
-					      PR_OBJECT_TYPE,
-					      PR_DISPLAY_TYPE,
-					      PR_DISPLAY_NAME,
-					      PR_OFFICE_TELEPHONE_NUMBER,
-					      PR_COMPANY_NAME,
-					      PR_OFFICE_LOCATION);
-	} else {
-		pPropTags = r->in.pPropTags;
-	}
-
-	/* Allocate output MIds */
-	paStr = r->in.paStr;
-	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
-	DCESRV_NSP_RETURN_IF(!pMIds, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-	pMIds->cValues = paStr->Count;
-	pMIds->aulPropTag = (uint32_t *) talloc_array(pMIds, uint32_t, pMIds->cValues);
-	DCESRV_NSP_RETURN_IF(!pMIds->aulPropTag, r, MAPI_E_NOT_ENOUGH_MEMORY, pMIds);
-
-	pRows = talloc(mem_ctx, struct PropertyRowSet_r);
-	DCESRV_NSP_RETURN_IF(!pRows, r, MAPI_E_NOT_ENOUGH_MEMORY, pMIds);
-	pRows->cRows = 0;
-	pRows->aRow = talloc_array(pRows, struct PropertyRow_r, pMIds->cValues);
-	if (!pRows->aRow) {
-		retval = MAPI_E_NOT_ENOUGH_MEMORY;
-		goto error;
-	}
-
-	/* Step 2. Fetch AB container records */
-	for (i = 0; i < paStr->Count; i++) {
-		struct ldb_result	*ldb_res;
-		char			*filter = talloc_strdup(mem_ctx, "");
-		int			j;
-
-		if (!filter) {
-			retval = MAPI_E_NOT_ENOUGH_MEMORY;
-			goto error;
-		}
-		/* Build search filter */
-		for (j = 0; j < ARRAY_SIZE(search_attr); j++) {
-			char *attr_filter = talloc_asprintf(mem_ctx, "(%s=%s)", search_attr[j],
-							    ldb_binary_encode_string(mem_ctx, paStr->Strings[i]));
-			if (!attr_filter) {
-				retval = MAPI_E_NOT_ENOUGH_MEMORY;
-				goto error;
-			}
-			filter = talloc_strdup_append(filter, attr_filter);
-			if (!filter) {
-				retval = MAPI_E_NOT_ENOUGH_MEMORY;
-				goto error;
-			}
-			talloc_free(attr_filter);
-		}
-
-		/* Search AD */
-		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", filter_search, filter);
-		if (!filter) {
-			retval = MAPI_E_NOT_ENOUGH_MEMORY;
-			goto error;
-		}
-		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
-				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
-
-		/* Determine name resolution status and fetch object upon success */
-		if (ret != LDB_SUCCESS || ldb_res->count == 0) {
-			pMIds->aulPropTag[i] = MAPI_UNRESOLVED;
-		} else if (ldb_res->count > 1) {
-			pMIds->aulPropTag[i] = MAPI_AMBIGUOUS;
-		} else {
-			pMIds->aulPropTag[i] = MAPI_RESOLVED;
-			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
-							     ldb_res->msgs[0], 0, 0, pPropTags);
-			if (retval != MAPI_E_SUCCESS) {
-				OC_DEBUG(5, "[nspi] emsabp_fetch_attrs_from_msg failed");
-				goto error;
-			}
-			pRows->cRows++;
-		}
-	}
-
-	*r->out.ppMIds = pMIds;
-	if (pRows->cRows) {
-		*r->out.ppRows = pRows;
-	}
-
-	DCESRV_NSP_RETURN(r, retval, NULL);
-error:
-	OC_DEBUG(5, "[nspi] unexpected error %d", retval);
-	talloc_free(pMIds);
-	talloc_free(pRows);
-	DCESRV_NSP_RETURN(r, retval, NULL);
-}
-
-
-/**
-   \details exchange_nsp NspiResolveNamesW (0x14) function
+            The ANR implementation in this function does a search of fields values beginning with the search string.
+            A possible enhancement would be to trim superfluous spaces and/or split the search string by spaces so the order
+            of the elements would not be important.
 
    \param dce_call pointer to the session context
    \param mem_ctx pointer to the memory context
@@ -1363,7 +1230,7 @@ error:
    \return MAPI_E_SUCCESS on success
 
  */
-static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
+static void dcesrv_do_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx,
 				     struct NspiResolveNamesW *r)
 {
@@ -1377,24 +1244,45 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	uint32_t			i;
 	int				ret;
 	const char * const		recipient_attrs[] = { "*", NULL };
+	/* Attributes for ANR search */
 	const char * const		search_attr[] = { "mailNickName", "mail", "name",
-							  "displayName", "givenName", "sAMAccountName" };
-
-	OC_DEBUG(3, "exchange_nsp: NspiResolveNamesW (0x14)");
+							  "displayName", "givenName", "sn",
+							  "sAMAccountName",
+							  "legacyExchangeDN",
+							  "physicalDeliveryOfficeName"};
+	/* We do not use proxyAddresses attribute for search because we do not expect the user to type in the protocol.
+	   We do not use RDN attribute because it seems samba lack support for it.
+	   However in user objects RDN should be the same than name, so this case is covered. */
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
+	/* MS-OXNPI 3.1.4.1.17 server processing rules 2 says that we should return
+	   error if r->in.Reserved != 0, however Outlook 2010 always send non-zero so we skip it. */
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
+	if (!emsabp_ctx) {
+		retval = MAPI_E_CALL_FAILED;
+		goto failure;
+	}
+
+	if (r->in.pStat->ContainerID) {
+		if (!emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID)) {
+			retval = MAPI_E_INVALID_BOOKMARK;
+			goto failure;
+		}
+	}
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (retval != MAPI_E_SUCCESS) {
 		OC_DEBUG(5, "[nspi] ab_fetch_filter failed");
+		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
+	} else if (filter_search == NULL) {
+		OC_DEBUG(5, "[nspi] ab_fetch_filter called for an empty container");
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
@@ -1417,40 +1305,44 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	DCESRV_NSP_RETURN_IF(!pMIds, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	pMIds->cValues = paWStr->Count;
-	pMIds->aulPropTag = talloc_array(pMIds, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = talloc_zero_array(pMIds, uint32_t, pMIds->cValues);
 	DCESRV_NSP_RETURN_IF(!pMIds->aulPropTag, r, MAPI_E_NOT_ENOUGH_MEMORY, pMIds);
 
 	pRows = talloc(mem_ctx, struct PropertyRowSet_r);
-	DCESRV_NSP_RETURN_IF(!pRows, r, MAPI_E_NOT_ENOUGH_MEMORY, pMIds);
+	if (!pRows) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto failure;
+	}
 	pRows->cRows = 0;
-	pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pMIds->cValues);
+	pRows->aRow = talloc_zero_array(mem_ctx, struct PropertyRow_r, pMIds->cValues);
 	if (!pRows->aRow) {
 		retval = MAPI_E_NOT_ENOUGH_MEMORY;
-		goto error;
+		goto failure;
 	}
 
 	/* Step 2. Fetch AB container records */
 	for (i = 0; i < paWStr->Count; i++) {
 		struct ldb_result	*ldb_res;
-		char			*filter = talloc_strdup(mem_ctx, "");
+		char			*filter;
 		int			j;
 
+		filter = talloc_strdup(mem_ctx, "");
 		if (!filter) {
 			retval = MAPI_E_NOT_ENOUGH_MEMORY;
-			goto error;
+			goto failure;
 		}
 		/* Build search filter */
 		for (j = 0; j < ARRAY_SIZE(search_attr); j++) {
-			char *attr_filter = talloc_asprintf(mem_ctx, "(%s=%s)", search_attr[j],
+			char *attr_filter = talloc_asprintf(mem_ctx, "(%s=%s*)", search_attr[j],
 							    ldb_binary_encode_string(mem_ctx, paWStr->Strings[i]));
 			if (!attr_filter) {
 				retval = MAPI_E_NOT_ENOUGH_MEMORY;
-				goto error;
+				goto failure;
 			}
 			filter = talloc_strdup_append(filter, attr_filter);
 			if (!filter) {
 				retval = MAPI_E_NOT_ENOUGH_MEMORY;
-				goto error;
+				goto failure;
 			}
 			talloc_free(attr_filter);
 		}
@@ -1459,24 +1351,29 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", filter_search, filter);
 		if (!filter) {
 			retval = MAPI_E_NOT_ENOUGH_MEMORY;
-			goto error;
+			goto failure;
 		}
+
 		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
 				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
 
-		/* Determine name resolutation status and fetch object upon success */
+		/* Determine name resolution status and fetch object upon success */
 		if (ret != LDB_SUCCESS || ldb_res->count == 0) {
 			pMIds->aulPropTag[i] = MAPI_UNRESOLVED;
 		} else if (ldb_res->count > 1) {
 			pMIds->aulPropTag[i] = MAPI_AMBIGUOUS;
 		} else {
 			pMIds->aulPropTag[i] = MAPI_RESOLVED;
+			/* The standard says that we must have a call to NspiQueryRows to fill the rows.
+			   However with our actual implementation it would imply extract the dn, use it to
+			   get the mid and then call to QueryRows, where the element data would be fetched again.
+			   So for efficiency we will build the row here, with the data we already have */
 			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
 							     ldb_res->msgs[0], 0, 0, pPropTags);
 			if (retval != MAPI_E_SUCCESS) {
 				OC_DEBUG(5, "[nspi] emsabp_fetch_attrs_from_msg failed");
-				goto error;
+				goto failure;
 			}
 			pRows->cRows++;
 		}
@@ -1488,11 +1385,67 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	}
 
 	DCESRV_NSP_RETURN(r, retval, NULL);
-error:
+failure:
 	OC_DEBUG(5, "[nspi] unexpected error %d", retval);
 	talloc_free(pMIds);
 	talloc_free(pRows);
+	*r->out.ppMIds = NULL;
+	*r->out.ppRows = NULL;
 	DCESRV_NSP_RETURN(r, retval, NULL);
+}
+
+
+/**
+   \details exchange_nsp NspiResolveNames (0x13) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiResolveNames request data
+
+   \return MAPI_E_SUCCESS on success
+
+ */
+static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
+				    TALLOC_CTX *mem_ctx,
+				    struct NspiResolveNames *r)
+{
+	OC_DEBUG(3, "exchange_nsp: NspiResolveNames (0x13)");
+	struct NspiResolveNamesW reqw;
+	struct StringsArrayW_r reqw_strings_array;
+
+	reqw.in.handle = r->in.handle;
+	reqw.in.Reserved = r->in.Reserved;
+	reqw.in.pStat = r->in.pStat;
+	reqw.in.pPropTags = r->in.pPropTags;
+	reqw.in.paWStr = &reqw_strings_array;
+	reqw.in.paWStr->Count = r->in.paStr->Count;
+	reqw.in.paWStr->Strings = r->in.paStr->Strings;
+
+	reqw.out.ppMIds = r->out.ppMIds;
+	reqw.out.ppRows = r->out.ppRows ;
+
+	dcesrv_do_NspiResolveNamesW(dce_call, mem_ctx, &reqw);
+	/* Copy result, the other out fields were pointers so not need of it */
+	r->out.result = reqw.out.result;
+}
+
+
+/**
+   \details exchange_nsp NspiResolveNamesW (0x14) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiResolveNamesW request data
+
+   \return MAPI_E_SUCCESS on success
+
+ */
+static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
+				     TALLOC_CTX *mem_ctx,
+				     struct NspiResolveNamesW *r)
+{
+	OC_DEBUG(3, "exchange_nsp: NspiResolveNamesW (0x14)");
+	dcesrv_do_NspiResolveNamesW(dce_call, mem_ctx, r);
 }
 
 
@@ -1632,7 +1585,7 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
-	OC_DEBUG(0, "dcesrv_exchange_nsp_unbind");
+	OC_DEBUG(0, "dcesrv_exchange_nsp_unbind: server_id=%d, context_id=0x%x", server_id, context_id);
 	return NT_STATUS_OK;
 }
 

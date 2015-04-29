@@ -55,7 +55,8 @@ struct dcesrv_mapiproxy_private {
 enum exchange_handle {
 	EXCHANGE_HANDLE_NSP,
 	EXCHANGE_HANDLE_EMSMDB,
-	EXCHANGE_HANDLE_DS_RFR
+	EXCHANGE_HANDLE_DS_RFR,
+	EXCHANGE_HANDLE_ASYNCEMSMDB
 };
 
 /* Forward declarations */

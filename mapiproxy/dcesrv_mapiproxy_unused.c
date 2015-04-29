@@ -796,15 +796,6 @@ enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_call, TA
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-/*
-  endpoint server for the exchange_async_emsmdb pipe
- */
-enum MAPISTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				       struct EcDoAsyncWaitEx *r)
-{
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
 /* 
    endpoint server for the exchange_unknown pipe
 */

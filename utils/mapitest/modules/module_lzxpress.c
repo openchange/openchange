@@ -43,7 +43,6 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	struct ndr_push		*ndr_comp;
 	struct ndr_push		*ndr_rgbIn;
 	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
-	//struct EcDoRpcExt2_NoDecode	r;
 	struct mapi2k7_request	request;
 	NTSTATUS		status;
 	enum ndr_err_code	ndr_err;
@@ -58,7 +57,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 		talloc_free(filename);
 		return false;
 	}
-	
+
 	blob.data = talloc_memdup(mt->mem_ctx,data,size);
 	blob.length = size;
 	mapitest_print_retval_step(mt, "1", "Loading 001_Outlook_2007_Compressed_ROPRequestPayload.dat", MAPI_E_SUCCESS);
@@ -84,7 +83,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	ndr_push_mapi_request(ndr_push, NDR_SCALARS|NDR_BUFFERS, request.mapi_request);
 	ndr_comp = ndr_push_init_ctx(mt->mem_ctx);
 	ndr_push_lzxpress_compress(ndr_comp, ndr_push);
-	
+
 	/* Recreate complete blob */
 	ndr_rgbIn = ndr_push_init_ctx(mt->mem_ctx);
 	ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);

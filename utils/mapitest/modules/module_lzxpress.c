@@ -43,14 +43,14 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	struct ndr_push		*ndr_comp;
 	struct ndr_push		*ndr_rgbIn;
 	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
-	struct EcDoRpcExt2	r;
+	//struct EcDoRpcExt2_NoDecode	r;
 	struct mapi2k7_request	request;
 	NTSTATUS		status;
 	enum ndr_err_code	ndr_err;
 
-	/* Step 1. Load Test File 001_Outlook_2007_in_ModifyRecipients_comp.dat */
-	filename = talloc_asprintf(mt->mem_ctx, "%s/001_Outlook_2007_in_ModifyRecipients_comp.dat", LZXPRESS_DATADIR);
-/* 	filename = talloc_asprintf(mt->mem_ctx, "%s/002_Outlook_2007_in_Tables_operations_comp.dat", LZXPRESS_DATADIR); */
+	/* Step 1. Load Test File 001_Outlook_2007_Compressed_ROPRequestPayload.dat */
+	/* This file contains a compressed ROP request payload extracted from the rgbIn field of EcDoRpcExt2 */
+	filename = talloc_asprintf(mt->mem_ctx, "%s/001_Outlook_2007_Compressed_ROPRequestPayload.dat", LZXPRESS_DATADIR);
 	data = (uint8_t *)file_load(filename, &size, 0, mt->mem_ctx);
 	if (!data) {
 		perror(filename);
@@ -58,33 +58,16 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 		talloc_free(filename);
 		return false;
 	}
-	blob.data = data;
+	
+	blob.data = talloc_memdup(mt->mem_ctx,data,size);
 	blob.length = size;
-	mapitest_print_retval_step(mt, "1", "Loading 001_Outlook_2007_in_ModifyRecipients_comp.dat", MAPI_E_SUCCESS);
+	mapitest_print_retval_step(mt, "1", "Loading 001_Outlook_2007_Compressed_ROPRequestPayload.dat", MAPI_E_SUCCESS);
 
 	ndr_print = talloc_zero(mt->mem_ctx, struct ndr_print);
 	ndr_print->print = ndr_print_debug_helper;
 	ndr_print->depth = 1;
 
-	/* Step 2. Pull 001_Outlook_2007_in_ModifyRecipients_comp.dat data */
-	ndr_pull = ndr_pull_init_blob(&blob, mt->mem_ctx);
-	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
-
-	ndr_err = ndr_pull_EcDoRpcExt2(ndr_pull, NDR_IN, &r);
-	talloc_free(ndr_pull);
-	status = ndr_map_error2ntstatus(ndr_err);
-	if (NT_STATUS_IS_OK(status)) {
-		mapitest_print_retval_step(mt, "2", "001_Outlook_2007_in_ModifyRecipients_comp.dat", 
-					   MAPI_E_SUCCESS);
-	} else {
-		mapitest_print_retval_step(mt, "2", "Pulling 001_Outlook_2007_in_ModifyRecipients_comp.dat", 
-					   MAPI_E_CALL_FAILED);
-		return false;
-	}
-
-	/* Step 4. Decompress data */
-	blob.data = talloc_memdup(mt->mem_ctx, r.in.rgbIn, r.in.cbIn);
-	blob.length = r.in.cbIn;
+	/* Step 2. Decompress data */
 	ndr_pull = ndr_pull_init_blob(&blob, mt->mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &request);
@@ -95,7 +78,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 		DEBUG(0, ("Success\n"));
 	}
 
-	/* Step 5. Recompress data */
+	/* Step 3. Recompress data */
 	ndr_push = ndr_push_init_ctx(mt->mem_ctx);
 	ndr_set_flags(&ndr_push->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	ndr_push_mapi_request(ndr_push, NDR_SCALARS|NDR_BUFFERS, request.mapi_request);
@@ -116,19 +99,19 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	talloc_free(ndr_comp);
 
 	/* Compare Outlook and openchange rgbIn compressed blob */
-	DEBUG(0, ("Outlook    compressed blob size = 0x%x\n", r.in.cbIn));
+	DEBUG(0, ("Outlook    compressed blob size = 0x%x\n", size));
 	DEBUG(0, ("OpenChange compressed blob size = 0x%x\n", ndr_rgbIn->offset));
 	ret = true;
 	{
 		int i;
 		int min;
 
-		min = (ndr_rgbIn->offset >= r.in.cbIn) ? r.in.cbIn : ndr_rgbIn->offset;
+		min = (ndr_rgbIn->offset >= size) ? size : ndr_rgbIn->offset;
 		DEBUG(0, ("Comparing Outlook and OpenChange blobs on 0x%x bytes\n", min));
 		for (i = 0; i < min; i++) {
-			if (r.in.rgbIn[i] != ndr_rgbIn->data[i]) {
+			if (data[i] != ndr_rgbIn->data[i]) {
 				DEBUG(0, ("Bytes differs at offset 0x%x: Outlook (0x%.2x) OpenChange (0x%.2x)\n", 
-					  i, r.in.rgbIn[i], ndr_rgbIn->data[i]));
+					  i, data[i], ndr_rgbIn->data[i]));
 				ret = false;
 			}
 		}
@@ -137,7 +120,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 
 	mapitest_print(mt, "Compressed rgbIn by Outlook\n");
 	mapitest_print(mt, "==============================\n");
-	dump_data(0, r.in.rgbIn, r.in.cbIn);
+	dump_data(0, data, size);
 	mapitest_print(mt, "==============================\n");
 
 	mapitest_print(mt, "Compressed rgbIn by OpenChange\n");

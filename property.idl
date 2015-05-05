@@ -281,8 +281,8 @@ interface property
 	} TimeZoneStruct;
 
 	typedef [enum16bit] enum {
-		TZRULE_FLAG_RECUR_CURRENT_TZREG	= 0x8000,
-		TZRULE_FLAG_EFFECTIVE_TZREG	= 0x4000
+		TZRULE_FLAG_RECUR_CURRENT_TZREG	= 0x0001,
+		TZRULE_FLAG_EFFECTIVE_TZREG	= 0x0002
 	} TZRuleFlag;
 
 	/* pidLidAppointmentTimeZoneDefinitionRecur,

@@ -73,20 +73,6 @@ fi
 
 echo "#define OPENCHANGE_VERSION_STRING \"${OPENCHANGE_VERSION_STRING}\"" >> $TMPFILE
 
-##
-## Add some System related information (useful for debug and report)
-##
-echo "" >> $TMPFILE
-echo "/* System related information */" >> $TMPFILE
-
-OPENCHANGE_SYS_KERNEL_NAME=`uname -s`
-OPENCHANGE_SYS_KERNEL_RELEASE=`uname -r`
-OPENCHANGE_SYS_PROCESSOR=`uname -p`
-
-echo "#define OPENCHANGE_SYS_KERNEL_NAME \"${OPENCHANGE_SYS_KERNEL_NAME}\"" >> $TMPFILE
-echo "#define OPENCHANGE_SYS_KERNEL_RELEASE \"${OPENCHANGE_SYS_KERNEL_RELEASE}\"" >> $TMPFILE
-echo "#define OPENCHANGE_SYS_PROCESSOR \"${OPENCHANGE_SYS_PROCESSOR}\"" >> $TMPFILE
-
 mv "$TMPFILE" "$OUTPUT_FILE"
 
 echo "$0: '$OUTPUT_FILE' created for OpenChange libmapi(\"${OPENCHANGE_VERSION_STRING}\")"

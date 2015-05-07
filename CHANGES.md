@@ -11,6 +11,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Automatic Outlook inbox refresh when receiving new emails
 
 ### Fixes
+* No more `Deleted Items (1)`-like duplicated folders
 * Fixed creation of root folders on online mode and some special folders such as Sync Issues.
 * Fixed `Too many connections to ldap` when openchange runs on samba as member of a domain.
 * Fixed `Mark All as Read` feature regression bug introduced by 7737bdf6

@@ -1,3 +1,24 @@
+/*
+   OpenChange Unit Testing
+
+   OpenChange Project
+
+   Copyright (C) Jesús García Sáez 2013-2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "testsuite.h"
 #include "testsuite_common.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
@@ -835,6 +856,33 @@ START_TEST (test_get_system_idx) {
 	ck_assert_int_eq(15, system_idx);
 } END_TEST
 
+START_TEST (test_set_system_idx) {
+        int initial_system_idx, system_idx;
+	uint64_t fid = 13980299143264862209ul;
+
+	retval = openchangedb_get_system_idx(g_oc_ctx, USER1, fid, &initial_system_idx);
+	if (retval == MAPI_E_SUCCESS) {
+                ck_assert_int_eq(initial_system_idx, -1);
+        } else {
+                /* MAPI_E_CALL_FAILED is returned when system_idx is NULL in MySQL backend */
+                initial_system_idx = -1;
+        }
+
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, fid, 3);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_get_system_idx(g_oc_ctx, USER1, fid, &system_idx);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(system_idx, 3);
+
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, fid, initial_system_idx);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_get_system_idx(g_oc_ctx, USER1, fid, &system_idx);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(system_idx, initial_system_idx);
+} END_TEST
+
 START_TEST (test_get_system_idx_from_public_folder) {
 	int system_idx = 0;
 	uint64_t fid = 504403158265495553ul;
@@ -1300,6 +1348,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_message_count_from_public_folder);
 	tcase_add_test(tc, test_get_system_idx);
+	tcase_add_test(tc, test_set_system_idx);
 	tcase_add_test(tc, test_get_system_idx_from_public_folder);
 
 	tcase_add_test(tc, test_create_and_edit_message);

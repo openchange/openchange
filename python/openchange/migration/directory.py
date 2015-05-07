@@ -104,7 +104,7 @@ objectCategory: CN=Attribute-Schema,%(schema_dn)s
         try:
             db.add_ldif(add_schema_attr_ldif, ['relax:0'])
         except Exception, ex:
-            print "Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType atributes to schema: %s" % str(ex)
+            sys.stderr.write("Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType atributes to schema: %s\n" % str(ex))
 
         force_schemas_update(db, setup_path)
 
@@ -119,7 +119,7 @@ mayContain: msExchRecipientTypeDetails
         try:
             db.modify_ldif(upgrade_schema_ldif)
         except Exception, ex:
-            print "Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType to Mail-Recipient schema: %s" % str(ex)
+            sys.stderr.write("Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType to Mail-Recipient schema: %s\n" % str(ex))
 
         force_schemas_update(db, setup_path)
 
@@ -156,13 +156,13 @@ msExchRecipientDisplayType: 0
                 try:
                     db.modify_ldif(ldif)
                 except Exception, ex:
-                    print "Error migrating user %s: %s. Skipping user" % (dn, str(ex))
+                    sys.stderr.write("Error migrating user %s: %s. Skipping user\n" % (dn, str(ex)))
 
     @classmethod
     def unapply(cls, cur, **kwargs):
         # The schema migration cannot be rolled back because AD cannot
         # remove schema entries to avoid replication problems
-        print "Schema migration cannot be rolled back\n"
+        sys.stderr.write("Schema migration cannot be rolled back\n")
 
 
 @migration('directory', 2)

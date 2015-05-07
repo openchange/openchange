@@ -23,7 +23,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Performances
 * Fixed performance issue affecting initial synchronization of business size mailbox contents
-
+* Script improving initial time access and loading of a migrated IMAP mailbox in Outlook
 
 [//]: # (unreleased compare link should be changed to the latest release)
 [//]: # (the current hash was master when this CHANGES.md file was created)

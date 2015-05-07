@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [Unreleased]
 
 ### Added
+* Sharing request and invitation of folders among different Outlook versions
 * Automatic Outlook inbox refresh when receiving new emails
 
 ### Fixes

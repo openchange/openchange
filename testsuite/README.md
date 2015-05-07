@@ -28,6 +28,14 @@ or
 
     CK_RUN_CASE="Interface" bin/openchange-testsuite
 
+To check which tests are run, use `CK_VERBOSITY` environment
+variable with `verbose` value as follows:
+
+    CK_VERBOSITY=verbose bin/openchange-testsuite
+
+To review all available options, go to the following link:
+
+    http://check.sourceforge.net/doc/check_html/check_3.html#SRunner-Output
 
 Check for memory leaks
 ----------------------

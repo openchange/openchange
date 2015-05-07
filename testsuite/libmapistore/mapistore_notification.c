@@ -30,6 +30,7 @@
 static struct GUID	gl_async_uuid;
 static struct GUID	gl_uuid;
 static const char	*gl_cn = "FooBar";
+static const char	*gl_cn_lowercase = "foobar";
 static const char	*gl_host1 = "tcp://host1:9005";
 static const char	*gl_host2 = "tcp://host2:9006";
 static const char	*gl_host3 = "tcp://host3:9007";
@@ -395,6 +396,10 @@ START_TEST(resolver_exist) {
 
 	/* Test gl_cn existence */
 	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* Test gl_cn existence with different case */
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn_lowercase);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	/* Test non existent key */

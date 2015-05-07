@@ -648,7 +648,7 @@ add: proxyAddresses
 proxyAddresses: SMTP:%(smtp_user)s
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
-proxyAddresses: SMTP:postmaster@%(mail_domain)s
+proxyAddresses: smtp:postmaster@%(mail_domain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
 add: msExchRecipientTypeDetails
@@ -656,6 +656,10 @@ msExchRecipientTypeDetails: 6
 add: msExchRecipientDisplayType
 msExchRecipientDisplayType: 0
 """
+        # According to [MS-OXCMAIL] Section 1.1, the primary
+        # proxyAddresses entry is the SMTP one and the secondaries
+        # proxyAddresses entries are the smtp ones
+
         ldif_value = extended_user % {"user_dn": user_dn,
                                       "username": username,
                                       "netbiosname": names.netbiosname,

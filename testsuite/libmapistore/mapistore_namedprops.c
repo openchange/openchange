@@ -19,10 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "testsuite.h"
-#include <libmapistore/mapistore.h>
-#include <libmapistore/mapistore_errors.h>
-#include <libmapistore/backends/namedprops_backend.h>
+#include "testsuite/testsuite.h"
+#include <mapiproxy/libmapistore/mapistore.h>
+#include <mapiproxy/libmapistore/mapistore_errors.h>
+#include <mapiproxy/libmapistore/backends/namedprops_backend.h>
 
 START_TEST (test_init) {
 	TALLOC_CTX			*mem_ctx;

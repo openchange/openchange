@@ -118,7 +118,7 @@ re:: clean install
 
 .c.o:
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -c $< -o $@
 
 .c.po:
 	@echo "Compiling $< with -fPIC"
@@ -1428,22 +1428,22 @@ clean:: testsuite-clean
 
 bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/testsuite_common.o				\
-				testsuite/libmapistore/mapistore_namedprops.c		\
-				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
-				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
-				testsuite/libmapistore/mapistore_indexing.c		\
-				testsuite/libmapistore/mapistore_notification.c		\
-				testsuite/libmapiproxy/openchangedb.c			\
-				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
-				testsuite/mapiproxy/util/mysql.c			\
-				testsuite/mapiproxy/util/schema_migration.c		\
-				testsuite/libmapiproxy/openchangedb_logger.c		\
-				mapiproxy/libmapiproxy/backends/openchangedb_logger.c	\
-				testsuite/libmapi/mapi_property.c			\
+				testsuite/libmapistore/mapistore_namedprops.o		\
+				testsuite/libmapistore/mapistore_namedprops_mysql.o	\
+				testsuite/libmapistore/mapistore_namedprops_tdb.o	\
+				testsuite/libmapistore/mapistore_indexing.o		\
+				testsuite/libmapistore/mapistore_notification.o		\
+				testsuite/libmapiproxy/openchangedb.o			\
+				testsuite/libmapiproxy/openchangedb_multitenancy.o	\
+				testsuite/mapiproxy/util/mysql.o			\
+				testsuite/mapiproxy/util/schema_migration.o		\
+				testsuite/libmapiproxy/openchangedb_logger.o		\
+				mapiproxy/libmapiproxy/backends/openchangedb_logger.o	\
+				testsuite/libmapi/mapi_property.o			\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) $(PYTHON_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(MEMCACHED_LIBS)
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(MEMCACHED_LIBS)
 
 testsuite-check:	testsuite
 	@LD_LIBRARY_PATH=. PYTHONPATH=./python CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite
@@ -1692,28 +1692,28 @@ pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)			\
 		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)		
 #		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 
-$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
-						pyopenchange/pymapi_properties.c		\
+$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.o				\
+						pyopenchange/pymapi_properties.o		\
 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -fno-strict-aliasing $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_LIBS) $(LIBS)
 
-# $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
+# $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.o				\
 # 						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 # 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 # 	@echo "Linking $@"
 # 	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_LIBS) $(LIBS)
 
-$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
-							pyopenchange/mapistore/context.c			\
-							pyopenchange/mapistore/folder.c				\
-							pyopenchange/mapistore/freebusy_properties.c		\
-							pyopenchange/mapistore/table.c				\
-							pyopenchange/mapistore/errors.c				\
+$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.o			\
+							pyopenchange/mapistore/context.o			\
+							pyopenchange/mapistore/folder.o				\
+							pyopenchange/mapistore/freebusy_properties.o		\
+							pyopenchange/mapistore/table.o				\
+							pyopenchange/mapistore/errors.o				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling and linking $@"
-	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -fno-strict-aliasing $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_LIBS) $(LIBS)
+	@echo "Linking $@"
+	@$(CC) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_LIBS) $(LIBS)
 
 
 pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h

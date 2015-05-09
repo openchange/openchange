@@ -1,5 +1,5 @@
-#include "testsuite.h"
-#include "testsuite_common.h"
+#include "testsuite/testsuite.h"
+#include "testsuite/testsuite_common.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include "libmapi/libmapi.h"

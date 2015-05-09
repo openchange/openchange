@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "testsuite.h"
+#include "testsuite/testsuite.h"
 #include "libmapi/libmapi.h"
 
 /* Global test variables */

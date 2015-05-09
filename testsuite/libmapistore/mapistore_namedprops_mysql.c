@@ -20,12 +20,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "testsuite.h"
-#include "testsuite_common.h"
-#include <libmapistore/mapistore.h>
-#include <libmapistore/mapistore_errors.h>
-#include <libmapistore/backends/namedprops_mysql.h>
-#include "libmapistore/backends/namedprops_mysql.c"
+#include "testsuite/testsuite.h"
+#include "testsuite/testsuite_common.h"
+#include <mapiproxy/libmapistore/mapistore.h>
+#include <mapiproxy/libmapistore/mapistore_errors.h>
+#include <mapiproxy/libmapistore/backends/namedprops_mysql.h>
 
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>

@@ -525,7 +525,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			switch (i) {
 			case EMSMDBP_INBOX:
 				current_entry = main_entries[MAPISTORE_MAIL_ROLE];
-				inbox_fid = current_fid;
 				break;
 			case EMSMDBP_OUTBOX:
 				current_entry = main_entries[MAPISTORE_OUTBOX_ROLE];
@@ -546,9 +545,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 				mapistore_url = current_entry->url;
 			}
-			else {
-				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
-			}
 
 			/* According to [MS-OXOSFLD] Section 3.1.4.1, the special folder must be reused
 			   if one already exists by that name */
@@ -564,6 +560,13 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 					OC_DEBUG(1, "Error getting new change number: %s", mapi_get_errstr(ret));
 					goto error;
 				}
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
 				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error creating OpenChangeDB folder: %s", mapi_get_errstr(ret));
@@ -571,6 +574,13 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 			} else if (ret == MAPI_E_SUCCESS) {
 				current_fid = found_fid;
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
 				ret = openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, username, current_fid, mapistore_url);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error setting new MAPIStore URI %s: %s", mapistore_url, mapi_get_errstr(ret));
@@ -597,6 +607,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			if (i == EMSMDBP_INBOX) {
+				inbox_fid = current_fid;
 				/* set INBOX as receive folder for "All", "IPM", "Report.IPM" */
 				openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, username, "All", inbox_fid);
 				openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, username, "IPM", inbox_fid);
@@ -629,9 +640,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 				mapistore_url = current_entry->url;
 			}
-			else {
-				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
-			}
 
 			/* According to [MS-OXOSFLD] Section 3.1.4.1, the special folder must be reused
 			   if one already exists by that name */
@@ -647,6 +655,13 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 					OC_DEBUG(1, "Error getting new change number: %s", mapi_get_errstr(ret));
 					goto error;
 				}
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
 				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error creating OpenChangeDB folder: %s", mapi_get_errstr(ret));
@@ -654,6 +669,13 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 			} else if (ret == MAPI_E_SUCCESS) {
 				current_fid = found_fid;
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
 				ret = openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, username, current_fid, mapistore_url);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error setting new MAPIStore URI %s: %s", mapistore_url, mapi_get_errstr(ret));

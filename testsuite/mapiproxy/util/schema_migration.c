@@ -24,8 +24,7 @@
 #include "mapiproxy/util/schema_migration.c"
 
 /* Global test variables */
-static TALLOC_CTX 	*mem_ctx;
-static MYSQL		*conn;
+static MYSQL *conn;
 
 // v Unit test ----------------------------------------------------------------
 
@@ -36,7 +35,7 @@ START_TEST (test_migrate_openchangedb_schema) {
 	connection_string = "mysql://"OC_TESTSUITE_MYSQL_USER":"OC_TESTSUITE_MYSQL_PASS
 			    "@"OC_TESTSUITE_MYSQL_HOST"/"OC_TESTSUITE_MYSQL_DB;
 
-	ret = migrate_openchangedb_schema(mem_ctx, connection_string);
+	ret = migrate_openchangedb_schema(connection_string);
 	ck_assert_int_eq(ret, 0);
 
 } END_TEST
@@ -48,7 +47,7 @@ START_TEST (test_migrate_indexing_schema) {
 	connection_string = "mysql://"OC_TESTSUITE_MYSQL_USER":"OC_TESTSUITE_MYSQL_PASS
 			    "@"OC_TESTSUITE_MYSQL_HOST"/"OC_TESTSUITE_MYSQL_DB;
 
-	ret = migrate_indexing_schema(mem_ctx, connection_string);
+	ret = migrate_indexing_schema(connection_string);
 	ck_assert_int_eq(ret, 0);
 
 } END_TEST
@@ -60,7 +59,7 @@ START_TEST (test_migrate_named_properties_schema) {
 	connection_string = "mysql://"OC_TESTSUITE_MYSQL_USER":"OC_TESTSUITE_MYSQL_PASS
 			    "@"OC_TESTSUITE_MYSQL_HOST"/"OC_TESTSUITE_MYSQL_DB;
 
-	ret = migrate_named_properties_schema(mem_ctx, connection_string);
+	ret = migrate_named_properties_schema(connection_string);
 	ck_assert_int_eq(ret, 0);
 
 } END_TEST
@@ -85,23 +84,12 @@ static void unchecked_schema_migration_teardown(void)
 	drop_mysql_database(conn, OC_TESTSUITE_MYSQL_DB);
 }
 
-static void checked_schema_migration_setup(void)
-{
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
-}
-
-static void checked_schema_migration_teardown(void)
-{
-	talloc_free(mem_ctx);
-}
-
 Suite *mapiproxy_util_schema_migration_suite(void)
 {
 	Suite *s = suite_create("Mapiproxy/util/schema_migration");
 
 	TCase *tc = tcase_create("schema migration tests");
 	tcase_add_unchecked_fixture(tc, unchecked_schema_migration_setup, unchecked_schema_migration_teardown);
-	tcase_add_checked_fixture(tc, checked_schema_migration_setup, checked_schema_migration_teardown);
 
 	tcase_add_test(tc, test_migrate_openchangedb_schema);
 	tcase_add_test(tc, test_migrate_indexing_schema);

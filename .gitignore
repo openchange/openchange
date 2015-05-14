@@ -56,3 +56,4 @@ samba-*.tar.gz
 test_results.xml
 *.gcda
 *.gcno
+python/openchange/migration/mapistore_namedprops.py

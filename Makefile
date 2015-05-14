@@ -891,6 +891,7 @@ libmapistore:	mapiproxy/libmapistore/gen_ndr/mapistore_notification.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)		\
 		setup/mapistore/mapistore_namedprops.ldif			\
+		python/openchange/migration/mapistore_namedprops.py		\
 		$(OC_MAPISTORE)							\
 		$(MAPISTORE_TEST)
 

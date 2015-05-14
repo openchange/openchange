@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,11 +30,8 @@
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
 
-#define NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
-#define	NAMEDPROPS_MYSQL_TMPDIR		"/tmp"
 
 /* Global variables used for test fixture */
-static MYSQL				*conn;
 static struct namedprops_context	*g_nprops;
 static struct loadparm_context		*g_lp_ctx;
 static TALLOC_CTX			*g_mem_ctx;
@@ -110,77 +107,6 @@ START_TEST(test_parameters) {
 	talloc_free(mem_ctx);
 } END_TEST
 
-static void checked_mysql_setup(void)
-{
-	TALLOC_CTX	*mem_ctx = NULL;
-	MYSQL		*rconn = NULL;
-	char		*query = NULL;
-	int		ret;
-
-	mem_ctx = talloc_named(NULL, 0, "checked_mysql_setup");
-	ck_assert(mem_ctx != NULL);
-
-	conn = mysql_init(NULL);
-	ck_assert(conn != NULL);
-
-	rconn = mysql_real_connect(conn, OC_TESTSUITE_MYSQL_HOST,
-				   OC_TESTSUITE_MYSQL_USER, OC_TESTSUITE_MYSQL_PASS,
-				   NULL, 0, NULL, 0);
-	ck_assert(rconn != NULL);
-
-	query = talloc_asprintf(mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
-	ck_assert(query != NULL);
-	ret = mysql_query(conn, query);
-	talloc_free(query);
-
-	query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", OC_TESTSUITE_MYSQL_DB);
-	ck_assert(query != NULL);
-	ret = mysql_query(conn, query);
-	talloc_free(query);
-	ck_assert_int_eq(ret, 0);
-
-	ret = mysql_select_db(conn, OC_TESTSUITE_MYSQL_DB);
-	ck_assert_int_eq(ret, 0);
-
-	talloc_free(mem_ctx);
-}
-
-static void checked_mysql_teardown(void)
-{
-	drop_mysql_database(conn, OC_TESTSUITE_MYSQL_DB);
-}
-
-START_TEST (test_initialize_database) {
-	TALLOC_CTX		*mem_ctx = NULL;
-	enum mapistore_error	retval;
-	char			*connection_string;
-
-	mem_ctx = talloc_named(NULL, 0, "test_initialize_database");
-	ck_assert(mem_ctx != NULL);
-
-	connection_string = talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s",
-					    OC_TESTSUITE_MYSQL_USER,
-					    OC_TESTSUITE_MYSQL_PASS,
-					    OC_TESTSUITE_MYSQL_HOST,
-					    OC_TESTSUITE_MYSQL_DB);
-	ck_assert(connection_string != NULL);
-
-	/* test sanity checks */
-	retval = initialize_database(NULL, NULL, NULL);
-	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
-
-	ck_assert(is_schema_created(conn) == false);
-	ck_assert(is_database_empty(conn) == true);
-
-	retval = initialize_database(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH, connection_string);
-	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
-
-	ck_assert(is_schema_created(conn) == true);
-	ck_assert(is_database_empty(conn) == false);
-	talloc_free(mem_ctx);
-
-} END_TEST
-
 static void unchecked_mysql_query_setup(void)
 {
 	enum mapistore_error retval;
@@ -192,7 +118,7 @@ static void unchecked_mysql_query_setup(void)
 	ck_assert(g_lp_ctx != NULL);
 
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "mapistore:namedproperties", "mysql") == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_data", NAMEDPROPS_MYSQL_SCHEMA_PATH) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_data", "/tmp") == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_host", OC_TESTSUITE_MYSQL_HOST) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_user", OC_TESTSUITE_MYSQL_USER) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", OC_TESTSUITE_MYSQL_PASS) == true));
@@ -411,7 +337,6 @@ Suite *mapistore_namedprops_mysql_suite(void)
 {
 	Suite	*s;
 	TCase	*tc_config;
-	TCase	*tc_mysql;
 	TCase	*tc_mysql_q;
 
 	s = suite_create("libmapistore named properties: MySQL backend");
@@ -420,14 +345,6 @@ Suite *mapistore_namedprops_mysql_suite(void)
 	tc_config = tcase_create("MySQL backend configuration");
 	tcase_add_test(tc_config, test_parameters);
 	suite_add_tcase(s, tc_config);
-
-	/* MySQL initialization */
-	tc_mysql = tcase_create("MySQL initialization");
-	/* database provisioning takes longer than default timeout */
-	tcase_set_timeout(tc_mysql, 60);
-	tcase_add_checked_fixture(tc_mysql, checked_mysql_setup, checked_mysql_teardown);
-	tcase_add_test(tc_mysql, test_initialize_database);
-	suite_add_tcase(s, tc_mysql);
 
 	/* MySQL queries */
 	tc_mysql_q = tcase_create("MySQL queries");

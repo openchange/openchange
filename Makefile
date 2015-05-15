@@ -891,6 +891,7 @@ libmapistore:	mapiproxy/libmapistore/gen_ndr/mapistore_notification.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)		\
 		setup/mapistore/mapistore_namedprops.ldif			\
+		python/openchange/migration/mapistore_namedprops.py		\
 		$(OC_MAPISTORE)							\
 		$(MAPISTORE_TEST)
 
@@ -1664,12 +1665,15 @@ pythonscriptdir = python
 
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
-python-install::
+python-install:: python/openchange/migration/mapistore_namedprops.py
 	@echo "Installing Python modules"
 	@$(foreach MODULE, $(PYTHON_MODULES), \
 		$(INSTALL) -d $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 		$(INSTALL) -m 0644 $(pythonscriptdir)/$(MODULE) $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 	)
+
+python/openchange/migration/mapistore_namedprops.py: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	libmapi/conf/mparse.pl --parser=mapistore_namedprops_python --outputdir=python/openchange/migration/ libmapi/conf/mapi-named-properties
 
 python-uninstall::
 	rm -rf $(DESTDIR)$(pythondir)/openchange

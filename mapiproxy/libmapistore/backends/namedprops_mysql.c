@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -276,7 +276,6 @@ static int mapistore_namedprops_mysql_destructor(struct namedprops_context *self
 	return 0;
 }
 
-
 /**
    \details Retrieve MySQL backend parametric options from
    configuration file and store them into a data structure.
@@ -309,210 +308,6 @@ enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_conte
 	MAPISTORE_RETVAL_IF(!p->host && !p->sock, MAPISTORE_ERR_BACKEND_INIT, NULL);
 
 	return MAPISTORE_SUCCESS;
-}
-
-
-/**
-   \details Check if the named properties schema is created
-
-   \param conn pointer to the MySQL connection
-
-   \return true if the schema is created, otherwise false;
- */
-static bool is_schema_created(MYSQL *conn)
-{
-	return table_exists(conn, NAMEDPROPS_MYSQL_TABLE);
-}
-
-
-/**
-   \details Check if the database is empty
-
-   \param conn pointer to the MySQL connection
-
-   \return true if the database is empty, otherwise false
- */
-static bool is_database_empty(MYSQL *conn)
-{
-	enum MYSQLRESULT	ret;
-	uint64_t		n = 0;
-
-	ret = select_first_uint(conn, "SELECT count(*) FROM "NAMEDPROPS_MYSQL_TABLE, &n);
-	if (ret != MYSQL_SUCCESS) {
-		/* query failed, table does not exist? */
-		return true;
-	}
-
-	return n == 0;
-}
-
-static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
-				const char ***fields, const char *field,
-				bool mandatory)
-{
-	const char *val = ldb_msg_find_attr_as_string(ldif, field, "");
-	if (strlen(val) == 0) {
-		if (mandatory) {
-			OC_DEBUG(0, "%s value hasn't been found! malformed ldif?", field);
-		}
-		return false;
-	}
-	char *end;
-	int intval = strtol(val, &end, 10);
-	if (end && strlen(val) == (end - val)) {
-		*fields = str_list_add(*fields,
-				       talloc_asprintf(mem_ctx, "%s=%d", field,
-						       intval));
-	} else {
-		*fields = str_list_add(*fields,
-				       talloc_asprintf(mem_ctx, "%s='%s'",
-						       field, val));
-	}
-	return true;
-}
-
-
-/**
-  Table fields:
-    * Mandatory fields:
-        * `type` TINYINT(1)
-        * `propType` INT(10) unsigned
-        * `oleguid` VARCHAR(255)
-        * `mappedId` INT(10) unsigned
-    * Optional fields:
-        * `propId` INT(10) unsigned
-        * `propName` VARCHAR(255)
-        * `oom` VARCHAR(255)
-        * `canonical` VARCHAR(255)
- */
-static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
-{
-	const char *val = ldb_msg_find_attr_as_string(ldif, "objectClass", "");
-	if (strlen(val) < strlen("MNID_ID")) {
-		// It's not a valid entry, ignore it
-		return true;
-	}
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	const char **fields = (const char **) str_list_make_empty(mem_ctx);
-
-	// Optional fields
-	add_field_from_ldif(mem_ctx, ldif, &fields, "propId", false);
-	add_field_from_ldif(mem_ctx, ldif, &fields, "propName", false);
-	add_field_from_ldif(mem_ctx, ldif, &fields, "oom", false);
-	add_field_from_ldif(mem_ctx, ldif, &fields, "canonical", false);
-	// Mandatory fields
-	// oleguid and mappedId
-	if (!add_field_from_ldif(mem_ctx, ldif, &fields, "oleguid", true) ||
-	    !add_field_from_ldif(mem_ctx, ldif, &fields, "mappedId", true)) {
-		return false;
-	}
-	// type
-	int type;
-	if (strcmp(val, "MNID_STRING") == 0) {
-		type = MNID_STRING;
-	} else if (strcmp(val, "MNID_ID") == 0) {
-		type = MNID_ID;
-	} else {
-		OC_DEBUG(0, "Invalid objectClass %s", val);
-		return false;
-	}
-	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "type=%d", type));
-	// propType: it could be either an integer or a constant PT_*, we have
-	//           to store it as an integer
-	val = ldb_msg_find_attr_as_string(ldif, "propType", "");
-	if (strlen(val) == 0) {
-		OC_DEBUG(0, "propType value hasn't been found! malformed ldif?");
-		return false;
-	}
-	int propType;
-	if (isalpha(val[0])) {
-		propType = mapistore_namedprops_prop_type_from_string(val);
-		if (propType == -1) {
-			OC_DEBUG(0, "Invalid propType %s", val);
-			return false;
-		}
-	} else {
-		propType = strtol(val, NULL, 10);
-	}
-	fields = str_list_add(fields,
-			      talloc_asprintf(mem_ctx, "propType=%d", propType));
-	// Done, we have all fields on fields array
-	char *fields_sql = str_list_join(mem_ctx, fields, ',');
-	char *sql = talloc_asprintf(mem_ctx,
-			"INSERT INTO " NAMEDPROPS_MYSQL_TABLE " SET %s", fields_sql);
-	mysql_query(conn, sql);
-	talloc_free(mem_ctx);
-	return true;
-}
-
-
-/**
-  \details Initialize the database and provision it
-
-  \param conn pointer to the MySQL context
-  \param schema_path pointer to the path holding schema files
-
-  \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_path, const char *connection_string)
-{
-	TALLOC_CTX		*mem_ctx;
-	enum mapistore_error	retval = MAPISTORE_SUCCESS;
-	struct ldb_context	*ldb_ctx;
-	struct ldb_ldif		*ldif;
-	struct ldb_message	*msg;
-	int			ret;
-	char			*filename;
-	FILE			*f;
-	bool			inserted;
-	int			schema_created_ret;
-
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
-
-	mem_ctx = talloc_named(NULL, 0, "initialize_database");
-	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
-
-	schema_created_ret = migrate_named_properties_schema(mem_ctx, connection_string);
-	if (schema_created_ret) {
-		OC_DEBUG(1, "Failed named properties schema creation using migration framework: %d\n",
-			  schema_created_ret);
-		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
-	}
-
-	ldb_ctx = ldb_init(mem_ctx, NULL);
-	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
-
-	filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",
-				   schema_path ? schema_path : mapistore_namedprops_get_ldif_path());
-	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-
-	f = fopen(filename, "r");
-	talloc_free(filename);
-	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
-	
-	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &msg);
-		if (ret) {
-			retval = MAPISTORE_ERR_DATABASE_INIT;
-			mapistore_set_errno(MAPISTORE_ERR_DATABASE_INIT);
-			goto end;
-		}
-
-		inserted = insert_ldif_msg(conn, msg);
-		ldb_ldif_read_free(ldb_ctx, ldif);
-		if (!inserted) {
-			retval = MAPISTORE_ERR_DATABASE_OPS;
-			mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
-			goto end;
-		}
-	}
-
-end:
-	talloc_free(mem_ctx);
-	fclose(f);
-
-	return retval;
 }
 
 static char *connection_string_from_parameters(TALLOC_CTX *mem_ctx, struct namedprops_mysql_params *parms)
@@ -553,6 +348,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	struct namedprops_mysql_params	parms;
 	MYSQL				*conn = NULL;
 	char				*connection_string = NULL;
+	int				schema_created_ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -562,8 +358,8 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &parms);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "ERROR: parsing MySQL named properties "
-			  "parametric option failed with %s\n",
-			  mapistore_errstr(retval));
+			    "parametric option failed with %s\n",
+			    mapistore_errstr(retval));
 		MAPISTORE_RETVAL_ERR(retval, NULL);
 	}
 
@@ -580,10 +376,18 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Initialize the database */
-	if (!is_schema_created(conn) || is_database_empty(conn)) {
-		retval = initialize_database(conn, parms.data, connection_string);
-		MAPISTORE_RETVAL_IF(retval != MAPISTORE_SUCCESS, retval, NULL);
+	if (!table_exists(conn, NAMEDPROPS_MYSQL_TABLE)) {
+		OC_DEBUG(3, "Creating schema for named_properties on mysql %s\n",
+			 connection_string);
+		schema_created_ret = migrate_named_properties_schema(connection_string);
+		if (schema_created_ret) {
+			OC_DEBUG(1, "Failed named properties schema creation using "
+				 "migration framework: %d\n", schema_created_ret);
+			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, connection_string);
+		}
 	}
+
+	talloc_free(connection_string);
 
 	/* Create context */
 	nprops = talloc_zero(mem_ctx, struct namedprops_context);

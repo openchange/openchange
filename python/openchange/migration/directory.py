@@ -3,6 +3,7 @@
 
 # OpenChangeDB migration for directory schema and contents
 # Copyright (C) Javier Amor Garcia <jamor@zentyal.com> 2015
+#               Enrique J. Hernández <ejhernandez@zentyal.com> 2015
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@ Migration for OpenChange directory schema and data
 """
 from openchange.migration import migration, Migration
 import ldb
+import sys
 
 
 @migration('directory', 1)
@@ -102,7 +104,7 @@ objectCategory: CN=Attribute-Schema,%(schema_dn)s
         try:
             db.add_ldif(add_schema_attr_ldif, ['relax:0'])
         except Exception, ex:
-            print "Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType atributes to schema: %s" % str(ex)
+            sys.stderr.write("Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType atributes to schema: %s\n" % str(ex))
 
         force_schemas_update(db, setup_path)
 
@@ -117,7 +119,7 @@ mayContain: msExchRecipientTypeDetails
         try:
             db.modify_ldif(upgrade_schema_ldif)
         except Exception, ex:
-            print "Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType to Mail-Recipient schema: %s" % str(ex)
+            sys.stderr.write("Error adding msExchRecipientTypeDetails and msExchRecipientDisplayType to Mail-Recipient schema: %s\n" % str(ex))
 
         force_schemas_update(db, setup_path)
 
@@ -154,10 +156,84 @@ msExchRecipientDisplayType: 0
                 try:
                     db.modify_ldif(ldif)
                 except Exception, ex:
-                    print "Error migrating user %s: %s. Skipping user" % (dn, str(ex))
+                    sys.stderr.write("Error migrating user %s: %s. Skipping user\n" % (dn, str(ex)))
 
     @classmethod
     def unapply(cls, cur, **kwargs):
         # The schema migration cannot be rolled back because AD cannot
         # remove schema entries to avoid replication problems
-        print "Schema migration cannot be rolled back\n"
+        sys.stderr.write("Schema migration cannot be rolled back\n")
+
+
+@migration('directory', 2)
+class SetPostmansterSecondaryProxyAddressesEntry(Migration):
+    description = 'Set postmaster as secondary SMTP ProxyAddresses entry'
+
+    @classmethod
+    def apply(cls, cur, **kwargs):
+        from openchange.provision import get_local_samdb
+
+        names = kwargs['names']
+        db = get_local_samdb(names, kwargs['lp'], kwargs['creds'])
+
+        # Set postmaster proxyAddress attribute as secondary entry
+        modify_postmaster_ldif_template = """
+dn: {user_dn}
+changetype: modify
+delete: proxyAddresses
+proxyAddresses: SMTP:postmaster@{mail_domain}
+-
+add: proxyAddresses
+proxyAddresses: smtp:postmaster@{mail_domain}
+"""
+
+        base_dn = "CN=Users,%s" % names.domaindn
+        ldb_filter = "(proxyAddresses=*)"
+        res = db.search(base=base_dn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
+        for element in res:
+            if 'proxyAddresses' in element:
+                for entry in element['proxyAddresses']:
+                    if entry.startswith('SMTP:postmaster@'):
+                        mail_domain = entry[len('SMTP:postmaster@'):]
+                        dn = element.dn.get_linearized()
+                        ldif = modify_postmaster_ldif_template.format(user_dn=dn,
+                                                                      mail_domain=mail_domain)
+                        try:
+                            db.modify_ldif(ldif)
+                        except Exception, ex:
+                            sys.stderr.write("Error migrating user %s: %s\n" % (dn, ex))
+
+    @classmethod
+    def unapply(cls, cur, **kwargs):
+        # Do nothing by now
+        from openchange.provision import get_local_samdb
+
+        names = kwargs['names']
+        db = get_local_samdb(names, kwargs['lp'], kwargs['creds'])
+
+        # Set postmaster proxyAddress attribute as secondary entry
+        modify_postmaster_ldif_template = """
+dn: {user_dn}
+changetype: modify
+delete: proxyAddresses
+proxyAddresses: smtp:postmaster@{mail_domain}
+-
+add: proxyAddresses
+proxyAddresses: SMTP:postmaster@{mail_domain}
+"""
+
+        base_dn = "CN=Users,%s" % names.domaindn
+        ldb_filter = "(proxyAddresses=*)"
+        res = db.search(base=base_dn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
+        for element in res:
+            if 'proxyAddresses' in element:
+                for entry in element['proxyAddresses']:
+                    if entry.startswith('smtp:postmaster@'):
+                        mail_domain = entry[len('smtp:postmaster@'):]
+                        dn = element.dn.get_linearized()
+                        ldif = modify_postmaster_ldif_template.format(user_dn=dn,
+                                                                      mail_domain=mail_domain)
+                        try:
+                            db.modify_ldif(ldif)
+                        except Exception, ex:
+                            sys.stderr.write("Error unmigrating user %s: %s\n" % (dn, ex))

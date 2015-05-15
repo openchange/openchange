@@ -2672,7 +2672,7 @@ static enum mapistore_error mapistore_python_message_submit(void *message_object
 
    \param message_object pointer to the message object on which we
    want to set the property
-   \param flags the flags to set on the message
+   \param flags the flags that set the behaviour of the function
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
@@ -2682,10 +2682,13 @@ static enum mapistore_error mapistore_python_message_set_read_flag(void *message
 	enum mapistore_error		retval;
 	struct mapistore_python_object	*pyobj;
 	PyObject			*message;
+	PyObject                        *proplist;
 	PyObject			*pres;
 	PyObject			*key;
 	PyObject			*val;
 	PyObject			*pydict;
+	uint32_t                        msg_flags;
+	int                             ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -2701,24 +2704,70 @@ static enum mapistore_error mapistore_python_message_set_read_flag(void *message
 	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-	/* Set PidTagMessageFlags */
-	pydict = PyDict_New();
-	if (pydict == NULL) {
-		DEBUG(0, ("[ERR][%s]: Unable to initialize Python Dictionary\n", __location__));
+	/* Retrieve the message dictionary and read PidTagMessageFlags */
+	proplist = PyList_New(0);
+	if (proplist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python list\n",
+			  pyobj->name, __location__));
+		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
+	pres = PyObject_CallMethod(message, "get_properties", "O", proplist);
+	Py_DECREF(proplist);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: \n",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+	if (PyDict_Check(pres) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, pres->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
 
 	key = PyString_FromString("PidTagMessageFlags");
-	val = PyLong_FromLong((uint32_t)flags);
-	if (PyDict_SetItem(pydict, key, val) == -1) {
+	val = PyDict_GetItem(pres, key);
+	if (val == NULL) {
+		/* If the property is missing, set all flags to zero */
+		msg_flags = 0x0;
+	} else {
+		msg_flags = PyLong_AsUnsignedLong(val);
+	}
+	Py_DECREF(pres);
+
+	/* Update read flag */
+	if (flags & 0x4) {
+		/* Clear read flag */
+		msg_flags &= 0xFFFE;
+	} else {
+		/* Set read flag  */
+		msg_flags |= 0x1;
+	}
+        /* TODO: Handle read receipts */
+
+	/* Update and commit message properties */
+	pydict = PyDict_New();
+	if (pydict == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python Dictionary\n",
+			  __location__));
+		PyErr_Print();
+		Py_DECREF(key);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	val = PyLong_FromLong(msg_flags);
+	ret = PyDict_SetItem(pydict, key, val);
+	Py_DECREF(val);
+	Py_DECREF(key);
+	if (ret == -1) {
 		DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
 			  __location__));
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-
-	/* Call set_properties function */
 	pres = PyObject_CallMethod(message, "update", "O", pydict);
 	Py_DECREF(pydict);
 	if (pres == NULL) {
@@ -2727,8 +2776,6 @@ static enum mapistore_error mapistore_python_message_set_read_flag(void *message
 		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
-
-	/* TODO Send Receipt */
 
 	retval = PyLong_AsLong(pres);
 	Py_DECREF(pres);

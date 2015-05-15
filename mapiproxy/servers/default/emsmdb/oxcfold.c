@@ -426,16 +426,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 	ret = emsmdbp_object_get_fid_by_name(emsmdbp_ctx, parent_object, request->FolderName.lpszW, &fid);
 	if (ret == MAPISTORE_SUCCESS) {
-		if (request->ulFlags != OPEN_IF_EXISTS) {
-			mapi_repl->error_code = MAPI_E_COLLISION;
+		if (oxosfld_is_special_folder(emsmdbp_ctx, fid) || request->ulFlags == OPEN_IF_EXISTS) {
+			response->IsExistingFolder = true;
+		} else {
 			if (emsmdbp_is_mapistore(parent_object)) {
 				OC_DEBUG(5, "Folder %s exists in MAPIStore", request->FolderName.lpszW);
 			} else {
 				OC_DEBUG(5, "Folder %s exists in OpenChangeDB", request->FolderName.lpszW);
 			}
+			mapi_repl->error_code = MAPI_E_COLLISION;
 			goto end;
 		}
-		response->IsExistingFolder = true;
 	}
 
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
@@ -569,11 +570,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 	ret = emsmdbp_folder_delete(emsmdbp_ctx, handle_object, mapi_req->u.mapi_DeleteFolder.FolderId, mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 	if (ret == MAPISTORE_ERR_EXIST) {
 		mapi_repl->u.mapi_DeleteFolder.PartialCompletion = true;
-	}
-	else if (ret != MAPISTORE_SUCCESS) {
-		OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (0x%x)",
-			  mapi_req->u.mapi_DeleteFolder.FolderId, retval);
-		retval = MAPI_E_NOT_FOUND;
+	} else if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (%s)",
+			 mapi_req->u.mapi_DeleteFolder.FolderId, mapistore_errstr(ret));
+		if (ret == MAPISTORE_ERR_DENIED) {
+			retval = MAPI_E_NO_ACCESS;
+		} else {
+			retval = MAPI_E_NOT_FOUND;
+		}
 	}
 	mapi_repl->error_code = retval;
 

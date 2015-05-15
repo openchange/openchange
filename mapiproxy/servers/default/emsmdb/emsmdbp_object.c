@@ -1534,9 +1534,16 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
+	/* Check if it is a special folder */
+	if (oxosfld_is_special_folder(emsmdbp_ctx, fid)) {
+		OC_DEBUG(1, "Attempt to delete special folder: 0x%"PRIx64, fid);
+		ret = MAPISTORE_ERR_DENIED;
+		goto end;
+	}
+
 	mailboxstore = emsmdbp_is_mailboxstore(parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {	/* fid is not a mapistore root */
-		OC_DEBUG(0, "Deleting mapistore folder\n");
+		OC_DEBUG(3, "Deleting mapistore folder\n");
 		/* handled by mapistore */
 		context_id = emsmdbp_get_contextID(parent_folder);
 

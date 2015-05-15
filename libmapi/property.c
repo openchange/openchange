@@ -1896,6 +1896,92 @@ _PUBLIC_ struct OneOffEntryId *get_OneOffEntryId(TALLOC_CTX *mem_ctx, struct Bin
 }
 
 /**
+   \details Retrieve a PersistData structure from a binary blob. This structure is meant
+   to contain the entryID of a special folder and other data related to a special folder.
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw PersistData data
+
+   \return Allocated PersistData structure on success, otherwise NULL
+
+   \note Developers must free the allocated PersistData when finished.
+ */
+_PUBLIC_ struct PersistData *get_PersistData(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct PersistData	*PersistData = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	PersistData = talloc_zero(mem_ctx, struct PersistData);
+	if (!PersistData) return NULL;
+	ndr_err_code = ndr_pull_PersistData(ndr, NDR_SCALARS, PersistData);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(PersistData);
+		return NULL;
+	}
+
+	return PersistData;
+}
+
+/**
+   \details Retrieve a PersistData structure array from a binary blob. This structure is meant
+   to contain entryIDs from special folders and other data related to special folders.
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with a raw PersistData array
+
+   \return Allocated PersistDataArray on success, otherwise NULL
+
+   \note Developers must free the allocated PersistDataArray when finished.
+ */
+_PUBLIC_ struct PersistDataArray *get_PersistDataArray(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct PersistDataArray	*PersistDataArray = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	PersistDataArray = talloc_zero(mem_ctx, struct PersistDataArray);
+	if (!PersistDataArray) return NULL;
+	ndr_err_code = ndr_pull_PersistDataArray(ndr, NDR_SCALARS|NDR_BUFFERS, PersistDataArray);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(PersistDataArray);
+		return NULL;
+	}
+
+	return PersistDataArray;
+}
+
+/**
    \details Return the effective value used in a TypedString
    structure.
 

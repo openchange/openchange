@@ -31,4 +31,4 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 [//]: # (unreleased compare link should be changed to the latest release)
 [//]: # (the current hash was master when this CHANGES.md file was created)
-[unreleased]: https://github.com/openchange/openchange/compare/0460ace70d03de001de11d8fb54f0571128b0b2f...HEAD
+[unreleased]: https://github.com/openchange/openchange/compare/4c18a0039344c93e49faf07cc52a14cec9cee3c7...HEAD

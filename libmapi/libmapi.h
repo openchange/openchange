@@ -129,6 +129,7 @@ enum MAPISTATUS		GetLoadparmContext(struct mapi_context *, struct loadparm_conte
 /* The following public definitions come from libmapi/simple_mapi.c */
 enum MAPISTATUS		GetDefaultPublicFolder(mapi_object_t *, uint64_t *, const uint32_t);
 enum MAPISTATUS		GetDefaultFolder(mapi_object_t *, uint64_t *, const uint32_t);
+enum MAPISTATUS		GetSpecialAdditionalFolder(mapi_object_t *, uint64_t *, const uint32_t);
 bool			IsMailboxFolder(mapi_object_t *, uint64_t, uint32_t *);
 enum MAPISTATUS		GetFolderItemsCount(mapi_object_t *, uint32_t *, uint32_t *);
 enum MAPISTATUS		AddUserPermission(mapi_object_t *, const char *, enum ACLRIGHTS);
@@ -287,6 +288,8 @@ struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);
 struct FolderEntryId	*get_FolderEntryId(TALLOC_CTX *, struct Binary_r *);
 struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *, struct Binary_r *);
 struct OneOffEntryId	*get_OneOffEntryId(TALLOC_CTX *, struct Binary_r *);
+struct PersistData      *get_PersistData(TALLOC_CTX *, struct Binary_r *);
+struct PersistDataArray *get_PersistDataArray(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
 bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);

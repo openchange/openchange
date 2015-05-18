@@ -520,14 +520,11 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				inbox_fid = current_fid;
 			}
 		} else {
-			mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
-			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, username, &current_cn);
 			current_name = folder_names[i];
 
 			switch (i) {
 			case EMSMDBP_INBOX:
 				current_entry = main_entries[MAPISTORE_MAIL_ROLE];
-				inbox_fid = current_fid;
 				break;
 			case EMSMDBP_OUTBOX:
 				current_entry = main_entries[MAPISTORE_OUTBOX_ROLE];
@@ -548,19 +545,58 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 				mapistore_url = current_entry->url;
 			}
-			else {
-				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+
+			/* According to [MS-OXOSFLD] Section 3.1.4.1, the special folder must be reused
+			   if one already exists by that name */
+			ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid);
+			if (ret == MAPI_E_NOT_FOUND) {
+				retval = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
+				if (retval != MAPISTORE_SUCCESS) {
+					OC_DEBUG(1, "Error getting new folder id: %s", mapistore_errstr(retval));
+					goto error;
+				}
+				ret = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, username, &current_cn);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error getting new change number: %s", mapi_get_errstr(ret));
+					goto error;
+				}
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
+				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error creating OpenChangeDB folder: %s", mapi_get_errstr(ret));
+					goto error;
+				}
+			} else if (ret == MAPI_E_SUCCESS) {
+				current_fid = found_fid;
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
+				ret = openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, username, current_fid, mapistore_url);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error setting new MAPIStore URI %s: %s", mapistore_url, mapi_get_errstr(ret));
+					goto error;
+				}
+				ret = openchangedb_set_system_idx(emsmdbp_ctx->oc_ctx, username, current_fid, i);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error setting new system index %d: %s", i, mapi_get_errstr(ret));
+					goto error;
+				}
+				/* change number is updated by set_folder_properties */
+			} else {
+				OC_DEBUG(1, "Error trying to get fid by name (%s): %s", current_name, mapi_get_errstr(ret));
+				goto error;
 			}
 
-			/* Ensure the name is unique */
-			base_name = current_name;
-			j = 1;
-			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
-				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
-				j++;
-			}
-
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			property_row.lpProps[0].value.lpszW = current_name;
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
@@ -571,6 +607,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			if (i == EMSMDBP_INBOX) {
+				inbox_fid = current_fid;
 				/* set INBOX as receive folder for "All", "IPM", "Report.IPM" */
 				openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, username, "All", inbox_fid);
 				openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, username, "IPM", inbox_fid);
@@ -595,9 +632,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.cValues = 2;
 			property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;
 
-			mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
-			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, username, &current_cn);
-
 			current_name = current_folder->name;
 			current_entry = main_entries[current_folder->role];
 			if (current_entry) {
@@ -606,21 +640,60 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 				mapistore_url = current_entry->url;
 			}
-			else {
-				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
-			}
 
-			/* Ensure the name is unique */
-			base_name = current_name;
-			j = 1;
-			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
-				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
-				j++;
+			/* According to [MS-OXOSFLD] Section 3.1.4.1, the special folder must be reused
+			   if one already exists by that name */
+			ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid);
+			if (ret == MAPI_E_NOT_FOUND) {
+				retval = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
+				if (retval != MAPISTORE_SUCCESS) {
+					OC_DEBUG(1, "Error getting new folder id: %s", mapistore_errstr(retval));
+					goto error;
+				}
+				ret = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, username, &current_cn);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error getting new change number: %s", mapi_get_errstr(ret));
+					goto error;
+				}
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
+				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error creating OpenChangeDB folder: %s", mapi_get_errstr(ret));
+					goto error;
+				}
+			} else if (ret == MAPI_E_SUCCESS) {
+				current_fid = found_fid;
+				if (!current_entry) {
+					mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+					if (!mapistore_url) {
+						OC_DEBUG(1, "Out-of-memory when allocating a MAPIStore URL");
+						goto error;
+					}
+				}
+				ret = openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, username, current_fid, mapistore_url);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error setting new MAPIStore URI %s: %s", mapistore_url, mapi_get_errstr(ret));
+					goto error;
+				}
+				ret = openchangedb_set_system_idx(emsmdbp_ctx->oc_ctx, username, current_fid, i);
+				if (ret != MAPI_E_SUCCESS) {
+					OC_DEBUG(1, "Error setting new system index %d: %s", i, mapi_get_errstr(ret));
+					goto error;
+				}
+				/* change number is updated by set_folder_properties */
+			} else {
+				OC_DEBUG(1, "Error trying to get fid by name (%s): %s", current_name, mapi_get_errstr(ret));
+				goto error;
 			}
 
 			property_row.lpProps[0].value.lpszW = current_name;
 			property_row.lpProps[1].value.lpszW = container_classes[current_folder->role];
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
@@ -689,6 +762,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
 					current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
 					j++;
+					OC_DEBUG(5, "Secondary entry collides in its name (%s) with 0x%"PRIx64, base_name, found_fid);
 				}
 				property_row.lpProps[0].value.lpszW = current_name;
 

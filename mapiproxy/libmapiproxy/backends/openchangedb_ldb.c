@@ -356,7 +356,7 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	int			ret;
 	struct ldb_context	*ldb_ctx = self->data;
 
-	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+	mem_ctx = talloc_named(NULL, 0, "set_mapistoreURI");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
@@ -1700,6 +1700,36 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
+				      const char *username, uint64_t fid,
+				      int system_idx)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+	struct ldb_context	*ldb_ctx = self->data;
+
+	mem_ctx = talloc_named(NULL, 0, "set_system_idx");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "SystemIdx", "%d", system_idx);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static enum MAPISTATUS transaction_start(struct openchangedb_context *self)
 {
 	ldb_transaction_start(self->data);
@@ -2409,6 +2439,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_folder_count = get_folder_count;
 	oc_ctx->get_message_count = get_message_count;
 	oc_ctx->get_system_idx = get_system_idx;
+	oc_ctx->set_system_idx = set_system_idx;
 	oc_ctx->get_table_property = get_table_property;
 	oc_ctx->get_fid_by_name = get_fid_by_name;
 	oc_ctx->get_mid_by_subject = get_mid_by_subject;

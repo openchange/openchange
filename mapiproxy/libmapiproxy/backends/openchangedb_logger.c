@@ -558,6 +558,23 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
 					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_system_idx(priv_data->backend, username, fid, system_idx_p);
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], system_idx=[%d]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 retval == MAPI_E_SUCCESS ? *system_idx_p : -1);
+
+	return retval;
+}
+
+static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
+				      const char *username, uint64_t fid,
+				      int system_idx)
+{
+	enum MAPISTATUS retval;
+	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
+
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s] system_idx=[%d]",
+		 priv_data->log_prefix, username, system_idx);
+	retval = priv_data->backend->set_system_idx(priv_data->backend, username, fid, system_idx);
 	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
 					priv_data->log_prefix, mapi_get_errstr(retval));
 
@@ -839,6 +856,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_logger_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_folder_count = get_folder_count;
 	oc_ctx->get_message_count = get_message_count;
 	oc_ctx->get_system_idx = get_system_idx;
+	oc_ctx->set_system_idx = set_system_idx;
 	oc_ctx->get_table_property = get_table_property;
 	oc_ctx->get_fid_by_name = get_fid_by_name;
 	oc_ctx->get_mid_by_subject = get_mid_by_subject;

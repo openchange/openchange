@@ -69,6 +69,10 @@ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *, int, uint16_t, c
 enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *, int, uint16_t, const struct ExceptionInfo *, struct ExtendedException *);
 enum ndr_err_code ndr_push_AppointmentRecurrencePattern(struct ndr_push *, int, const struct AppointmentRecurrencePattern *);
 enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull *, int, struct AppointmentRecurrencePattern *);
+enum ndr_err_code ndr_push_PersistDataArray(struct ndr_push *ndr, int ndr_flags, const struct PersistDataArray *r);
+enum ndr_err_code ndr_pull_PersistDataArray(struct ndr_pull *ndr, int ndr_flags, struct PersistDataArray *r);
+enum ndr_err_code ndr_push_PersistElementArray(struct ndr_push *ndr, int ndr_flags, const struct PersistElementArray *r);
+enum ndr_err_code ndr_pull_PersistElementArray(struct ndr_pull *ndr, int ndr_flags, struct PersistElementArray *r);
 
 /* The following private definitions come from libmapi/nspi.c */
 int nspi_disconnect_dtor(void *);

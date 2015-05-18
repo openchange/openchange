@@ -3,7 +3,9 @@
 
    OpenChange Project
 
-   copyright (C) Kamen Mazdrashki 2014
+   Copyright (C) Kamen Mazdrashki 2014
+   Copyright (C) Javier Amor García 2015
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +23,8 @@
 
 #include "testsuite.h"
 #include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
+#include <gen_ndr/ndr_exchange.h>
 
 /* Global test variables */
 static TALLOC_CTX *mem_ctx;
@@ -150,7 +154,7 @@ START_TEST (test_mapi_copy_spropvalues) {
 
 } END_TEST
 
-START_TEST (test_mapi_get_AppointmentRecurrencePattern) {
+START_TEST (test_get_AppointmentRecurrencePattern) {
 	int i;
 	int nCases = 5;
 	struct Binary_r cases[nCases];
@@ -185,6 +189,87 @@ START_TEST (test_mapi_get_AppointmentRecurrencePattern) {
 		res = get_AppointmentRecurrencePattern(mem_ctx, &cases[i]);
 		ck_assert(res != NULL);
 	}
+} END_TEST
+
+START_TEST (test_get_PersistDataArray) {
+	struct Binary_r		bin;
+	int			i;
+	struct PersistDataArray *res;
+	/* Outlook 2010 standard case */
+	const uint8_t		case_0[] =
+		{0x1, 0x80, 0x32, 0x0, 0x1, 0x0, 0x2e, 0x0, 0x0, 0x0, 0x0, 0x0, 0x71, 0x83, 0xdc,
+		 0x72, 0x83, 0x71, 0x28, 0x45, 0xb9, 0xd1, 0x7, 0x13, 0xca, 0xd2, 0x4b, 0xf4,
+		 0x1, 0x0, 0x99, 0xb0, 0x3e, 0xa2, 0xa1, 0x66, 0xf9, 0x48, 0xba, 0x88, 0xdc,
+		 0x7a, 0x58, 0x87, 0x1a, 0xd8, 0x0, 0x0, 0x0, 0x1, 0x19, 0xdc, 0x0, 0x0, 0x6,
+		 0x80, 0x32, 0x0, 0x1, 0x0, 0x2e, 0x0, 0x0, 0x0, 0x0, 0x0, 0x71, 0x83, 0xdc,
+		 0x72, 0x83, 0x71, 0x28, 0x45, 0xb9, 0xd1, 0x7, 0x13, 0xca, 0xd2, 0x4b, 0xf4,
+		 0x1, 0x0, 0x99, 0xb0, 0x3e, 0xa2, 0xa1, 0x66, 0xf9, 0x48, 0xba, 0x88, 0xdc,
+		 0x7a, 0x58, 0x87, 0x1a, 0xd8, 0x0, 0x0, 0x0, 0x1, 0x19, 0xdd, 0x0, 0x0, 0x7,
+		 0x80, 0x32, 0x0, 0x1, 0x0, 0x2e, 0x0, 0x0, 0x0, 0x0, 0x0, 0x71, 0x83, 0xdc,
+		 0x72, 0x83, 0x71, 0x28, 0x45, 0xb9, 0xd1, 0x7, 0x13, 0xca, 0xd2, 0x4b, 0xf4,
+		 0x1, 0x0, 0x99, 0xb0, 0x3e, 0xa2, 0xa1, 0x66, 0xf9, 0x48, 0xba, 0x88, 0xdc,
+		 0x7a, 0x58, 0x87, 0x1a, 0xd8, 0x0, 0x0, 0x0, 0x1, 0x19, 0xde, 0x0, 0x0, 0x8,
+		 0x80, 0x32, 0x0, 0x1, 0x0, 0x2e, 0x0, 0x0, 0x0, 0x0, 0x0, 0x71, 0x83, 0xdc,
+		 0x72, 0x83, 0x71, 0x28,0x45, 0xb9, 0xd1, 0x7, 0x13, 0xca, 0xd2, 0x4b, 0xf4,
+		 0x1, 0x0, 0x99, 0xb0, 0x3e, 0xa2, 0xa1, 0x66, 0xf9, 0x48, 0xba, 0x88, 0xdc,
+		 0x7a, 0x58, 0x87, 0x1a, 0xd8, 0x0, 0x0, 0x0, 0x1, 0x19, 0xbc, 0x0, 0x0, 0x0,
+		 0x0, 0x0, 0x0};
+	/* Empty PersistData */
+	const uint8_t		 case_1[] =
+		{0x0, 0x0, 0x0, 0x0};
+	/* PersistElement Header and Sentinel and no PersistDataSentinel */
+	const uint8_t		 case_2[] =
+		{0x1, 0x80, 0x3e, 0x0, 0x2, 0x0, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1, 0x0, 0x2e, 0x0,
+		 0x0, 0x0, 0x0, 0x0, 0x71, 0x83, 0xdc, 0x72, 0x83, 0x71, 0x28, 0x45, 0xb9, 0xd1,
+		 0x7, 0x13, 0xca, 0xd2, 0x4b, 0xf4, 0x1, 0x0, 0x99, 0xb0, 0x3e, 0xa2, 0xa1, 0x66,
+		 0xf9, 0x48, 0xba, 0x88, 0xdc, 0x7a, 0x58, 0x87, 0x1a, 0xd8, 0x0, 0x0, 0x0, 0x1,
+		 0x19, 0xdc, 0x0, 0x0,
+		 0x0, 0x0, 0x0, 0x0};
+	const uint8_t		 *cases[] = {case_0, case_1, case_2};
+	const size_t		 cases_size[] = { sizeof(case_0)/sizeof(uint8_t),
+						  sizeof(case_1)/sizeof(uint8_t),
+						  sizeof(case_2)/sizeof(uint8_t) };
+	const uint32_t		 cases_cValues[] = {5, 1, 1};
+	const size_t		 CASES_NUM = sizeof(cases)/sizeof(uint8_t*);
+
+	for (i = 0; i < CASES_NUM; i++) {
+		bin.cb = cases_size[i];
+		bin.lpb = (uint8_t *) cases[i];
+		res = get_PersistDataArray(mem_ctx, &bin);
+		ck_assert(res != NULL);
+		ck_assert_int_eq(res->cValues, cases_cValues[i]);
+	}
+
+} END_TEST
+
+START_TEST (test_push_PersistDataArray) {
+
+	struct ndr_push		*ndr;
+	enum ndr_err_code	ndr_err_code;
+	struct PersistDataArray persist_data_array;
+	struct PersistElement	*persist_element;
+	const uint8_t		data[4] = { 0x0, 0x1, 0x2, 0x3 };
+
+	persist_data_array.cValues = 1;
+	persist_data_array.lpPersistData = talloc_zero_array(mem_ctx, struct PersistData, 1);
+	persist_data_array.lpPersistData[0].PersistID = RSF_PID_RSS_SUBSCRIPTION;
+	persist_data_array.lpPersistData[0].DataElementsSize = 8;
+	persist_data_array.lpPersistData[0].DataElements.cValues = 1;
+	persist_data_array.lpPersistData[0].DataElements.lpPersistElement = talloc_zero_array(mem_ctx, struct PersistElement, 1);
+	persist_element = persist_data_array.lpPersistData[0].DataElements.lpPersistElement;
+	persist_element->ElementID = RSF_ELID_ENTRYID;
+	persist_element->ElementDataSize = 4;
+	persist_element->ElementData.rsf_elid_entryid.length = 4;
+	persist_element->ElementData.rsf_elid_entryid.data = talloc_zero_array(mem_ctx, uint8_t, 4);
+	persist_element->ElementData.rsf_elid_entryid.data = (uint8_t *) data;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr->offset = 0;
+
+	ndr_err_code = ndr_push_PersistDataArray(ndr, NDR_SCALARS|NDR_BUFFERS, &persist_data_array);
+	ck_assert(ndr_err_code == NDR_ERR_SUCCESS);
+	ck_assert_int_eq(ndr->offset, 12);
+
 } END_TEST
 
 // ^ unit tests ---------------------------------------------------------------
@@ -223,7 +308,7 @@ static void _make_test_srow(TALLOC_CTX *mem_ctx)
 
 static void tc_mapi_copy_spropvalues_setup(void)
 {
-	mem_ctx = talloc_named(NULL, 0, "libmapi_property_suite");
+	mem_ctx = talloc_new(talloc_autofree_context());
 	test_srow = talloc_zero(mem_ctx, struct SRow);
 
 	_make_test_srow(mem_ctx);
@@ -234,12 +319,22 @@ static void tc_mapi_copy_spropvalues_teardown(void)
 	talloc_free(mem_ctx);
 }
 
-static void tc_mapi_get_AppointmentRecurrencePattern_setup(void)
+static void tc_get_AppointmentRecurrencePattern_setup(void)
 {
-	mem_ctx = talloc_named(NULL, 0, "libmapi_property_get_AppointmentRecurrencePattern");
+	mem_ctx = talloc_new(talloc_autofree_context());
 }
 
-static void tc_mapi_get_AppointmentRecurrencePattern_teardown(void)
+static void tc_get_AppointmentRecurrencePattern_teardown(void)
+{
+	talloc_free(mem_ctx);
+}
+
+static void get_PersistDataArray_setup(void)
+{
+	mem_ctx = talloc_new(talloc_autofree_context());
+}
+
+static void get_PersistDataArray_teardown(void)
 {
 	talloc_free(mem_ctx);
 }
@@ -254,9 +349,16 @@ Suite *libmapi_property_suite(void)
 	tcase_add_test(tc, test_mapi_copy_spropvalues);
 	suite_add_tcase(s, tc);
 
-	tc = tcase_create("mapi_get_AppointmentRecurrencePattern");
-	tcase_add_checked_fixture(tc, tc_mapi_get_AppointmentRecurrencePattern_setup, tc_mapi_get_AppointmentRecurrencePattern_teardown);
-	tcase_add_test(tc, test_mapi_get_AppointmentRecurrencePattern);
+	tc = tcase_create("get_AppointmentRecurrencePattern");
+	tcase_add_checked_fixture(tc, tc_get_AppointmentRecurrencePattern_setup,
+				  tc_get_AppointmentRecurrencePattern_teardown);
+	tcase_add_test(tc, test_get_AppointmentRecurrencePattern);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("get_PersistDataArray");
+	tcase_add_unchecked_fixture(tc, get_PersistDataArray_setup, get_PersistDataArray_teardown);
+	tcase_add_test(tc, test_get_PersistDataArray);
+	tcase_add_test(tc, test_push_PersistDataArray);
 	suite_add_tcase(s, tc);
 
 	return s;

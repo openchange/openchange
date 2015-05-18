@@ -891,6 +891,7 @@ libmapistore:	mapiproxy/libmapistore/gen_ndr/mapistore_notification.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)		\
 		setup/mapistore/mapistore_namedprops.ldif			\
+		python/openchange/migration/mapistore_namedprops.py		\
 		$(OC_MAPISTORE)							\
 		$(MAPISTORE_TEST)
 
@@ -1135,6 +1136,7 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
 						mapiproxy/servers/default/emsmdb/oxomsg.po			\
+						mapiproxy/servers/default/emsmdb/oxosfld.po			\
 						mapiproxy/servers/default/emsmdb/oxorule.po			\
 						mapiproxy/servers/default/emsmdb/oxcperm.po
 	@echo "Linking $@"
@@ -1496,6 +1498,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcfold.o		\
 		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxomsg.o		\
+		utils/mapitest/modules/module_oxosfld.o		\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
 		utils/mapitest/modules/module_oxctable.o	\
@@ -1524,6 +1527,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxcfold.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxomsg.c		\
+	utils/mapitest/modules/module_oxosfld.c		\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\
@@ -1661,12 +1665,15 @@ pythonscriptdir = python
 
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
-python-install::
+python-install:: python/openchange/migration/mapistore_namedprops.py
 	@echo "Installing Python modules"
 	@$(foreach MODULE, $(PYTHON_MODULES), \
 		$(INSTALL) -d $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 		$(INSTALL) -m 0644 $(pythonscriptdir)/$(MODULE) $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 	)
+
+python/openchange/migration/mapistore_namedprops.py: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	libmapi/conf/mparse.pl --parser=mapistore_namedprops_python --outputdir=python/openchange/migration/ libmapi/conf/mapi-named-properties
 
 python-uninstall::
 	rm -rf $(DESTDIR)$(pythondir)/openchange

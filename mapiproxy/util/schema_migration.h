@@ -24,8 +24,8 @@
 
 #include <talloc.h>
 
-int migrate_openchangedb_schema(TALLOC_CTX *, const char *);
-int migrate_indexing_schema(TALLOC_CTX *, const char *);
-int migrate_named_properties_schema(TALLOC_CTX *, const char *);
+int migrate_openchangedb_schema(const char *);
+int migrate_indexing_schema(const char *);
+int migrate_named_properties_schema(const char *);
 
 #endif /* __SCHEMA_MIGRATION_H__ */

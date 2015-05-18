@@ -827,10 +827,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 		OC_DEBUG(3, "Creating schema for indexing on mysql %s\n",
 			  connection_string);
 
-		schema_created_ret = migrate_indexing_schema(mstore_ctx, connection_string);
+		schema_created_ret = migrate_indexing_schema(connection_string);
 		if (schema_created_ret) {
 			OC_DEBUG(1, "Failed indexing schema creation using migration framework: %d\n",
-                                  schema_created_ret);
+				 schema_created_ret);
 			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 		}
 	}

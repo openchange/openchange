@@ -2048,6 +2048,37 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	return retval;
 }
 
+static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
+				      const char *username, uint64_t fid,
+				      int system_idx)
+{
+	TALLOC_CTX	*mem_ctx;
+	MYSQL		*conn;
+	enum MAPISTATUS	retval;
+	char		*sql;
+
+	mem_ctx = talloc_named(NULL, 0, "set_system_idx");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	conn = self->data;
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
+
+	sql = talloc_asprintf(mem_ctx,
+		"UPDATE folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"SET f.SystemIdx = %d "
+		"WHERE f.folder_id = %"PRIu64,
+		_sql(mem_ctx, username), system_idx, fid);
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	retval = status(execute_query(conn, sql));
+	if (mysql_affected_rows(conn) == 0) {
+		retval = MAPI_E_NOT_FOUND;
+	}
+
+	talloc_free(mem_ctx);
+	return retval;
+}
+
 static enum MAPISTATUS transaction_start(struct openchangedb_context *self)
 {
 	MYSQL	*conn;
@@ -3727,6 +3758,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_folder_count = get_folder_count;
 	oc_ctx->get_message_count = get_message_count;
 	oc_ctx->get_system_idx = get_system_idx;
+	oc_ctx->set_system_idx = set_system_idx;
 	oc_ctx->get_table_property = get_table_property;
 	oc_ctx->get_fid_by_name = get_fid_by_name;
 	oc_ctx->get_mid_by_subject = get_mid_by_subject;
@@ -3771,7 +3803,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	if (!table_exists(oc_ctx->data, "folders")) {
 		OC_DEBUG(3, "Creating schema for openchangedb on mysql %s\n",
 			  connection_string);
-		schema_created_ret = migrate_openchangedb_schema(mem_ctx, connection_string);
+		schema_created_ret = migrate_openchangedb_schema(connection_string);
 		if (schema_created_ret) {
 			OC_DEBUG(1, "Failed openchangedb schema creation using migration framework: %d\n",
 				  schema_created_ret);

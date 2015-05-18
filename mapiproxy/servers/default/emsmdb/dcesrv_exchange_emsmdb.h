@@ -476,6 +476,9 @@ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *, struct emsmd
 enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSetLocalReplicaMidsetDeleted(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
+/* definition from oxosfld.c */
+bool oxosfld_is_special_folder(struct emsmdbp_context *, uint64_t);
+
 __END_DECLS
 
 #endif	/* __DCESRV_EXCHANGE_EMSMDB_H */

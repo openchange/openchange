@@ -85,7 +85,7 @@ end:
 
    \return 0 on success, 1 on failing called to Python code, -1 on Out-Of-Memory errors
  */
-int migrate_openchangedb_schema(TALLOC_CTX *mem_ctx, const char *connection_string)
+int migrate_openchangedb_schema(const char *connection_string)
 {
         return migrate_schema(connection_string, "OpenChangeDBWithMysqlBackend");
 }
@@ -100,7 +100,7 @@ int migrate_openchangedb_schema(TALLOC_CTX *mem_ctx, const char *connection_stri
 
    \return 0 on success, 1 on failing called to Python code, -1 on Out-Of-Memory errors
  */
-int migrate_indexing_schema(TALLOC_CTX *mem_ctx, const char *connection_string)
+int migrate_indexing_schema(const char *connection_string)
 {
         return migrate_schema(connection_string, "IndexingWithMysqlBackend");
 }
@@ -115,7 +115,7 @@ int migrate_indexing_schema(TALLOC_CTX *mem_ctx, const char *connection_string)
 
    \return 0 on success, 1 on failing called to Python code, -1 on Out-Of-Memory errors
  */
-int migrate_named_properties_schema(TALLOC_CTX *mem_ctx, const char *connection_string)
+int migrate_named_properties_schema(const char *connection_string)
 {
         return migrate_schema(connection_string, "NamedPropertiesWithMysqlBackend");
 }

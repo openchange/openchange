@@ -579,7 +579,7 @@ def get_group_dn(ldb, domain_dn, org_name, groupname):
             if group_dn:
                 return group_dn
         except LdbError, ldb_error:
-            code, msg =ldb_error.args
+            code, msg = ldb_error.args
             # error 32. "no such base dn", is ignored to be able to fallback to zserver DN style
             if code != 32:
                 raise ldb_error
@@ -739,6 +739,22 @@ msExchRecipientDisplayType: 0
         print "[!] User '%s' not found" % username
 
 
+def delete_user(names, lp, creds, username=None):
+    db = get_local_samdb(names, lp, creds)
+    basedn = "CN=Users,%s" % names.domaindn
+    user_dn = get_user_dn(db, basedn, username)
+    if not user_dn:
+        print "[!] User '%s' not found" % username
+        return
+
+    to_delete = ['mailNickName', 'homeMDB', 'homeMTA',' legacyExchangeDN',
+                 'proxyAddresses', 'msExchUserAccountControl',
+                 'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
+    _delete_attrs_ignore_no_existent(db, user_dn, to_delete)
+
+    print "[+] Removed all OpenChange LDAP attributes from account %s " % username
+
+
 def accountcontrol(names, lp, creds, username, value=0):
     """enable/disable an OpenChange user account.
 
@@ -837,17 +853,30 @@ def delete_group(names, lp, creds, groupname):
     group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
     if not group_dn:
         raise Exception("Group not found " + group_dn)
-    ldif = """
-dn: %(group_dn)s
+    to_delete = ['mailNickname', 'legacyExchangeDN', 'proxyAddresses',
+                 'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
+    _delete_attrs_ignore_no_existent(db, group_dn, to_delete)
+
+    print "[+] Removed all OpenChange LDAP attributes from group account %s " % groupname
+
+
+def _delete_attrs_ignore_no_existent(db, dn, to_delete):
+    ldif_template = """
+dn: %(dn)s
 changetype: modify
-delete: mailNickName
-delete: legacyExchangeDN
-delete: proxyAddresses
-delete: msExchRecipientTypeDetails
-delete: msExchRecipientDisplayType
+delete: %(attr)s
 """
-    ldif = ldif % {"group_dn": group_dn}
-    db.modify_ldif(ldif)
+    for attr in to_delete:
+        ldif_value = ldif_template % {"dn": dn, "attr": attr}
+        try:
+            db.modify_ldif(ldif_value)
+        except LdbError as err:
+            (code, msg) = err
+            if code == ldb.ERR_NO_SUCH_ATTRIBUTE:
+                # no existent attribute. Ignore
+                pass
+            else:
+                raise err
 
 
 def update_group(names, lp, creds, groupname):

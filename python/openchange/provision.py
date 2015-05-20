@@ -187,7 +187,7 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     return names
 
 
-def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False):
+def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False, allow_existent=False):
     """Provision/modify schema using LDIF specified file
     :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
@@ -213,34 +213,41 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
             "HOSTNAME": names.hostname
         }
         if modify_mode:
-            setup_modify_ldif(sam_db, setup_path(ldif), ldif_params)
+            ldif_apply_method = sam_db.modify_ldif
         else:
-            full_path = setup_path(ldif)
-            ldif_data = read_and_sub_file(full_path, ldif_params)
-            # schemaIDGUID can raise error if not match what is expected by schema master,
-            #  if not present it will be automatically filled by the schema master
-            ldif_data = re.sub("^schemaIDGUID:", '#schemaIDGUID:', ldif_data, flags=re.M)
+            ldif_apply_method = sam_db.add_ldif
 
-            # we add elements one by one only to control better the exact position of the error
-            ldif_elements = re.split("\n\n+", ldif_data)
-            elements_to_add = []
-            for element in ldif_elements:
-                if not element:
+        full_path = setup_path(ldif)
+        ldif_data = read_and_sub_file(full_path, ldif_params)
+        # schemaIDGUID can raise error if not match what is expected by schema master,
+        #  if not present it will be automatically filled by the schema master
+        ldif_data = re.sub("^schemaIDGUID:", '#schemaIDGUID:', ldif_data, flags=re.M)
+
+        # we add elements one by one only to control better the exact position of the error
+        ldif_elements = re.split("\n\n+", ldif_data)
+        elements_to_add = []
+        for element in ldif_elements:
+            if not element:
+                continue
+            # this match is to assure we have a legit element
+            match = re.search('^\s*dn:\s+(.*)$', element, flags=re.M)
+            if match:
+                dn = match.group(1)
+                if allow_existent and exists_dn(sam_db, dn):
+                    # TODO: check that the existent element has correct values
                     continue
-                # this match is to assure we have a legit element
-                match = re.search('^\s*dn:\s+(.*)$', element, flags=re.M)
-                if match:
-                    elements_to_add.append(element)
 
-            if not elements_to_add:
-                raise Exception('No elements to add found in ' + full_path)
+                elements_to_add.append(element)
 
-            for el in elements_to_add:
-                try:
-                    sam_db.add_ldif(el, ['relax:0'])
-                except Exception as ex:
-                    print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
-                    raise
+        if not elements_to_add:
+            print 'No elements to add found in ' + full_path
+
+        for el in elements_to_add:
+            try:
+                ldif_apply_method(el, ['relax:0'])
+            except Exception as ex:
+                print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
+                raise
     except:
         sam_db.transaction_cancel()
         raise
@@ -571,6 +578,20 @@ def _get_element_dn(ldb, basedn, ldb_filter):
         raise "More than one result for search %s with base %s" % (ldb_filter, basedn)
 
     return dn
+
+
+def exists_dn(sam_db, dn):
+    try:
+        ret = sam_db.search(base=dn,
+                            scope=ldb.SCOPE_BASE,
+                            attrs=['dn'])
+        return len(ret) > 0
+    except LdbError as ex:
+        code, leftover = ex
+        if code == 32:
+            return False
+        else:
+            raise ex
 
 
 def get_schema_master(db):
@@ -1104,7 +1125,7 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     uri = openchangedb_url(lp)
     if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-    elif uri.startswith('ldb:'):
+    elif uri.startswith('ldb:') or uri.startswith('/'):
         openchangedb = mailbox.OpenChangeDB(uri)
     else:
         raise Exception("unknown backend in openchangedb URI %s" % uri)

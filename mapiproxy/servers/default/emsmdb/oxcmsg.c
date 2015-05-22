@@ -753,6 +753,7 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 	const void		*prop_value;
 	enum MAPISTATUS		retval;
 	const uint16_t          prop_count = recipient_row->RecipientRow.prop_count;
+	uint8_t			prop_flag;
 
 	recipient->type = recipient_row->RecipClass;
 
@@ -793,13 +794,23 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 
 	data_pos = 0;
 	for (i = 0; i < prop_count; i++) {
-
 		if (recipient_row->RecipientRow.layout) {
+			prop_flag = recipient_row->RecipientRow.prop_values.data[data_pos];
 			data_pos++;
-			if (recipient_row->RecipientRow.prop_values.data[data_pos] != 0) {
+
+			/* As specified in [MS-OXCDATA], section 2.11.5, property values in a data blob with a
+			   layout are preceded by a byte that determines whether the property is present (0x0),
+			   missing (0x1) or if instead there is a 4-byte error code (0xa) */
+			if (prop_flag != 0) {
 				recipient->data[i+2] = NULL;
-				if (recipient_row->RecipientRow.prop_values.data[data_pos] == 0xa) {
+				if (prop_flag == PT_ERROR) {
 					data_pos += 4;
+				}
+				else if (prop_flag != 1) {
+					OC_DEBUG(0, "Unknown flag for RecipientProperty with tag [%s].\n",
+						  get_proptag_name(properties[i]));
+					TALLOC_FREE(recipient->data);
+					return MAPI_E_UNKNOWN_FLAGS;
 				}
 				continue;
 			}

@@ -577,23 +577,36 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	OC_DEBUG(3, "exchange_nsp: NspiQueryRows (0x3)\n");
 
-	/* Ensure incoming user is authenticated and code page is correct*/
+	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
+	/* Step 1. Sanity checks from Server Processing Rules */
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
+	DCESRV_NSP_RETURN_IF(r->in.lpETable == NULL && r->in.Count == 0,
+			     r, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if (r->in.lpETable == NULL && r->in.pStat->ContainerID) {
+		DCESRV_NSP_RETURN_IF(
+			!emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID),
+			r, MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
 	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Step 2. Perform the search */
 	retval = emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
 	DCESRV_NSP_RETURN_IF(retval != MAPI_E_SUCCESS, r, retval, NULL);
 
-	/* Now we have passed session verifications and have the data we can do the operation */
+	/* Step 3. Now we have passed session verifications and have
+	   the data we can do the operation */
 	dcesrv_do_NspiQueryRows(mem_ctx, r, emsabp_ctx, mids, true);
 }
 

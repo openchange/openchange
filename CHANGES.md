@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Open a shared calendar from address list in Outlook 2013
 * Send event invitation mails to several attendees, mixing internal and external recipients
 
 ## [2.3]

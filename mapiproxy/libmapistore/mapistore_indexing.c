@@ -449,7 +449,8 @@ static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	ictx = mapistore_indexing_search(mstore_ctx, username);
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ret = ictx->allocate_fmids(ictx, username, range_len, fid);

@@ -802,12 +802,31 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
+	/* Step 1. Sanity checks from Server Processing Rules */
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
-	/* Step 1. Retrieve MIds array given search criterias */
+	DCESRV_NSP_RETURN_IF(r->in.Filter
+			     && (r->in.pStat->SortType != SortTypePhoneticDisplayName)
+			     && (r->in.pStat->SortType != SortTypeDisplayName),
+			     r, MAPI_E_CALL_FAILED, NULL);
+
+	DCESRV_NSP_RETURN_IF(r->in.Reserved1 != 0, r, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* SortTypePhoneticDisplayName is not supported, then apply
+	   [MS-OXNSPI] Section 3.1.4.1.10 Rule 6 */
+	if (r->in.pStat->SortType == SortTypePhoneticDisplayName) {
+		r->in.pStat->SortType = SortTypeDisplayName;
+	}
+
+	if (r->in.pStat->SortType == SortTypeDisplayName && r->in.pStat->ContainerID) {
+		DCESRV_NSP_RETURN_IF(emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false,
+				     r, MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
+	/* Step 2. Retrieve MIds array given search criterias */
 	ppOutMIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	ppOutMIds->cValues = 0;
 	ppOutMIds->aulPropTag = NULL;
@@ -824,7 +843,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 	*r->out.ppOutMIds = ppOutMIds;
 
-	/* Step 2. Retrieve requested properties for these MIds */
+	/* Step 3. Retrieve requested properties for these MIds */
 	r->out.ppRows = talloc_zero(mem_ctx, struct PropertyRowSet_r *);
 	r->out.ppRows[0] = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	r->out.ppRows[0]->cRows = ppOutMIds->cValues;

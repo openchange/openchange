@@ -634,15 +634,17 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	OC_DEBUG(3, "exchange_nsp: NspiSeekEntries (0x4)\n");
 
-	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
-
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
+
+	DCESRV_NSP_RETURN_IF(r->in.Reserved != 0, r, MAPI_E_INVALID_PARAMETER, NULL);
+
 	if (r->in.pStat->ContainerID) {
 		container_exists = emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID);
-		if (container_exists) {
+		if (!container_exists) {
 			retval = MAPI_E_INVALID_BOOKMARK;
 			goto failure;
 		}
@@ -650,6 +652,19 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 	if (!r->in.pTarget) {
 		retval = MAPI_E_INVALID_PARAMETER;
+		goto failure;
+	}
+
+	/* SortTypePhoneticDisplayName is not supported, then apply
+	   [MS-OXNSPI] Section 3.1.4.1.9 Rule 9 */
+	if (r->in.pStat->SortType == SortTypePhoneticDisplayName) {
+		retval = MAPI_E_CALL_FAILED;
+		goto failure;
+	}
+
+	if ((r->in.pStat->SortType != SortTypePhoneticDisplayName)
+	    && (r->in.pStat->SortType != SortTypeDisplayName)) {
+		retval = MAPI_E_CALL_FAILED;
 		goto failure;
 	}
 

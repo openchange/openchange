@@ -1141,21 +1141,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 	struct ldb_server_sort_control	**ldb_sort_controls = NULL;
 	struct ldb_request		*ldb_req;
 
-	/* Step 0. Sanity Checks (MS-NSPI Server Processing Rules) */
-	if (pStat->SortType == SortTypePhoneticDisplayName) {
-		return MAPI_E_CALL_FAILED;
-	}
-
-	if (((pStat->SortType == SortTypeDisplayName) || (pStat->SortType == SortTypePhoneticDisplayName)) &&
-	    (pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, pStat->ContainerID) == false))) {
-		return MAPI_E_INVALID_BOOKMARK;
-	}
-
-	if (restriction && (pStat->SortType != SortTypeDisplayName) &&
-	    (pStat->SortType != SortTypePhoneticDisplayName)) {
-		return MAPI_E_CALL_FAILED;
-	}
-
 	local_mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(local_mem_ctx == NULL, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 

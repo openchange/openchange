@@ -371,6 +371,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
+	/* Step 0. Sanity checks from Server Processing Rules */
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -381,12 +382,13 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		DCESRV_NSP_RETURN_IF(!container_exists, r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
+	/* Step 1. Search in the directory */
 	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	retval = emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
 	DCESRV_NSP_RETURN_IF(retval != MAPI_E_SUCCESS, r, retval, NULL);
 
-	/* After the checks and the retrieval do the update stat */
+	/* Step 2. Do the update stat with the result */
 	dcesrv_do_NspiUpdateStat(r, mids);
 }
 

@@ -247,7 +247,7 @@ static bool openchange_newmail(struct openchange_user *user,
 
 	/* initialize mapistore notification */
 	if (user->resolver) {
-		bret = lpcfg_set_cmdline(lp_ctx, "notification_cache", user->resolver);
+		bret = lpcfg_set_cmdline(lp_ctx, "mapistore:notification_cache", user->resolver);
 		if (bret == false) {
 			i_fatal("unable to set resolver address '%s'", user->resolver);
 		}

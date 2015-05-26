@@ -442,7 +442,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(!ppOutMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
-	r.in.Reserved = 0;
+	r.in.Reserved1 = 0;
 	
 	r.in.pStat = nspi_ctx->pStat;
 	r.in.pStat->ContainerID = 0x0;

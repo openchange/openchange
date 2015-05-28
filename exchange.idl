@@ -576,7 +576,7 @@ System Attendant Private Interface
 	/* Function 0x05 */
 	MAPISTATUS NspiGetMatches(
 		[in]		policy_handle		*handle,
-		[in]		uint32			Reserved,
+		[in]		uint32			Reserved1,
 		[in,out]	STAT			*pStat,
 		[in][unique]	SPropTagArray		*pReserved,
 		[in]		uint32			Reserved2,

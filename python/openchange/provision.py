@@ -744,7 +744,7 @@ legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
 add: proxyAddresses
 proxyAddresses: SMTP:%(smtp_user)s
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
-proxyAddresses: SMTP:postmaster@%(mail_domain)s
+proxyAddresses: smtp:postmaster@%(mail_domain)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(groupname)s
 add: msExchRecipientTypeDetails
 msExchRecipientTypeDetails: %(recipient_type_details)s

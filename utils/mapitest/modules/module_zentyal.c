@@ -176,7 +176,7 @@ _PUBLIC_ bool mapitest_zentyal_1645(struct mapitest *mt)
 
 	retval = nspi_UpdateStat(nspi_ctx, mem_ctx, &plDelta);
 	mapitest_print_retval_clean(mt, "NspiUpdateStat", retval);
-	if (retval != MAPI_E_CALL_FAILED) {
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
 	}

@@ -187,9 +187,8 @@ add: proxyAddresses
 proxyAddresses: smtp:postmaster@{mail_domain}
 """
 
-        base_dn = "CN=Users,%s" % names.domaindn
         ldb_filter = "(proxyAddresses=*)"
-        res = db.search(base=base_dn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
+        res = db.search(base=names.domaindn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
         for element in res:
             if 'proxyAddresses' in element:
                 for entry in element['proxyAddresses']:
@@ -222,9 +221,8 @@ add: proxyAddresses
 proxyAddresses: SMTP:postmaster@{mail_domain}
 """
 
-        base_dn = "CN=Users,%s" % names.domaindn
         ldb_filter = "(proxyAddresses=*)"
-        res = db.search(base=base_dn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
+        res = db.search(base=names.domaindn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
         for element in res:
             if 'proxyAddresses' in element:
                 for entry in element['proxyAddresses']:

@@ -1773,11 +1773,14 @@ static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTr
 				OC_DEBUG(5, "synccontext buffer is %u bytes long\n", (uint32_t) synccontext->stream.buffer.length);
 			}
 			response->TransferBuffer = emsmdbp_stream_read_buffer(&synccontext->stream, buffer_size);
+
+			if (synccontext->stream.position == synccontext->stream.buffer.length) {
+				end_of_buffer = true;
+			}
 		}
 	}
 
 	response->TotalStepCount = synccontext->total_steps;
-	/* if (synccontext->stream.position == synccontext->stream.buffer.length) { */
 	if (end_of_buffer) {
 		response->TransferStatus = TransferStatus_Done;
 		response->InProgressCount = response->TotalStepCount;

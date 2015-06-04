@@ -183,6 +183,9 @@ static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char 
 	TALLOC_CTX	*mem_ctx;
 	char		*url_tmp = NULL;
 	char		*_uri = NULL;
+	char		*encoded_username = NULL;
+	char		*user = NULL;
+	char		*at_domain = NULL;
 	size_t		baselen = 0;
 	size_t		len = 0;
 	char		*folder_tmp = NULL;
@@ -199,7 +202,19 @@ static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	url_tmp = talloc_asprintf(mem_ctx, "sogo://%s:%s@%s/", username, username, type);
+	/* When the username is the mail address, we replace the '@' by '%40' */
+	at_domain = strchr(username, '@');
+	if (at_domain != NULL) {
+		user = talloc_strndup(mem_ctx, username, at_domain - username);
+		MAPISTORE_RETVAL_IF(!user, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+		encoded_username = talloc_asprintf(mem_ctx, "%s%s%s", user, "%40", at_domain + 1);
+		MAPISTORE_RETVAL_IF(!encoded_username, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	} else {
+		encoded_username = talloc_strdup(mem_ctx, username);
+		MAPISTORE_RETVAL_IF(!encoded_username, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	}
+
+	url_tmp = talloc_asprintf(mem_ctx, "sogo://%s@%s/", encoded_username, type);
 	MAPISTORE_RETVAL_IF(!url_tmp, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	baselen = strlen(url_tmp);
 

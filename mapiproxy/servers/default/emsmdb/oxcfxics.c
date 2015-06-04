@@ -1430,17 +1430,23 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				synccontext->skipped_objects++;
 				OC_DEBUG(5, "folder changes: cn %.16"PRIx64" already present\n", cn);
-				goto end_row;
+				if (retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) {
+					goto end_row;
+				}
 			}
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
-			if (retvals[sync_data->prop_index.change_key]) {
+			/* work-around an issue in SOGo that generates an empty predecessor change list blob */
+			if ((retvals[sync_data->prop_index.change_key]) ||
+			    ((retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) &&
+			     (retvals[sync_data->prop_index.predecessor_change_list]))) {
 				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
-			}
-			else {
+			} else {
 				bin_data = data_pointers[sync_data->prop_index.change_key];
 			}
+
+
 			query_props.aulPropTag[j] = PidTagChangeKey;
 			header_data_pointers[j] = bin_data;
 			j++;

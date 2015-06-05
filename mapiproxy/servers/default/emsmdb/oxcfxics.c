@@ -1438,9 +1438,9 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 
 			/* change key */
 			/* work-around an issue in SOGo that generates an empty predecessor change list blob */
-			if ((retvals[sync_data->prop_index.change_key]) ||
+			if ((retvals[sync_data->prop_index.change_key] != MAPI_E_SUCCESS) ||
 			    ((retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) &&
-			     (retvals[sync_data->prop_index.predecessor_change_list]))) {
+			     (retvals[sync_data->prop_index.predecessor_change_list] != MAPI_E_SUCCESS))) {
 				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
 			} else {
 				bin_data = data_pointers[sync_data->prop_index.change_key];
@@ -1453,7 +1453,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 
 			/* predecessor... (already computed) */
 			query_props.aulPropTag[j] = PidTagPredecessorChangeList;
-			if (retvals[sync_data->prop_index.predecessor_change_list]) {
+			if (retvals[sync_data->prop_index.predecessor_change_list] != MAPI_E_SUCCESS) {
 				predecessors_data.cb = bin_data->cb + 1;
 				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
 				*predecessors_data.lpb = bin_data->cb & 0xff;

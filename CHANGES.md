@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Support notifications when the username is a mail address (e.g. Zentyal Cloud)
 * Open a shared calendar from address list in Outlook 2013
 * Send event invitation mails to several attendees, mixing internal and external recipients
 

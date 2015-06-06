@@ -1437,7 +1437,14 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
-			/* work-around an issue in SOGo that generates an empty predecessor change list blob */
+
+			/* When the SOGo backend generates the PidTagChangeKey for folders on first synchronization,
+			   it generates a PidTagChangeKey with the replicaID part filled with zeros. This property value
+			   is then used to populate the PidTagPredecessorChangeList. Using an empty replicaID is however
+			   causing Outlook to generate Synchronization Issues. If the PidTagPredecessorChangeList property
+			   is missing, it means we are synchronizing a folder for the first time. The following condition
+			   therefore ensures that a proper PidTagChangeKey is generated to comply with Outlook requirements.
+			*/
 			if ((retvals[sync_data->prop_index.change_key] != MAPI_E_SUCCESS) ||
 			    ((retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) &&
 			     (retvals[sync_data->prop_index.predecessor_change_list] != MAPI_E_SUCCESS))) {

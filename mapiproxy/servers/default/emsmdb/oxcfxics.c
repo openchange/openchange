@@ -1976,6 +1976,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	OC_DEBUG(5, "Configure download context for fid: 0x%.16"PRIx64"\n", folder_object->object.folder->folderID);
+
         synccontext_object = emsmdbp_object_synccontext_init(NULL, emsmdbp_ctx, folder_object);
         synccontext = synccontext_object->object.synccontext;
 

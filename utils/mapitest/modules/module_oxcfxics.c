@@ -5,6 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2008
    Copyright (C) Brad Hards 2010-2011
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -516,22 +517,24 @@ cleanup:
 	return ret;
 }
 
-
 /**
    \details Test the RopSynchronizationConfigure (0x70),
    RopSynchronizationUploadStateStreamBegin (0x75),
    RopSynchronizationUploadStateStreamContinue (0x76),
-   RopSynchronizationUploadStateStreamEnd (0x77) and
+   RopSynchronizationUploadStateStreamEnd (0x77),
+   RopFastTransferSourceGetBuffer (0x4e) and
    RopSynchronizationGetTransferState (0x82) operations
+   for hierarchy synchronisation.
 
    This function:
    -# Log on private message store
-   -# Creates a test folder
-   -# Sets up sync configure context
-   -# Uploads an empty ICS state
-   -# cleans up.
+   -# Create a test folder
+   -# Set up sync configure context for downloading changes in hierarchy
+   -# Upload an empty ICS state
+   -# Download current state
+   -# Clean up.
  */
-_PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcfxics_SyncConfigureHierarchy(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	struct mt_common_tf_ctx	*context;
@@ -543,6 +546,10 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	DATA_BLOB		ics_state;
 	struct SPropTagArray	*property_tags;
 	bool			ret = true;
+	DATA_BLOB		transfer_data;
+	struct fx_parser_context	*parser;
+	enum TransferStatus	transfer_status;
+	uint16_t		progress, total_steps;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -567,8 +574,9 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	property_tags = set_SPropTagArray(mt->mem_ctx, 0x0);
 	restriction.length = 0;
 	restriction.data = NULL;
-	retval = ICSSyncConfigure(&download_folder, Hierarchy,
-				  FastTransfer_Unicode, SynchronizationFlag_Unicode,
+	retval = ICSSyncConfigure(&(context->obj_test_folder), Hierarchy,
+				  FastTransfer_Unicode,
+				  SynchronizationFlag_Unicode,
 				  Eid | Cn, restriction, property_tags, &obj_sync_context);
 	mapitest_print_retval_clean(mt, "ICSSyncConfigure", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -599,6 +607,163 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+
+	retval = FXGetBuffer(&obj_sync_context, 0, &transfer_status, &progress, &total_steps,
+			     &transfer_data);
+	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Check the transfer is done */
+	mapitest_print_assert(mt, "Hierarchy changes download transfer done",
+			      transfer_status == TransferStatus_Done);
+	if (transfer_status != TransferStatus_Done) {
+		ret = false;
+	}
+
+	parser = fxparser_init(mt->mem_ctx, NULL);
+	retval = fxparser_parse(parser, &transfer_data);
+	mapitest_print_retval_clean(mt, "FX buffer parse", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	talloc_free(parser);
+	// TODO: verify that the buffer is as expected
+
+	retval = ICSSyncGetTransferState(&obj_sync_context, &obj_transfer_state);
+	mapitest_print_retval_clean(mt, "ICSSyncGetTransferState", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&obj_transfer_state);
+	mapi_object_release(&obj_sync_context);
+	mapi_object_release(&download_folder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}
+
+/**
+   \details Test the RopSynchronizationConfigure (0x70),
+   RopSynchronizationUploadStateStreamBegin (0x75),
+   RopSynchronizationUploadStateStreamContinue (0x76),
+   RopSynchronizationUploadStateStreamEnd (0x77),
+   RopFastTransferSourceGetBuffer (0x4e) and
+   RopSynchronizationGetTransferState (0x82) operations
+   for content synchronisation.
+
+   This function:
+   -# Log on private message store
+   -# Creates a test folder
+   -# Sets up sync configure context
+   -# Uploads an empty ICS state
+   -# cleans up.
+ */
+_PUBLIC_ bool mapitest_oxcfxics_SyncConfigureContents(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	struct mt_common_tf_ctx	*context;
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_sync_context;
+	mapi_object_t		download_folder;
+	mapi_object_t		obj_transfer_state;
+	DATA_BLOB		restriction;
+	DATA_BLOB		ics_state;
+	struct SPropTagArray	*property_tags;
+	bool			ret = true;
+	DATA_BLOB		transfer_data;
+	struct fx_parser_context	*parser;
+	enum TransferStatus	transfer_status;
+	uint16_t		progress, total_steps;
+
+	/* Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Create destfolder */
+	mapi_object_init(&download_folder);
+	mapi_object_init(&obj_sync_context);
+	mapi_object_init(&obj_transfer_state);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "ICSDownloadFolder", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &download_folder);
+	mapitest_print_retval_clean(mt, "Create ICS Download Folder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	property_tags = set_SPropTagArray(mt->mem_ctx, 0x0);
+	restriction.length = 0;
+	restriction.data = NULL;
+	retval = ICSSyncConfigure(&download_folder, Contents,
+				  FastTransfer_Unicode,
+				  SynchronizationFlag_Unicode | SynchronizationFlag_Normal | SynchronizationFlag_NoForeignIdentifiers | SynchronizationFlag_BestBody,
+				  Eid | Cn | OrderByDeliveryTime,
+				  restriction, property_tags, &obj_sync_context);
+	mapitest_print_retval_clean(mt, "ICSSyncConfigure", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	ics_state.length = 0;
+	ics_state.data = NULL;
+
+	retval = ICSSyncUploadStateBegin(&obj_sync_context, MetaTagIdsetGiven, ics_state.length);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateBegin", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncUploadStateContinue(&obj_sync_context, ics_state);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateContinue", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncUploadStateEnd(&obj_sync_context);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateEnd", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = FXGetBuffer(&obj_sync_context, 0, &transfer_status, &progress, &total_steps,
+			     &transfer_data);
+	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Check the transfer is done */
+	mapitest_print_assert(mt, "Content changes download transfer done",
+			      transfer_status == TransferStatus_Done);
+	if (transfer_status != TransferStatus_Done) {
+		ret = false;
+	}
+
+	parser = fxparser_init(mt->mem_ctx, NULL);
+	retval = fxparser_parse(parser, &transfer_data);
+	mapitest_print_retval_clean(mt, "FX buffer parse", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	talloc_free(parser);
+	// TODO: verify that the buffer is as expected
 
 	retval = ICSSyncGetTransferState(&obj_sync_context, &obj_transfer_state);
 	mapitest_print_retval_clean(mt, "ICSSyncGetTransferState", retval);

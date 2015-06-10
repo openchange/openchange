@@ -187,7 +187,8 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     return names
 
 
-def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False, allow_existent=False):
+def provision_schema(sam_db, setup_path, names, reporter, ldif, msg,
+                     modify_mode=False, ignore_already_exists=False):
     """Provision/modify schema using LDIF specified file
     :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
@@ -195,6 +196,8 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
+    :param modify_mode: Whether we want to modify or insert
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
     """
     sam_db.transaction_start()
 
@@ -223,7 +226,8 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
         #  if not present it will be automatically filled by the schema master
         ldif_data = re.sub("^schemaIDGUID:", '#schemaIDGUID:', ldif_data, flags=re.M)
 
-        # we add elements one by one only to control better the exact position of the error
+        # We add elements one by one only to control better the exact position
+        # of the error
         ldif_elements = re.split("\n\n+", ldif_data)
         elements_to_add = []
         for element in ldif_elements:
@@ -233,10 +237,9 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
             match = re.search('^\s*dn:\s+(.*)$', element, flags=re.M)
             if match:
                 dn = match.group(1)
-                if allow_existent and exists_dn(sam_db, dn):
+                if ignore_already_exists and exists_dn(sam_db, dn):
                     # TODO: check that the existent element has correct values
                     continue
-
                 elements_to_add.append(element)
 
         if not elements_to_add:
@@ -267,7 +270,8 @@ def force_schemas_update(sam_db, setup_path):
     sam_db.transaction_commit()
 
 
-def modify_schema(sam_db, setup_path, names, reporter, ldif, msg):
+def modify_schema(sam_db, setup_path, names, reporter, ldif, msg,
+                  ignore_already_exists=False):
     """Modify schema using LDIF specified file
     :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
@@ -275,9 +279,12 @@ def modify_schema(sam_db, setup_path, names, reporter, ldif, msg):
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
     """
 
-    return provision_schema(sam_db, setup_path, names, reporter, ldif, msg, True)
+    return provision_schema(sam_db, setup_path, names, reporter, ldif, msg,
+                            modify_mode=True,
+                            ignore_already_exists=ignore_already_exists)
 
 
 def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
@@ -381,7 +388,8 @@ def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     return deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
 
 
-def install_schemas(setup_path, names, lp, creds, reporter):
+def install_schemas(setup_path, names, lp, creds, reporter,
+                    ignore_already_exists=False):
     """Install the OpenChange-specific schemas in the SAM LDAP database.
 
     :param setup_path: Path to the setup directory.
@@ -389,6 +397,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     :param lp: Loadparm context
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
     """
     lp.set("dsdb:schema update allowed", "yes")
 
@@ -456,7 +465,8 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     for schema in schemas:
         try:
             provision_schema(sam_db, setup_path, names, reporter, schema['path'],
-                             schema['description'], schema['modify_mode'])
+                             schema['description'], schema['modify_mode'],
+                             ignore_already_exists=ignore_already_exists)
         except LdbError, ldb_error:
             print ("[!] error while provisioning the Exchange"
                    " schema classes (%d): %s"
@@ -466,14 +476,16 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     try:
         provision_schema(sam_db, setup_path, names, reporter,
                          "AD/oc_provision_configuration.ldif",
-                         "Generic Exchange configuration objects")
+                         "Generic Exchange configuration objects",
+                         ignore_already_exists=ignore_already_exists)
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
         raise
 
 
-def provision_organization(setup_path, names, lp, creds, reporter=None):
+def provision_organization(setup_path, names, lp, creds, reporter=None,
+                           ignore_already_exists=False):
     """Create exchange organization
 
     :param setup_path: Path to the setup directory
@@ -481,20 +493,27 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     :param creds: Credentials context
     :param names: Provision Names object
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
     """
     if reporter is None:
         reporter = TextProgressReporter()
 
     sam_db = get_schema_master_samdb(names, lp, creds)
     try:
-        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+        provision_schema(sam_db, setup_path, names, reporter,
+                         "AD/oc_provision_configuration_org.ldif",
+                         "Exchange Organization objects",
+                         ignore_already_exists=ignore_already_exists)
     except LdbError, ldb_error:
             print ("[!] error while provisioning the Exchange organization objects"
                    " objects (%d): %s" % ldb_error.args)
             return False
 
     try:
-        modify_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects")
+        modify_schema(sam_db, setup_path, names, reporter,
+                      "AD/oc_provision_configuration_finalize.ldif",
+                      "Update generic Exchange configuration objects",
+                      ignore_already_exists=ignore_already_exists)
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange organization"
                " objects (%d): %s" % ldb_error.args)
@@ -515,14 +534,19 @@ def deprovision_organization(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     try:
-        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+        deprovision_schema(setup_path, names, lp, creds, reporter,
+                           "AD/oc_provision_configuration_org.ldif",
+                           "Exchange Organization objects")
     except LdbError, ldb_error:
             print ("[!] error while deprovisioning the Exchange organization objects"
                    " objects (%d): %s" % ldb_error.args)
             return False
 
     try:
-        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects", modify_mode=True)
+        deprovision_schema(setup_path, names, lp, creds, reporter,
+                           "AD/oc_provision_configuration_finalize.ldif",
+                           "Update generic Exchange configuration objects",
+                           modify_mode=True)
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange organization"
                " objects (%d): %s" % ldb_error.args)
@@ -967,7 +991,8 @@ def checkusage(names, lp, creds):
         raise err
 
 
-def provision(setup_path, names, lp, creds, reporter=None):
+def provision(setup_path, names, lp, creds, reporter=None,
+              ignore_already_exists=False):
     """Extend Samba4 with OpenChange data.
 
     :param setup_path: Path to the setup directory
@@ -975,6 +1000,7 @@ def provision(setup_path, names, lp, creds, reporter=None):
     :param creds: Credentials context
     :param names: Provision Names object
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
 
     If a progress reporter is not provided, a text output reporter is provided
     """
@@ -987,10 +1013,12 @@ def provision(setup_path, names, lp, creds, reporter=None):
     check_not_provisioned(names, lp, creds)
 
     # Install OpenChange-specific schemas
-    install_schemas(setup_path, names, lp, creds, reporter)
+    install_schemas(setup_path, names, lp, creds, reporter,
+                    ignore_already_exists=ignore_already_exists)
 
     # Provision first org
-    provision_organization(setup_path, names, lp, creds, reporter)
+    provision_organization(setup_path, names, lp, creds, reporter,
+                           ignore_already_exists=ignore_already_exists)
 
     print "[SUCCESS] Done!"
 
@@ -1026,7 +1054,8 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
         raise err
 
 
-def register(setup_path, names, lp, creds, reporter=None):
+def register(setup_path, names, lp, creds, reporter=None,
+             ignore_already_exists=False):
     """Register an OpenChange server as a valid Exchange server.
 
     :param setup_path: Path to the setup directory
@@ -1034,6 +1063,7 @@ def register(setup_path, names, lp, creds, reporter=None):
     :param lp: Loadparm context
     :param creds: Credentials context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
 
     If a progress reporter is not provided, a text output reporter is provided
     """
@@ -1043,7 +1073,10 @@ def register(setup_path, names, lp, creds, reporter=None):
 
     try:
         sam_db = get_schema_master_samdb(names, lp, creds)
-        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_new_server.ldif", "Exchange Samba registration")
+        provision_schema(sam_db, setup_path, names, reporter,
+                         "AD/oc_provision_configuration_new_server.ldif",
+                         "Exchange Samba registration",
+                         ignore_already_exists=ignore_already_exists)
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while registering Openchange Samba configuration"
@@ -1090,7 +1123,8 @@ def unregister(setup_path, names, lp, creds, reporter=None):
         raise err
 
 
-def registerasmain(setup_path, names, lp, creds, reporter=None):
+def registerasmain(setup_path, names, lp, creds, reporter=None,
+                   ignore_already_exists=False):
     """Register an OpenChange server as the main Exchange server.
 
     :param setup_path: Path to the setup directory
@@ -1098,6 +1132,7 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
     :param lp: Loadparm context
     :param creds: Credentials context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ignore_already_exists: Whether to ignore already existent schemas or not
 
     If a progress reporter is not provided, a text output reporter is provided
     """
@@ -1107,7 +1142,10 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
 
     try:
         sam_db = get_schema_master_samdb(names, lp, creds)
-        modify_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_as_main.ldif", "Register Exchange Samba as the main server")
+        modify_schema(sam_db, setup_path, names, reporter,
+                      "AD/oc_provision_configuration_as_main.ldif",
+                      "Register Exchange Samba as the main server",
+                      ignore_already_exists=ignore_already_exists)
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while registering Openchange Samba configuration"

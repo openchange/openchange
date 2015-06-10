@@ -62,6 +62,8 @@ parser.add_option("--firstou", type="string", metavar="FIRSTOU",
                   help="set OpenChange Administrative Group (otherwise 'First Administrative Group')")
 parser.add_option("--standalone", action="store_true", help="Provisioning an standalone OpenChange server")
 parser.add_option("--additional", action="store_true", help="Provisioning an additional OpenChange server")
+parser.add_option("--ignore-already-exists", action="store_true",
+                  help="Ignore errors when installing schemas that already exists")
 parser.add_option("--primary-server", action="store_true", help="Set this OpenChange server as the primary server")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
 parser.add_option("--openchangedb-uri", type="string", default="ldb://openchange.ldb",
@@ -101,16 +103,23 @@ if opts.deprovision:
         print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
         sys.exit(1)
 elif opts.additional and opts.primary_server:
-    openchange.register(setup_path, provisionnames, lp, creds)
-    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+    openchange.register(setup_path, provisionnames, lp, creds,
+                        ignore_already_exists=opts.ignore_already_exists)
+    openchange.registerasmain(setup_path, provisionnames, lp, creds,
+                              ignore_already_exists=opts.ignore_already_exists)
 elif opts.additional:
-    openchange.register(setup_path, provisionnames, lp, creds)
+    openchange.register(setup_path, provisionnames, lp, creds,
+                        ignore_already_exists=opts.ignore_already_exists)
 elif opts.standalone:
-    openchange.provision(setup_path, provisionnames, lp, creds)
-    openchange.register(setup_path, provisionnames, lp, creds)
-    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+    openchange.provision(setup_path, provisionnames, lp, creds,
+                         ignore_already_exists=opts.ignore_already_exists)
+    openchange.register(setup_path, provisionnames, lp, creds,
+                        ignore_already_exists=opts.ignore_already_exists)
+    openchange.registerasmain(setup_path, provisionnames, lp, creds,
+                              ignore_already_exists=opts.ignore_already_exists)
 elif opts.primary_server:
-    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+    openchange.registerasmain(setup_path, provisionnames, lp, creds,
+                              ignore_already_exists=opts.ignore_already_exists)
 elif opts.migrate:
     openchange.openchangedb_migrate(lp)
 elif opts.check:

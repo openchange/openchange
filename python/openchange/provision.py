@@ -613,7 +613,7 @@ def exists_dn(sam_db, dn):
         return len(ret) > 0
     except LdbError as ex:
         code, leftover = ex
-        if code == 32:
+        if code == ldb.ERR_NO_SUCH_OBJECT:
             return False
         else:
             raise ex

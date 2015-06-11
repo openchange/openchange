@@ -138,7 +138,7 @@ msExchRecipientDisplayType: 0
 """
 
         base_dn = "CN=Users,%s" % names.domaindn
-        ldb_filter = "(objectClass=user)"
+        ldb_filter = "(&(objectClass=user)(proxyAddresses=*))"
         res = db.search(base=base_dn, scope=ldb.SCOPE_SUBTREE, expression=ldb_filter)
         for element in res:
             # check if intrnal user

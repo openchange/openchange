@@ -87,6 +87,7 @@ struct oxcfxics_sync_data {
 
 struct oxcfxics_message_sync_data {
 	uint64_t	*mids;
+	uint64_t	*cns;
 	uint64_t	count;
 	uint64_t	max;
 };
@@ -790,15 +791,17 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
 {
 	TALLOC_CTX			*mem_ctx, *msg_ctx;
-	bool				folder_is_mapistore, end_of_table, changed_prop_index = false;
+	bool				folder_is_mapistore, changed_prop_index = false;
+	bool				end_of_table = false;
 	struct emsmdbp_object		*table_object, *message_object;
 	uint32_t			i;
-	static enum MAPITAGS		mid_property = PidTagMid;
 	enum MAPISTATUS			*retvals, *header_retvals, retval_msg_class = MAPI_E_NOT_FOUND;
+	const enum MAPITAGS		table_prop_tags[] = {PidTagMid, PidTagChangeNumber};
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
 	uint32_t			unix_time, contextID, message_class_prop_index;
+	const uint32_t			table_props_count = sizeof(table_prop_tags) / sizeof(enum MAPITAGS);
 	struct UI8Array_r		preload_mids;
 	enum mapistore_table_type	mstore_type;
 	struct SPropTagArray		query_props;
@@ -846,38 +849,58 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			abort();
 		}
 
-		table_object->object.table->prop_count = 1;
-		table_object->object.table->properties = &mid_property;
+		table_object->object.table->prop_count = table_props_count;
+		table_object->object.table->properties = (enum MAPITAGS *)table_prop_tags;
 
 		oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, owner, original_cnset_seen);
 		message_sync_data->max = 0;
 		if (emsmdbp_is_mapistore(table_object)) {
 			contextID = emsmdbp_get_contextID(folder_object);
-			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, table_object->object.table->prop_count, table_object->object.table->properties);
+			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object,
+						    table_object->object.table->prop_count, table_object->object.table->properties);
+			if (synccontext->request.order_by_delivery_time) {
+				/* sort messages: most recent delivery time first when available.
+				   [MS-OXCFXICS] Section 3.2.5.9.1.1 */
+				lpSortCriteria.cSorts = 1;
+				lpSortCriteria.cCategories = 0;
+				lpSortCriteria.cExpanded = 0;
+				lpSortCriteria.aSort = talloc_array(mem_ctx, struct SSortOrder, 1);
+				lpSortCriteria.aSort[0].ulPropTag = PidTagMessageDeliveryTime;
+				lpSortCriteria.aSort[0].ulOrder = TABLE_SORT_DESCEND;
+				mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, contextID,
+							       table_object->backend_object,
+							       &lpSortCriteria, &status);
+				talloc_free(lpSortCriteria.aSort);
+			}
+
 			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 			synccontext->total_objects += table_object->object.table->denominator;
 
 			OC_DEBUG(5, "push_messageChange: %d objects in table\n", table_object->object.table->denominator);
-			/* fetch maching mids */
-			message_sync_data->mids = talloc_array(message_sync_data, uint64_t, table_object->object.table->denominator);
 
-			/* sort messages: most recent delivery time first when available */
-			lpSortCriteria.cSorts = 1;
-			lpSortCriteria.cCategories = 0;
-			lpSortCriteria.cExpanded = 0;
-			lpSortCriteria.aSort = talloc_array(mem_ctx, struct SSortOrder, 1);
-			lpSortCriteria.aSort[0].ulPropTag = PidTagMessageDeliveryTime;
-			lpSortCriteria.aSort[0].ulOrder = TABLE_SORT_DESCEND;
-			mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, contextID,
-						       table_object->backend_object,
-						       &lpSortCriteria, &status);
-			talloc_free(lpSortCriteria.aSort);
+			/* fetch maching mids */
+			message_sync_data->mids = talloc_zero_array(message_sync_data, uint64_t, table_object->object.table->denominator);
+			if (!message_sync_data->mids) {
+				OC_DEBUG(1, "Error allocating mid array");
+				goto end;
+			}
+			message_sync_data->cns = talloc_zero_array(message_sync_data, uint64_t,
+								   table_object->object.table->denominator);
+			if (!message_sync_data->cns) {
+				OC_DEBUG(1, "Error allocating change number array");
+				goto end;
+			}
 
 			for (i = 0; i < table_object->object.table->denominator; i++) {
 				data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 				if (data_pointers) {
 					if (retvals[0] == MAPI_E_SUCCESS) {
 						message_sync_data->mids[message_sync_data->max] = *(uint64_t *) data_pointers[0];
+						if (retvals[1] == MAPI_E_SUCCESS) {
+							message_sync_data->cns[message_sync_data->max] = *(uint64_t *) data_pointers[1];
+						} else {
+							message_sync_data->cns[message_sync_data->max] = 0;
+						}
 						message_sync_data->max++;
 					}
 				}
@@ -901,6 +924,15 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	for (; sync_data->ndr->offset < max_message_sync_size && message_sync_data->count < message_sync_data->max; message_sync_data->count++) {
 		msg_ctx = talloc_new(NULL);
 		msg_properties = properties;
+
+		if (folder_is_mapistore && message_sync_data->cns[message_sync_data->count] != 0) {
+			cn = ((message_sync_data->cns[message_sync_data->count] >> 16) & 0x0000ffffffffffff);
+			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
+				synccontext->skipped_objects++;
+				OC_DEBUG(5, "message changes: cn %.16"PRIx64" already present\n", cn);
+				goto end_row;
+			}
+		}
 
 		if (folder_is_mapistore && (message_sync_data->count % message_preload_interval) == 0) {
 			preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;
@@ -1146,6 +1178,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		end_of_table = true;
 	}
 
+end:
 	talloc_free(mem_ctx);
 
 	return end_of_table;
@@ -1942,6 +1975,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
+
+	OC_DEBUG(5, "Configure download context for fid: 0x%.16"PRIx64"\n", folder_object->object.folder->folderID);
 
         synccontext_object = emsmdbp_object_synccontext_init(NULL, emsmdbp_ctx, folder_object);
         synccontext = synccontext_object->object.synccontext;

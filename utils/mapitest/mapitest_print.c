@@ -674,3 +674,28 @@ _PUBLIC_ void mapitest_print_PAB_entry(struct mapitest *mt, struct PropertyRow_r
 
 	mapidump_PAB_entry(aRow);
 }
+
+/**
+   \details Print assert result
+
+   \param mt pointer to the top-level mapitest structure
+   \param name the test name
+   \param assert_result the assert result to output
+
+ */
+_PUBLIC_ void mapitest_print_assert(struct mapitest *mt, char *name, bool assert_result)
+{
+	const char	*retstr = NULL;
+
+	if (mt->subunit_output) {
+		return;
+	}
+
+	retstr = assert_result ? "TRUE" : "FALSE";
+
+	if (mt->color == true) {
+                mapitest_print(mt, "* %-35s: %s %s %s \n", name, (assert_result ? MT_RED : MT_GREEN), retstr, MT_WHITE);
+	} else {
+                mapitest_print(mt, "* %-35s: %s\n", name, retstr);
+	}
+}

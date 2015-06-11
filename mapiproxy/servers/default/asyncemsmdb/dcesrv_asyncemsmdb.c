@@ -214,7 +214,7 @@ static enum mapistore_error build_mapistore_sogo_url(TALLOC_CTX *_mem_ctx, char 
 		MAPISTORE_RETVAL_IF(!encoded_username, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	}
 
-	url_tmp = talloc_asprintf(mem_ctx, "sogo://%s@%s/", encoded_username, type);
+	url_tmp = talloc_asprintf(mem_ctx, "sogo://%s:%s@%s/", encoded_username, encoded_username, type);
 	MAPISTORE_RETVAL_IF(!url_tmp, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	baselen = strlen(url_tmp);
 

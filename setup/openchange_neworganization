@@ -41,7 +41,12 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
 parser.add_option("--firstou", type="string", metavar="FIRSTOU",
                   default="First Administrative Group",
                   help="set OpenChange Administrative Group (otherwise 'First Administrative Group')")
+parser.add_option("--ignore-already-exists", action="store_true",
+                  help="Ignore errors when installing schemas that already exists")
+parser.add_option("--enable-all-groups", action="store_true",
+                  help="Enable all groups when provisioning organization")
 parser.add_option("--deprovision", action="store_true", help="Deprovision the organization")
+
 
 opts, args = parser.parse_args()
 if len(args) != 0:
@@ -55,7 +60,6 @@ _setupdir = os.path.dirname(__file__)
 if not os.path.exists(os.path.join(_setupdir, "AD")):
     _setupdir = samba.param.setup_dir()
 
-
 def setup_path(*args):
     global _setupdir
     return os.path.join(_setupdir, *args)
@@ -67,6 +71,8 @@ if opts.deprovision:
     openchange.deprovision_organization(setup_path, provisionnames, lp, creds)
     openchange.unregister(setup_path, provisionnames, lp, creds)
 else:
-    if openchange.provision_organization(setup_path, provisionnames, lp, creds):
-        openchange.register(setup_path, provisionnames, lp, creds)
+    if openchange.provision_organization(setup_path, provisionnames, lp, creds, ignore_already_exists=opts.ignore_already_exists):
+        openchange.register(setup_path, provisionnames, lp, creds, ignore_already_exists=opts.ignore_already_exists)
         openchange.openchangedb_new_organization(provisionnames, lp)
+    if opts.enable_all_groups:
+        openchange.enable_all_groups_in_organization(provisionnames, lp, creds, provisionnames.firstorg)

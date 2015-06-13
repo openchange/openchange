@@ -708,7 +708,7 @@ msExchRecipientDisplayType: 0
         if len(res) == 1:
             record = res[0]
         else:
-            raise Exception("this should never happen as we just modified the record...")
+            raise Exception("Added user %s not found" % (user_dn))
         record_keys = map(lambda x: x.lower(), record.keys())
 
         if "displayname" not in record_keys:
@@ -735,7 +735,7 @@ def delete_user(names, lp, creds, username=None):
     to_delete = ['mailNickName', 'homeMDB', 'homeMTA',' legacyExchangeDN',
                  'proxyAddresses', 'msExchUserAccountControl',
                  'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
-    _delete_attrs_ignore_no_existent(db, user_dn, to_delete)
+    _delete_attrs_ignore_nonexistent(db, user_dn, to_delete)
 
     print "[+] Removed all OpenChange LDAP attributes from account %s " % username
 
@@ -765,7 +765,7 @@ msExchUserAccountControl: %d
         print "[+] Account %s enabled" % username
 
 
-def newgroup(names, lp, creds, groupname, mail=None,):
+def newgroup(names, lp, creds, groupname, mail=None):
     """extend groupr record with OpenChange settings.
 
     :param names: provision names object.
@@ -777,11 +777,37 @@ def newgroup(names, lp, creds, groupname, mail=None,):
     """
     db = get_local_samdb(names, lp, creds)
     group_dn = get_group_dn(db, names.domaindn, groupname)
-
     if group_dn:
-        smtp_user, mail_domain = _smtp_user_and_domain_by_dn(group_dn, groupname, mail, names)
-        (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
-        extended_group = """
+        _enable_group(db, names, group_dn, groupname, mail)
+        print "[+] Group %s extended and enabled" % groupname
+    else:
+        print "[!] Group '%s' not found" % groupname
+
+
+def enable_all_groups_in_organization(names, lp, creds, org_name):
+    """enable all groups in the given organization
+
+    Groups without mail atrtibute are ignored
+    This methods only works in schemas where the groups reside under "CN=Groups,CN=%s,CN=Users,%s" % (org_name, domain_dn)
+    """
+    basedn = "CN=Groups,CN=%s,CN=Users,%s" % (org_name, names.domaindn)
+    ldap_filter = "(&(objectClass=group)(mail=*))"
+    db = get_local_samdb(names, lp, creds)
+    res = db.search(base=basedn,
+                    scope=ldb.SCOPE_SUBTREE,
+                    expression=ldap_filter,
+                    attrs=['cn', 'mail'])
+    for entry in res:
+        dn = entry.dn.get_linearized()
+        cn = entry['cn'][0]
+        mail = entry['mail'][0]
+        _enable_group(db, names, dn, cn, mail)
+
+
+def _enable_group(db, names, group_dn, groupname, mail=None,):
+    smtp_user, mail_domain = _smtp_user_and_domain_by_dn(group_dn, groupname, mail, names)
+    (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
+    extended_group = """
 dn: %(group_dn)s
 changetype: modify
 add: mailNickName
@@ -798,36 +824,32 @@ msExchRecipientTypeDetails: %(recipient_type_details)s
 add: msExchRecipientDisplayType
 msExchRecipientDisplayType: %(recipient_display_type)s
 """
-        ldif_value = extended_group % {"group_dn": group_dn,
-                                       "groupname": groupname,
-                                       "firstorg": names.firstorg,
-                                       "firstorg_x400": names.firstorg[:16],
-                                       "firstou": names.firstou,
-                                       "firstou_x400": names.firstou[:64],
-                                       "smtp_user": smtp_user,
-                                       "mail_domain": mail_domain,
-                                       "recipient_type_details": recipient_type_details,
-                                       "recipient_display_type": recipient_display_type}
-        db.modify_ldif(ldif_value)
+    ldif_value = extended_group % {"group_dn": group_dn,
+                                   "groupname": groupname,
+                                   "firstorg": names.firstorg,
+                                   "firstorg_x400": names.firstorg[:16],
+                                   "firstou": names.firstou,
+                                   "firstou_x400": names.firstou[:64],
+                                   "smtp_user": smtp_user,
+                                   "mail_domain": mail_domain,
+                                   "recipient_type_details": recipient_type_details,
+                                   "recipient_display_type": recipient_display_type}
+    db.modify_ldif(ldif_value)
 
-        res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=["*"])
-        if len(res) == 1:
-            record = res[0]
-        else:
-            raise Exception("this should never happen as we just modified the record...")
-        record_keys = [x.lower() for x in record.keys()]
-
-        if "displayname" not in record_keys:
-            extended_group = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (group_dn, groupname)
-            db.modify_ldif(extended_group)
-
-        if "mail" not in record_keys:
-            extended_group = "dn: %s\nadd: mail\nmail: %s\n" % (group_dn, smtp_user)
-            db.modify_ldif(extended_group)
-
-        print "[+] Group %s extended and enabled" % groupname
+    res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=["*"])
+    if len(res) == 1:
+        record = res[0]
     else:
-        print "[!] Group '%s' not found" % groupname
+        raise Exception("Added group %s not found" % (group_dn))
+    record_keys = [x.lower() for x in record.keys()]
+
+    if "displayname" not in record_keys:
+        extended_group = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (group_dn, groupname)
+        db.modify_ldif(extended_group)
+
+    if "mail" not in record_keys:
+        extended_group = "dn: %s\nadd: mail\nmail: %s\n" % (group_dn, smtp_user)
+        db.modify_ldif(extended_group)
 
 
 def delete_group(names, lp, creds, groupname):
@@ -840,12 +862,12 @@ def delete_group(names, lp, creds, groupname):
         raise Exception("Group not found " + groupname)
     to_delete = ['mailNickname', 'legacyExchangeDN', 'proxyAddresses',
                  'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
-    _delete_attrs_ignore_no_existent(db, group_dn, to_delete)
+    _delete_attrs_ignore_nonexistent(db, group_dn, to_delete)
 
     print "[+] Removed all OpenChange LDAP attributes from group account %s " % groupname
 
 
-def _delete_attrs_ignore_no_existent(db, dn, to_delete):
+def _delete_attrs_ignore_nonexistent(db, dn, to_delete):
     ldif_template = """
 dn: %(dn)s
 changetype: modify

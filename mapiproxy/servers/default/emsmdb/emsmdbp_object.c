@@ -868,7 +868,11 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	}
 
 	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!needed_properties, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	OPENCHANGE_RETVAL_IF(!needed_properties->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	for (i = 0; i < properties->cValues; i++) {
 		if (!properties_exclusion[(uint16_t) (properties->aulPropTag[i] >> 16)]) {
 			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
@@ -878,6 +882,8 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
 	if (data_pointers) {
 		aRow = talloc_zero(mem_ctx, struct SRow);
+		OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 		for (i = 0; i < needed_properties->cValues; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
 				/* _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue) */
@@ -958,7 +964,11 @@ static int emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, s
 	}
 
 	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!needed_properties, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	OPENCHANGE_RETVAL_IF(!needed_properties->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	for (i = 0; i < properties->cValues; i++) {
 		if (!properties_exclusion[(uint16_t) (properties->aulPropTag[i] >> 16)]) {
 			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
@@ -968,6 +978,8 @@ static int emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, s
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
 	if (data_pointers) {
 		aRow = talloc_zero(mem_ctx, struct SRow);
+		OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 		for (i = 0; i < needed_properties->cValues; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
 				set_SPropValue_proptag(&newValue, needed_properties->aulPropTag[i], data_pointers[i]);

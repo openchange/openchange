@@ -921,7 +921,7 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
-static int emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct SPropTagArray *excluded_tags)
+static enum MAPISTATUS emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct SPropTagArray *excluded_tags)
 {
 	TALLOC_CTX		*mem_ctx;
 	bool			properties_exclusion[65536];
@@ -1162,9 +1162,9 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
-_PUBLIC_ int emsmdbp_object_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *target_object, struct SPropTagArray *excluded_properties, bool deep_copy)
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *target_object, struct SPropTagArray *excluded_properties, bool deep_copy)
 {
-	int ret;
+	enum MAPISTATUS ret;
 
 	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
 	      || source_object->type == EMSMDBP_OBJECT_MAILBOX

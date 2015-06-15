@@ -920,8 +920,8 @@ static int emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, s
 	TALLOC_CTX		*mem_ctx;
 	bool			properties_exclusion[65536];
 	struct SPropTagArray	*properties, *needed_properties;
-        void                    **data_pointers;
-        enum MAPISTATUS         *retvals = NULL;
+	void                    **data_pointers;
+	enum MAPISTATUS         *retvals = NULL;
 	struct SRow		*aRow;
 	struct SPropValue	newValue;
 	uint32_t		i;

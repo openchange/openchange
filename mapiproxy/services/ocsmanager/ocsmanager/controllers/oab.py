@@ -25,11 +25,15 @@ from ocsmanager.lib.base import BaseController
 
 class OabController(BaseController):
     """The constroller class for OAB requests."""
-    @restrict('POST', 'GET')
-    def oab(self, **kwargs):
+
+    def get_oab(self, **kwargs):
+        # TODO
         response.headers["content-type"] = "application/xml"
         body = """<?xml version="1.0" encoding="UTF-8"?>
         <OAB>
-       </OAB>"""
+        </OAB>"""
         return body
 
+    def head_oab(self, **kwargs):
+        # TODO
+        pass

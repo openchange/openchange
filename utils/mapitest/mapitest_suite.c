@@ -287,7 +287,7 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 	char			*tmp;
 	struct mapitest_test	*el;
 	struct mapitest_suite	*suite;
-	bool			ret = false;
+	bool			ret = false, test_run;
 
 	test_name = talloc_strdup(mt->mem_ctx, name);
 	if ((tmp = strtok(test_name, "-")) == NULL) {
@@ -306,12 +306,9 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 
 		if ((suite && (suite->online == mt->online)) || (suite && (suite->online == false))) {
 			for (el = suite->tests; el; el = el->next) {
-				if (mapitest_suite_test_is_applicable(mt, el)) {
-					mapitest_suite_run_test(mt, suite, el->name);
+				test_run = mapitest_suite_run_test(mt, suite, el->name);
+				if (test_run) {
 					ret = true;
-				} else {
-					printf("test is not applicable: %s\n", el->name);
-					return true;
 				}
 			}
 		}

@@ -254,6 +254,26 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	return retval;
 }
 
+static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *parent_ctx,
+					      struct openchangedb_context *self,
+					      const char *recipient,
+					      uint32_t *cValues,
+					      struct ReceiveFolder **entries)
+{
+	enum MAPISTATUS retval;
+	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
+
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
+	retval = priv_data->backend->get_ReceiveFolderTable(parent_ctx, priv_data->backend,
+							    recipient, cValues, entries);
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], cValues=[%d]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 (retval == MAPI_E_SUCCESS && cValues) ? *cValues : -1);
+
+	return retval;
+}
+
 static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 					   const char *recipient,
 					   uint64_t *FolderId)
@@ -849,6 +869,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_logger_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->set_mapistoreURI = set_mapistoreURI;
 	oc_ctx->get_fid = get_fid;
 	oc_ctx->get_ReceiveFolder = get_ReceiveFolder;
+	oc_ctx->get_ReceiveFolderTable = get_ReceiveFolderTable;
 	oc_ctx->get_TransportFolder = get_TransportFolder;
 	oc_ctx->lookup_folder_property = lookup_folder_property;
 	oc_ctx->set_folder_properties = set_folder_properties;

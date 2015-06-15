@@ -833,6 +833,7 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	struct SRow		*aRow;
 	struct SPropValue	newValue;
 	uint32_t		i;
+	int			ret;
 
 	mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
@@ -891,7 +892,10 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 				SRow_addprop(aRow, newValue);
 			}
 		}
-		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
+
+		ret = emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(5, "emsmdbp_object_set_properties failed with error code 0x%x", ret);
 			talloc_free(mem_ctx);
 			return MAPI_E_NO_SUPPORT;
 		}
@@ -930,6 +934,7 @@ static enum MAPISTATUS emsmdbp_copy_properties_submit(struct emsmdbp_context *em
 	enum MAPISTATUS         *retvals = NULL;
 	struct SRow		*aRow;
 	struct SPropValue	newValue;
+	int			ret;
 	uint32_t		i;
 
 	mem_ctx = talloc_new(NULL);
@@ -986,7 +991,10 @@ static enum MAPISTATUS emsmdbp_copy_properties_submit(struct emsmdbp_context *em
 				SRow_addprop(aRow, newValue);
 			}
 		}
-		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
+
+		ret = emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(5, "emsmdbp_object_set_properties failed with error code 0x%x", ret);
 			talloc_free(mem_ctx);
 			return MAPI_E_NO_SUPPORT;
 		}

@@ -20,7 +20,10 @@ def make_map(config):
 
     # CUSTOM ROUTES HERE
     map.connect('/autodiscover/{action}.xml', controller="autodiscover")
-    map.connect('/ews/oab.xml', controller="oab", action="oab")
+    map.connect('/ews/oab.xml', controller="oab", action="get_oab",
+                conditions={'method': ["GET", "POST"]})
+    map.connect('/ews/oab.xml', controller="oab", action="head_oab",
+                conditions={'method': ["HEAD"]})
     map.connect('/ews/{controller}')
     map.connect('/ews/{controller}.wsdl')
     map.connect('/{controller}/{action}')

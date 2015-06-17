@@ -12,6 +12,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Open a shared calendar from address list in Outlook 2013
 * Send event invitation mails to several attendees, mixing internal and external recipients
 * Fix folder hierarchy synchronization issues on mailbox subfolders
+* Old mails are now synchronized after account cleanup
 
 ### Performances
 * Optimize the download of contents when you were in the middle of the first synchronization process in a business size mailbox.

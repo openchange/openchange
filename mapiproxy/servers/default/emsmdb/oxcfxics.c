@@ -4,6 +4,9 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Wolfgang Sourdeau 2010-2012
+   Copyright (C) Julien Kerihuel 2009-2015
+   Copyright (C) Jesús García 2014
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,7 +57,7 @@ static const uint32_t message_preload_interval = 150;
  parent to another is modeled as a modification of a folder, where the value
  of PidTagParentSourceKey of the folder changes to reflect the new parent."
 
- * HACK: CnsetSeen = CnsetSeenFAI = CnsetRead */
+ * HACK: CnsetSeen = CnsetRead */
 
 struct oxcfxics_prop_index {
 	uint32_t	parent_fid;
@@ -78,6 +81,7 @@ struct oxcfxics_sync_data {
 
 	struct rawidset			*eid_set;
 	struct rawidset			*cnset_seen;
+	struct rawidset			*cnset_seen_fai;
 	struct rawidset			*cnset_read;
 
 	struct rawidset			*deleted_eid_set;
@@ -3385,9 +3389,6 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	enum MAPISTATUS			*retvals;
 	struct emsmdbp_object		*table_object, *subfolder_object;
 	struct emsmdbp_object_table	*table;
-	uint32_t			unix_time;
-	struct FILETIME			*lm_time;
-	NTTIME				nt_time;
 	TALLOC_CTX			*local_mem_ctx;
 	struct GUID			replica_guid;
 	enum mapistore_error		ret;
@@ -3398,8 +3399,12 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 
 	/* Query the amount of rows and update sync_data structure */
 	count_query_props = talloc_zero(local_mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!count_query_props, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
 	count_query_props->cValues = 1;
 	count_query_props->aulPropTag = talloc_zero(count_query_props, enum MAPITAGS);
+	OPENCHANGE_RETVAL_IF(!count_query_props->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY,
+			     local_mem_ctx);
 	switch (sync_data->table_type) {
 	case MAPISTORE_FOLDER_TABLE:
 		count_query_props->aulPropTag[0] = PidTagFolderChildCount;
@@ -3411,7 +3416,9 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 		count_query_props->aulPropTag[0] = PidTagAssociatedContentCount;
 		break;
 	default:
-		abort();
+		OC_DEBUG(1, "Wrong table type to transfer state: %d", sync_data->table_type);
+		talloc_free(local_mem_ctx);
+		return MAPI_E_INVALID_PARAMETER;
 	}
 	data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, folder_object, count_query_props, (enum MAPISTATUS **) &retvals);
 	if (data_pointers && !retvals[0]) {
@@ -3420,14 +3427,16 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 		OPENCHANGE_RETVAL_IF(!nr_eid, MAPI_E_SUCCESS, local_mem_ctx);
 	} else {
 		OC_DEBUG(1, "ERROR: could not retrieve number of rows in table\n");
-		abort();
+		talloc_free(local_mem_ctx);
+		return MAPI_E_CALL_FAILED;
 	}
 
 	/* Fetch the actual table data */
- 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0); 
+	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0);
 	if (!table_object) {
-		OC_DEBUG(5, "could not open folder table\n");
-		abort();
+		OC_DEBUG(1, "could not open folder table");
+		talloc_free(local_mem_ctx);
+		return MAPI_E_CALL_FAILED;
 	}
 	table_object->object.table->prop_count = synccontext->properties.cValues;
 	table_object->object.table->properties = synccontext->properties.aulPropTag;
@@ -3445,25 +3454,17 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 			
-			if (retvals[1]) {
-				unix_time = oc_version_time;
-			}
-			else {
-				lm_time = (struct FILETIME *) data_pointers[1];
-				nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
-				unix_time = nt_time_to_unix(nt_time);
-			}
-
-			if (unix_time < oc_version_time) {
-				unix_time = oc_version_time;
-			}
-
 			if (retvals[sync_data->prop_index.change_number]) {
-				OC_DEBUG(5, "mandatory property PidTagChangeNumber not returned for message\n");
-				abort();
+				OC_DEBUG(1, "mandatory property PidTagChangeNumber not returned for message %.16"PRIx64, eid);
+				talloc_free(local_mem_ctx);
+				return MAPI_E_CALL_FAILED;
 			}
 			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
-			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+			if (sync_data->table_type == MAPISTORE_FAI_TABLE) {
+				RAWIDSET_push_guid_glob(sync_data->cnset_seen_fai, &sync_data->replica_guid, cn);
+			} else {
+				RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+			}
 			
 			talloc_free(retvals);
 			talloc_free(data_pointers);
@@ -3497,18 +3498,19 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 
 static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *owner, struct emsmdbp_object *synccontext_object)
 {
-	void					*mem_ctx;
 	struct idset				*new_idset, *old_idset;
 	struct oxcfxics_sync_data		*sync_data;
 	struct emsmdbp_context			*emsmdbp_ctx;
 	struct emsmdbp_object_synccontext	*synccontext;
 	enum MAPISTATUS				retval;
+	TALLOC_CTX				*mem_ctx;
 
 	emsmdbp_ctx = synccontext_object->emsmdbp_ctx;
 	synccontext = synccontext_object->object.synccontext;
 	ndr_push_uint32(ndr, NDR_SCALARS, IncrSyncStateBegin);
 
-	mem_ctx = talloc_zero(NULL, void);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	sync_data = talloc_zero(mem_ctx, struct oxcfxics_sync_data);
 	OPENCHANGE_RETVAL_IF(!sync_data, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
@@ -3525,6 +3527,7 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->cutmarks_ndr->offset = 0;
 	sync_data->cnset_seen = RAWIDSET_make(sync_data, false, true);
+	sync_data->cnset_seen_fai = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	if (synccontext->request.contents_mode) {
@@ -3553,15 +3556,24 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 	old_idset = synccontext->cnset_seen;
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
 	retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, synccontext->cnset_seen, "cnset_seen");
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	talloc_free(old_idset);
 	talloc_free(new_idset);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
 	ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetSeen);
 	ndr_push_idset(ndr, synccontext->cnset_seen);
 	if (synccontext->request.contents_mode && synccontext->request.fai) {
+		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen_fai);
+		old_idset = synccontext->cnset_seen_fai;
+		synccontext->cnset_seen_fai = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+					      synccontext->cnset_seen_fai, "cnset_seen_fai");
+		talloc_free(old_idset);
+		talloc_free(new_idset);
+		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
+
 		ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetSeenFAI);
-		ndr_push_idset(ndr, synccontext->cnset_seen);
+		ndr_push_idset(ndr, synccontext->cnset_seen_fai);
 	}
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);

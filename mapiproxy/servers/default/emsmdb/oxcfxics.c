@@ -1463,24 +1463,37 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				synccontext->skipped_objects++;
 				OC_DEBUG(5, "folder changes: cn %.16"PRIx64" already present\n", cn);
-				goto end_row;
+				if (retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) {
+					goto end_row;
+				}
 			}
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
-			if (retvals[sync_data->prop_index.change_key]) {
+
+			/* When the SOGo backend generates the PidTagChangeKey for folders on first synchronization,
+			   it generates a PidTagChangeKey with the replicaID part filled with zeros. This property value
+			   is then used to populate the PidTagPredecessorChangeList. Using an empty replicaID is however
+			   causing Outlook to generate Synchronization Issues. If the PidTagPredecessorChangeList property
+			   is missing, it means we are synchronizing a folder for the first time. The following condition
+			   therefore ensures that a proper PidTagChangeKey is generated to comply with Outlook requirements.
+			*/
+			if ((retvals[sync_data->prop_index.change_key] != MAPI_E_SUCCESS) ||
+			    ((retvals[sync_data->prop_index.change_key] == MAPI_E_SUCCESS) &&
+			     (retvals[sync_data->prop_index.predecessor_change_list] != MAPI_E_SUCCESS))) {
 				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
-			}
-			else {
+			} else {
 				bin_data = data_pointers[sync_data->prop_index.change_key];
 			}
+
+
 			query_props.aulPropTag[j] = PidTagChangeKey;
 			header_data_pointers[j] = bin_data;
 			j++;
 
 			/* predecessor... (already computed) */
 			query_props.aulPropTag[j] = PidTagPredecessorChangeList;
-			if (retvals[sync_data->prop_index.predecessor_change_list]) {
+			if (retvals[sync_data->prop_index.predecessor_change_list] != MAPI_E_SUCCESS) {
 				predecessors_data.cb = bin_data->cb + 1;
 				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
 				*predecessors_data.lpb = bin_data->cb & 0xff;
@@ -1806,11 +1819,14 @@ static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTr
 				OC_DEBUG(5, "synccontext buffer is %u bytes long\n", (uint32_t) synccontext->stream.buffer.length);
 			}
 			response->TransferBuffer = emsmdbp_stream_read_buffer(&synccontext->stream, buffer_size);
+
+			if (synccontext->stream.position == synccontext->stream.buffer.length) {
+				end_of_buffer = true;
+			}
 		}
 	}
 
 	response->TotalStepCount = synccontext->total_steps;
-	/* if (synccontext->stream.position == synccontext->stream.buffer.length) { */
 	if (end_of_buffer) {
 		response->TransferStatus = TransferStatus_Done;
 		response->InProgressCount = response->TotalStepCount;

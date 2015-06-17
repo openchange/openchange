@@ -833,6 +833,7 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	struct SRow		*aRow;
 	struct SPropValue	newValue;
 	uint32_t		i;
+	int			ret;
 
 	mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
@@ -868,7 +869,11 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	}
 
 	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!needed_properties, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	OPENCHANGE_RETVAL_IF(!needed_properties->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	for (i = 0; i < properties->cValues; i++) {
 		if (!properties_exclusion[(uint16_t) (properties->aulPropTag[i] >> 16)]) {
 			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
@@ -878,6 +883,8 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
 	if (data_pointers) {
 		aRow = talloc_zero(mem_ctx, struct SRow);
+		OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 		for (i = 0; i < needed_properties->cValues; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
 				/* _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue) */
@@ -885,7 +892,109 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 				SRow_addprop(aRow, newValue);
 			}
 		}
-		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
+
+		ret = emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(5, "emsmdbp_object_set_properties failed with error code 0x%x", ret);
+			talloc_free(mem_ctx);
+			return MAPI_E_NO_SUPPORT;
+		}
+	}
+	else {
+		talloc_free(mem_ctx);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Copy properties from one emsmdb object to the other within
+   the context of message submission
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param source_object the source object to copy properties from
+   \param dest_object the destination object
+   \param excluded_tags the set of property tags excluded from the copy
+
+   \note This version is a copy of emsmdbp_copy_properties but which
+   removes the exclusion of PidTagChangeKey and
+   PidTagPredecessorChangeList properties.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+ */
+static enum MAPISTATUS emsmdbp_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct SPropTagArray *excluded_tags)
+{
+	TALLOC_CTX		*mem_ctx;
+	bool			properties_exclusion[65536];
+	struct SPropTagArray	*properties, *needed_properties;
+	void                    **data_pointers;
+	enum MAPISTATUS         *retvals = NULL;
+	struct SRow		*aRow;
+	struct SPropValue	newValue;
+	int			ret;
+	uint32_t		i;
+
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
+		OC_DEBUG(0, "mapistore support not implemented yet - shouldn't occur\n");
+		talloc_free(mem_ctx);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* 1. Exclusions */
+	memset(properties_exclusion, 0, 65536 * sizeof(bool));
+
+	/* 1a. Explicit exclusions */
+	properties_exclusion[(uint16_t) (PidTagRowType >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstanceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstanceNum >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagFolderId >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagMid >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagSourceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagParentSourceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagParentFolderId >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagChangeNumber >> 16)] = true;
+
+	/* 1b. Request exclusions */
+	if (excluded_tags != NULL) {
+		for (i = 0; i < excluded_tags->cValues; i++) {
+			properties_exclusion[(uint16_t) (excluded_tags->aulPropTag[i] >> 16)] = true;
+		}
+	}
+
+	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!needed_properties, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	OPENCHANGE_RETVAL_IF(!needed_properties->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	for (i = 0; i < properties->cValues; i++) {
+		if (!properties_exclusion[(uint16_t) (properties->aulPropTag[i] >> 16)]) {
+			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
+		}
+	}
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
+	if (data_pointers) {
+		aRow = talloc_zero(mem_ctx, struct SRow);
+		OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+		for (i = 0; i < needed_properties->cValues; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				set_SPropValue_proptag(&newValue, needed_properties->aulPropTag[i], data_pointers[i]);
+				SRow_addprop(aRow, newValue);
+			}
+		}
+
+		ret = emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(5, "emsmdbp_object_set_properties failed with error code 0x%x", ret);
 			talloc_free(mem_ctx);
 			return MAPI_E_NO_SUPPORT;
 		}
@@ -1044,6 +1153,77 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Copy properties from an object to another object
+
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param source_object pointer to the source object
+   \param target_object pointer to the target object
+   \param excluded_properties pointer to a SPropTagArray listing properties that must not be copied
+   \param deep_copy indicates whether subobjects must be copied
+
+   \note This version is a copy of emsmdbp_object_copy_properties but
+   which removes the exclusion of PidTagChangeKey and
+   PidTagPredecessorChangeList properties.
+
+   \return Allocated emsmdbp object on success, otherwise NULL
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_copy_properties_submit(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *target_object, struct SPropTagArray *excluded_properties, bool deep_copy)
+{
+	enum MAPISTATUS ret;
+
+	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
+	      || source_object->type == EMSMDBP_OBJECT_MAILBOX
+	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
+	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
+		OC_DEBUG(0, "object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type);
+		ret = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+	if (target_object->type != source_object->type) {
+		OC_DEBUG(0, "source and destination objects type must match (type =  %d)\n", target_object->type);
+		ret = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	/* copy properties (common to all object types) */
+	ret = emsmdbp_copy_properties_submit(emsmdbp_ctx, source_object, target_object, excluded_properties);
+	if (ret != MAPI_E_SUCCESS) {
+                goto end;
+	}
+
+	/* type specific ops */
+	switch (source_object->type) {
+	case EMSMDBP_OBJECT_MESSAGE:
+		if (emsmdbp_is_mapistore(source_object) && emsmdbp_is_mapistore(target_object)) {
+			ret = emsmdbp_copy_message_recipients_mapistore(emsmdbp_ctx, source_object, target_object);
+			if (ret != MAPI_E_SUCCESS) {
+				goto end;
+			}
+			if (deep_copy) {
+				ret = emsmdbp_copy_message_attachments_mapistore(emsmdbp_ctx, source_object, target_object);
+				if (ret != MAPI_E_SUCCESS) {
+					goto end;
+				}
+			}
+		}
+		else {
+			OC_DEBUG(0, "Cannot copy recipients or attachments to or from non-mapistore messages\n");
+		}
+		break;
+	default:
+		if (deep_copy) {
+			OC_DEBUG(0, "Cannot deep copy non-message objects\n");
+		}
+	}
+
+end:
+
+	return ret;
+}
+
 
 /**
    \details Copy properties from an object to another object

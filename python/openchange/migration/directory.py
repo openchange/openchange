@@ -235,3 +235,64 @@ proxyAddresses: SMTP:postmaster@{mail_domain}
                             db.modify_ldif(ldif)
                         except Exception, ex:
                             sys.stderr.write("Error unmigrating user %s: %s\n" % (dn, ex))
+
+
+@migration('directory', 3)
+class AddActiveSyncAttributes(Migration):
+    description = 'Add missing ActiveSync attributes'
+
+    @classmethod
+    def apply(cls, cur, **kwargs):
+        from openchange.provision import get_local_samdb
+        lp = kwargs['lp']
+        creds = kwargs['creds']
+        names = kwargs['names']
+        db = get_local_samdb(names, lp, creds)
+        add_activesync_template = """
+dn: {dn}
+changetype: modify
+add: msExchOmaAdminWirelessEnable
+msExchOmaAdminWirelessEnable: 0
+"""
+        recipients = cls._get_all_enabled_users(db, names.domaindn)
+        for element in recipients:
+            if 'msExchOmaAdminWirelessEnable' in element:
+                continue
+            dn = element.dn.get_linearized()
+            ldif = add_activesync_template.format(dn=dn)
+            try:
+                db.modify_ldif(ldif)
+            except Exception, ex:
+                msg = "Error migrating recipient %s: %s\n" % (dn, ex)
+                sys.stderr.write(msg)
+
+    @classmethod
+    def unapply(cls, cur, **kwargs):
+        from openchange.provision import get_local_samdb
+        lp = kwargs['lp']
+        creds = kwargs['creds']
+        names = kwargs['names']
+        db = get_local_samdb(names, lp, creds)
+        delete_activesync_template = """
+dn: {dn}
+changetype: delete
+delete: msExchOmaAdminWirelessEnable
+"""
+        recipients = cls._get_all_enabled_users(db, names.domaindn)
+        for element in recipients:
+            if not 'msExchOmaAdminWirelessEnable' in element:
+                continue
+            dn = element.dn.get_linearized()
+            ldif = delete_activesync_template.format(dn=dn)
+            try:
+                db.modify_ldif(ldif)
+            except Exception, ex:
+                msg = "Error reverting migration in recipient %s: %s\n" % (dn, ex)
+                sys.stderr.write(msg)
+
+    @classmethod
+    def _get_all_enabled_users(cls, db, base_dn):
+        ldb_filter = "(&(objectClass=user)(proxyAddresses=*))"
+        return db.search(base=base_dn,
+                         scope=ldb.SCOPE_SUBTREE,
+                         expression=ldb_filter)

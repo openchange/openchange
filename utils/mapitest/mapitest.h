@@ -51,6 +51,8 @@ enum TestApplicabilityFlags {
 	NotInExchange2010 = 0x1,	/*!< This test is not applicable to Exchange 2010 */
 	NotInExchange2010SP0 = 0x2,	/*!< This test is not applicable to Exchange 2010
 	                                     Service Pack 0, but is applicable to later versions */
+	NotInOpenChange = 0x4,		/*!< This test is not applicable to OpenChange as
+					     the ROP is not implemented yet */
 	ExpectedFail = 0x8000,          /*!< This test is expected to fail */
 	LastTestApplicabilityFlag = 0xFFFF
 };

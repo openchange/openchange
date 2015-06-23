@@ -42,6 +42,7 @@ struct TestApplicabilityDescription {
 	{ ApplicableToAllVersions, 	"Applicable to all server versions" },
 	{ NotInExchange2010, 		"Not applicable to Exchange 2010" },
 	{ NotInExchange2010SP0,		"Not applicable to Exchange 2010 SP0" },
+	{ NotInOpenChange,		"Not implemented in OpenChange" },
 	{ LastTestApplicabilityFlag,	"Sentinel Value" }
 };
 

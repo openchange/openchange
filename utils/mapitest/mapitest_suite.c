@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -189,6 +190,29 @@ _PUBLIC_ struct mapitest_suite *mapitest_suite_find(struct mapitest *mt,
 }
 
 /**
+   \details check if the given server is OpenChange
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true if the server is OpenChange, otherwise false
+
+   \note this is a "hack". Any improvement is welcome.
+*/
+static bool mapitest_suite_is_server_OpenChange(struct mapitest *mt)
+{
+	mapi_object_t		obj_store;
+	enum MAPISTATUS		retval;
+	uint64_t		folder_id;
+
+	retval = OpenMsgStore(mt->session, &obj_store);
+	if (retval == MAPI_E_SUCCESS) {
+		retval = GetDefaultFolder(&obj_store, &folder_id, olFolderInbox);
+		return (retval == MAPI_E_SUCCESS && folder_id == 0xf503000000000001);
+	}
+	return false;
+}
+
+/**
    \details test whether a particular test is applicable
 
    \param mt pointer to the top-level mapitest structure
@@ -204,6 +228,9 @@ static bool mapitest_suite_test_is_applicable(struct mapitest *mt, struct mapite
 		return false;
 	}
 	if ((test->flags & NotInExchange2010SP0) && (actualServerVer == Exchange2010SP0Version)) {
+		return false;
+	}
+	if ((test->flags & NotInOpenChange) && mapitest_suite_is_server_OpenChange(mt)) {
 		return false;
 	}
 	return true;
@@ -287,7 +314,7 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 	char			*tmp;
 	struct mapitest_test	*el;
 	struct mapitest_suite	*suite;
-	bool			ret = false;
+	bool			ret = false, test_run;
 
 	test_name = talloc_strdup(mt->mem_ctx, name);
 	if ((tmp = strtok(test_name, "-")) == NULL) {
@@ -306,12 +333,9 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 
 		if ((suite && (suite->online == mt->online)) || (suite && (suite->online == false))) {
 			for (el = suite->tests; el; el = el->next) {
-				if (mapitest_suite_test_is_applicable(mt, el)) {
-					mapitest_suite_run_test(mt, suite, el->name);
+				test_run = mapitest_suite_run_test(mt, suite, el->name);
+				if (test_run) {
 					ret = true;
-				} else {
-					printf("test is not applicable: %s\n", el->name);
-					return true;
 				}
 			}
 		}

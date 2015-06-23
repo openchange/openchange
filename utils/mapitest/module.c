@@ -66,10 +66,14 @@ _PUBLIC_ uint32_t module_oxcstor_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GET-RECEIVE-FOLDER", "Retrieve the receive folder ID", mapitest_oxcstor_GetReceiveFolder);
 	mapitest_suite_add_test(suite, "SET-RECEIVE-FOLDER", "Set the receive folder", mapitest_oxcstor_SetReceiveFolder);
 	mapitest_suite_add_test(suite, "GET-RECEIVE-FOLDER-TABLE", "Retrieve the Receive Folder Table", mapitest_oxcstor_GetReceiveFolderTable);
-	mapitest_suite_add_test(suite, "PUBLICFOLDER-ISGHOSTED", "Determine if a public folder is ghosted", mapitest_oxcstor_PublicFolderIsGhosted);
-	mapitest_suite_add_test(suite, "GETOWNINGSERVERS", "Get the list of servers that host replicas of a given public folder", mapitest_oxcstor_GetOwningServers);
+	mapitest_suite_add_test_flagged(suite, "PUBLICFOLDER-ISGHOSTED",
+					"Determine if a public folder is ghosted",
+					mapitest_oxcstor_PublicFolderIsGhosted, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "GETOWNINGSERVERS",
+					"Get the list of servers that host replicas of a given public folder",
+					mapitest_oxcstor_GetOwningServers, NotInOpenChange);
 	mapitest_suite_add_test(suite, "LONGTERMID", "Map to / from a Long Term ID", mapitest_oxcstor_LongTermId);
-	mapitest_suite_add_test_flagged(suite, "GETSTORESTATE", "Retrieve the store state", mapitest_oxcstor_GetStoreState, NotInExchange2010);
+	mapitest_suite_add_test_flagged(suite, "GETSTORESTATE", "Retrieve the store state", mapitest_oxcstor_GetStoreState, NotInExchange2010 | NotInOpenChange);
 	mapitest_suite_add_test(suite, "ISMAILBOXFOLDER", "Get the standard folder for a given folder ID", mapitest_oxcstor_IsMailboxFolder);
 
 	mapitest_suite_register(mt, suite);
@@ -104,8 +108,12 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "MOVECOPY-MESSAGES", "Move or copy messages from a source to destination folder", mapitest_oxcfold_MoveCopyMessages);
 	mapitest_suite_add_test(suite, "MOVEFOLDER", "Move folder from source to destination", mapitest_oxcfold_MoveFolder);
 	mapitest_suite_add_test(suite, "COPYFOLDER", "Copy folder from source to destination", mapitest_oxcfold_CopyFolder);
-	mapitest_suite_add_test(suite, "HARDDELETEMESSAGES", "Hard delete messages", mapitest_oxcfold_HardDeleteMessages);
-	mapitest_suite_add_test(suite, "HARDDELETEMESSAGESANDSUBFOLDERS", "Hard delete messages and subfolders", mapitest_oxcfold_HardDeleteMessagesAndSubfolders);
+	mapitest_suite_add_test_flagged(suite, "HARDDELETEMESSAGES", "Hard delete messages",
+					mapitest_oxcfold_HardDeleteMessages, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "HARDDELETEMESSAGESANDSUBFOLDERS",
+					"Hard delete messages and subfolders",
+					mapitest_oxcfold_HardDeleteMessagesAndSubfolders,
+					NotInOpenChange);
 	mapitest_suite_add_test(suite, "DELETEMESSAGES", "Soft delete messages", mapitest_oxcfold_DeleteMessages);
 
 	mapitest_suite_register(mt, suite);
@@ -129,11 +137,16 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 	
 	mapitest_suite_add_test(suite, "ADDRESS-TYPES", "Address Types", mapitest_oxomsg_AddressTypes);
 	mapitest_suite_add_test(suite, "SUBMIT-MESSAGE", "Submit message", mapitest_oxomsg_SubmitMessage);
-	mapitest_suite_add_test(suite, "ABORT-SUBMIT", "Abort submitted message", mapitest_oxomsg_AbortSubmit);
+	mapitest_suite_add_test_flagged(suite, "ABORT-SUBMIT", "Abort submitted message",
+					mapitest_oxomsg_AbortSubmit, NotInOpenChange);
 	mapitest_suite_add_test(suite, "SET-SPOOLER", "Client intends to act as a mail spooler", mapitest_oxomsg_SetSpooler);
-	mapitest_suite_add_test(suite, "SPOOLER-LOCK-MESSAGE", "Lock the specified message for spooling", mapitest_oxomsg_SpoolerLockMessage);
+	mapitest_suite_add_test_flagged(suite, "SPOOLER-LOCK-MESSAGE",
+					"Lock the specified message for spooling",
+					mapitest_oxomsg_SpoolerLockMessage, NotInOpenChange);
 	mapitest_suite_add_test(suite, "TRANSPORT-SEND", "Sends the specified message object out for message delivery", mapitest_oxomsg_TransportSend);
-	mapitest_suite_add_test(suite, "TRANSPORT-NEW-MAIL", "Submit a new message for processing", mapitest_oxomsg_TransportNewMail);
+	mapitest_suite_add_test_flagged(suite, "TRANSPORT-NEW-MAIL",
+					"Submit a new message for processing",
+					mapitest_oxomsg_TransportNewMail, NotInOpenChange);
 	mapitest_suite_add_test(suite, "GET-TRANSPORT-FOLDER", "Retrieve the temporary transport folder ID", mapitest_oxomsg_GetTransportFolder);
 
 	mapitest_suite_register(mt, suite);
@@ -157,15 +170,20 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 
 	mapitest_suite_add_test(suite, "CREATE-MESSAGE", "Create message", mapitest_oxcmsg_CreateMessage);
 	mapitest_suite_add_test(suite, "SET-MESSAGE-READ-FLAGS", "Set message read flag", mapitest_oxcmsg_SetMessageReadFlag);
-	mapitest_suite_add_test(suite, "SET-READ-FLAGS", "Set read flag on multiple messages", mapitest_oxcmsg_SetReadFlags);
+	mapitest_suite_add_test_flagged(suite, "SET-READ-FLAGS",
+					"Set read flag on multiple messages",
+					mapitest_oxcmsg_SetReadFlags, NotInOpenChange);
 	mapitest_suite_add_test(suite, "MODIFY-RECIPIENTS", "Add new recipients", mapitest_oxcmsg_ModifyRecipients);
-	mapitest_suite_add_test(suite, "READ-RECIPIENTS", "Read recipients from a message", mapitest_oxcmsg_ReadRecipients);
+	mapitest_suite_add_test_flagged(suite, "READ-RECIPIENTS",
+					"Read recipients from a message",
+					mapitest_oxcmsg_ReadRecipients, NotInOpenChange);
 	mapitest_suite_add_test(suite, "REMOVE-ALL-RECIPIENTS", "Remove all recipients from a message", mapitest_oxcmsg_RemoveAllRecipients);
 	mapitest_suite_add_test(suite, "SAVE-CHANGES-MESSAGE", "Save changes on message", mapitest_oxcmsg_SaveChangesMessage);
 	mapitest_suite_add_test(suite, "GET-MESSAGE-STATUS", "Get message status", mapitest_oxcmsg_GetMessageStatus);
-	mapitest_suite_add_test(suite, "SET-MESSAGE-STATUS", "Set message status", mapitest_oxcmsg_SetMessageStatus);
+	mapitest_suite_add_test_flagged(suite, "SET-MESSAGE-STATUS", "Set message status",
+					mapitest_oxcmsg_SetMessageStatus, NotInOpenChange);
 	mapitest_suite_add_test(suite, "OPEN-EMBEDDED-MESSAGE", "Open a message embedded in another message", mapitest_oxcmsg_OpenEmbeddedMessage);
-	mapitest_suite_add_test_flagged(suite, "GET-VALID-ATTACHMENTS", "Get valid attachment IDs for a message", mapitest_oxcmsg_GetValidAttachments, NotInExchange2010);
+	mapitest_suite_add_test_flagged(suite, "GET-VALID-ATTACHMENTS", "Get valid attachment IDs for a message", mapitest_oxcmsg_GetValidAttachments, NotInExchange2010 | NotInOpenChange);
 	mapitest_suite_add_test(suite, "RELOAD-CACHED-INFORMATION", "Reload cached information for a message", mapitest_oxcmsg_ReloadCachedInformation);
 
 	mapitest_suite_register(mt, suite);
@@ -188,14 +206,23 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCTABLE", "Table Object Protocol", true);
 	
 	mapitest_suite_add_test(suite, "SETCOLUMNS", "Set Table Columns", mapitest_oxctable_SetColumns);
-	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Query Table Columns", mapitest_oxctable_QueryColumns);
+	mapitest_suite_add_test_flagged(suite, "QUERYCOLUMNS", "Query Table Columns",
+					mapitest_oxctable_QueryColumns, NotInOpenChange);
 	mapitest_suite_add_test(suite, "QUERYROWS", "Query Table Rows", mapitest_oxctable_QueryRows);
-	mapitest_suite_add_test_flagged(suite, "GETSTATUS", "Get Table Status", mapitest_oxctable_GetStatus, NotInExchange2010);
+	mapitest_suite_add_test_flagged(suite, "GETSTATUS", "Get Table Status",
+					mapitest_oxctable_GetStatus,
+					NotInExchange2010 | NotInOpenChange);
 	mapitest_suite_add_test(suite, "SEEKROW", "Seek a row", mapitest_oxctable_SeekRow);
 	mapitest_suite_add_test(suite, "RESTRICT", "Apply filters to a table", mapitest_oxctable_Restrict);
-	mapitest_suite_add_test_flagged(suite, "SEEKROW-APPROX", "Seek an approximate row", mapitest_oxctable_SeekRowApprox, NotInExchange2010);
-	mapitest_suite_add_test(suite, "CREATE-BOOKMARK", "Create a table bookmark", mapitest_oxctable_CreateBookmark);
-	mapitest_suite_add_test(suite, "SEEKROW-BOOKMARK", "Seek a row given a bookmark", mapitest_oxctable_SeekRowBookmark);
+	mapitest_suite_add_test_flagged(suite, "SEEKROW-APPROX",
+					"Seek an approximate row",
+					mapitest_oxctable_SeekRowApprox,
+					NotInExchange2010 | NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "CREATE-BOOKMARK", "Create a table bookmark",
+					mapitest_oxctable_CreateBookmark, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "SEEKROW-BOOKMARK",
+					"Seek a row given a bookmark",
+					mapitest_oxctable_SeekRowBookmark, NotInOpenChange);
 	mapitest_suite_add_test(suite, "CATEGORY", "Expand/collapse category rows", mapitest_oxctable_Category);
 
 	mapitest_suite_register(mt, suite);
@@ -222,14 +249,28 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GET-PROPSALL", "Retrieve the whole property array", mapitest_oxcprpt_GetPropsAll);
 	mapitest_suite_add_test(suite, "GET-PROPLIST", "Retrieve the property list", mapitest_oxcprpt_GetPropList);
 	mapitest_suite_add_test(suite, "SET-PROPS", "Set a specific set of properties", mapitest_oxcprpt_SetProps);
-	mapitest_suite_add_test(suite, "DELETE-PROPS", "Delete a specific set of properties", mapitest_oxcprpt_DeleteProps);
-	mapitest_suite_add_test(suite, "PROPS-NOREPLICATE", "Set / delete a specific set of properties (no replicate)", mapitest_oxcprpt_NoReplicate);
-	mapitest_suite_add_test(suite, "COPY-PROPS", "Copy a specified set of properties", mapitest_oxcprpt_CopyProps);
-	mapitest_suite_add_test(suite, "STREAM", "Test stream operations", mapitest_oxcprpt_Stream);
+	mapitest_suite_add_test_flagged(suite, "DELETE-PROPS",
+					"Delete a specific set of properties",
+					mapitest_oxcprpt_DeleteProps, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "PROPS-NOREPLICATE",
+					"Set / delete a specific set of properties (no replicate)",
+					mapitest_oxcprpt_NoReplicate, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "COPY-PROPS",
+					"Copy a specified set of properties",
+					mapitest_oxcprpt_CopyProps, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "STREAM", "Test stream operations",
+					mapitest_oxcprpt_Stream, NotInOpenChange);
 	mapitest_suite_add_test(suite, "COPYTO", "Copy or move properties", mapitest_oxcprpt_CopyTo);
-	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM", "Test atomic Write / Commit operation", mapitest_oxcprpt_WriteAndCommitStream, NotInExchange2010);
-	mapitest_suite_add_test_flagged(suite, "COPYTO-STREAM", "Copy stream from source to destination stream", mapitest_oxcprpt_CopyToStream, NotInExchange2010SP0);
-	mapitest_suite_add_test(suite, "NAME-ID", "Convert between Names and IDs", mapitest_oxcprpt_NameId);
+	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM",
+					"Test atomic Write / Commit operation",
+					mapitest_oxcprpt_WriteAndCommitStream,
+					NotInExchange2010 | NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "COPYTO-STREAM",
+					"Copy stream from source to destination stream",
+					mapitest_oxcprpt_CopyToStream,
+					NotInExchange2010SP0 | NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "NAME-ID", "Convert between Names and IDs",
+					mapitest_oxcprpt_NameId, NotInOpenChange);
 	mapitest_suite_add_test(suite, "PSMAPI-NAME-ID", "Convert between Names and IDs for PS_MAPI namespace", mapitest_oxcprpt_NameId_PSMAPI);
 
 	mapitest_suite_register(mt, suite);
@@ -273,7 +314,10 @@ _PUBLIC_ uint32_t module_oxcnotif_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCNOTIF", "Core Notification Protocol", true);
 
 	// mapitest_suite_add_test(suite, "REGISTER-NOTIFICATION", "Subscribe to notifications", mapitest_oxcnotif_RegisterNotification);
-	mapitest_suite_add_test_flagged(suite, "SYNC-OPEN-ADVISOR", "Test the SyncOpenAdvisor ROP", mapitest_oxcnotif_SyncOpenAdvisor, NotInExchange2010);
+	mapitest_suite_add_test_flagged(suite, "SYNC-OPEN-ADVISOR",
+					"Test the SyncOpenAdvisor ROP",
+					mapitest_oxcnotif_SyncOpenAdvisor,
+					NotInExchange2010 | NotInOpenChange);
 
 	mapitest_suite_register(mt, suite);
 
@@ -295,11 +339,16 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCFXICS", "Bulk Data Transfer Protocol", true);
 	
 	mapitest_suite_add_test(suite, "GET-LOCAL-REPLICA-IDS", "Reserve a range of IDs for local replica", mapitest_oxcfxics_GetLocalReplicaIds);
-	mapitest_suite_add_test(suite, "COPYFOLDER", "Test CopyFolder operation", mapitest_oxcfxics_CopyFolder);
-	mapitest_suite_add_test(suite, "COPYMESSAGES", "Test CopyMessages operation", mapitest_oxcfxics_CopyMessages);
+	mapitest_suite_add_test_flagged(suite, "COPYFOLDER", "Test CopyFolder operation",
+					mapitest_oxcfxics_CopyFolder, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "COPYMESSAGES", "Test CopyMessages operation",
+					mapitest_oxcfxics_CopyMessages, NotInOpenChange);
 	mapitest_suite_add_test(suite, "COPYTO", "Test CopyTo operation", mapitest_oxcfxics_CopyTo);
-	mapitest_suite_add_test(suite, "COPYPROPS", "Test CopyProperties operation", mapitest_oxcfxics_CopyProperties);
-	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
+	mapitest_suite_add_test_flagged(suite, "COPYPROPS", "Test CopyProperties operation",
+					mapitest_oxcfxics_CopyProperties, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "DEST-CONFIGURE",
+					"Test Destination Configure operation",
+					mapitest_oxcfxics_DestConfigure, NotInOpenChange);
 	mapitest_suite_add_test(suite, "SYNC-CONFIGURE-HIERARCHY", "Configure ICS hierarchy context for download", mapitest_oxcfxics_SyncConfigureHierarchy);
 	mapitest_suite_add_test(suite, "SYNC-CONFIGURE-CONTENTS", "Configure ICS contents context for download", mapitest_oxcfxics_SyncConfigureContents);
 	mapitest_suite_add_test(suite, "SET-LOCAL-REPLICA-MIDSET-DELETED", "Reserve a range of local replica IDs", mapitest_oxcfxics_SetLocalReplicaMidsetDeleted);
@@ -349,18 +398,35 @@ _PUBLIC_ uint32_t module_nspi_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "QUERYROWS", "Returns a number of rows from a specified table", mapitest_nspi_QueryRows);
 	mapitest_suite_add_test(suite, "SEEKENTRIES", "Searches for and sets the logical position in a specific table", mapitest_nspi_SeekEntries);
 	mapitest_suite_add_test(suite, "GETMATCHES", "Returns an explicit table", mapitest_nspi_GetMatches);
-	mapitest_suite_add_test(suite, "RESORTRESTRICTION", "Apply a sort order to the objects in a restricted address book container", mapitest_nspi_ResortRestriction);
+	mapitest_suite_add_test_flagged(suite, "RESORTRESTRICTION",
+					"Apply a sort order to the objects in a restricted address book container",
+					mapitest_nspi_ResortRestriction, NotInOpenChange);
 	mapitest_suite_add_test(suite, "DNTOMID", "Maps a set of DN to a set of MId", mapitest_nspi_DNToMId);
-	mapitest_suite_add_test(suite, "GETPROPLIST", "Retrieve the list of properties associated to an object", mapitest_nspi_GetPropList);
+	mapitest_suite_add_test_flagged(suite, "GETPROPLIST",
+					"Retrieve the list of properties associated to an object",
+					mapitest_nspi_GetPropList, NotInOpenChange);
 	mapitest_suite_add_test(suite, "GETPROPS", "Returns a row containing a set of the properties and values", mapitest_nspi_GetProps);
-	mapitest_suite_add_test(suite, "COMPAREMIDS", "Compare the position in an AB container of two objects", mapitest_nspi_CompareMIds);
-	mapitest_suite_add_test(suite, "MODPROPS", "Modify an address book object", mapitest_nspi_ModProps);
+	mapitest_suite_add_test_flagged(suite, "COMPAREMIDS",
+					"Compare the position in an AB container of two objects",
+					mapitest_nspi_CompareMIds, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "MODPROPS", "Modify an address book object",
+					mapitest_nspi_ModProps, NotInOpenChange);
 	mapitest_suite_add_test(suite, "GETSPECIALTABLE", "Returns the rows of a special table to the client", mapitest_nspi_GetSpecialTable);
-	mapitest_suite_add_test(suite, "GETTEMPLATEINFO", "Returns information about template objects", mapitest_nspi_GetTemplateInfo);
-	mapitest_suite_add_test(suite, "MODLINKATT", "Modifies the values of a specific property of a specific row", mapitest_nspi_ModLinkAtt);
-	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Returns a list of all the properties the NSPI server is aware of", mapitest_nspi_QueryColumns);
-	mapitest_suite_add_test(suite, "GETNAMESFROMIDS", "Returns a list of property names for a set of proptags", mapitest_nspi_GetNamesFromIDs);
-	mapitest_suite_add_test(suite, "GETIDSFROMNAMES", "Returns the property IDs associated with property names", mapitest_nspi_GetIDsFromNames);
+	mapitest_suite_add_test_flagged(suite, "GETTEMPLATEINFO",
+					"Returns information about template objects",
+					mapitest_nspi_GetTemplateInfo, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "MODLINKATT",
+					"Modifies the values of a specific property of a specific row",
+					mapitest_nspi_ModLinkAtt, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "QUERYCOLUMNS",
+					"Returns a list of all the properties the NSPI server is aware of",
+					mapitest_nspi_QueryColumns, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "GETNAMESFROMIDS",
+					"Returns a list of property names for a set of proptags",
+					mapitest_nspi_GetNamesFromIDs, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "GETIDSFROMNAMES",
+					"Returns the property IDs associated with property names",
+					mapitest_nspi_GetIDsFromNames, NotInOpenChange);
 	mapitest_suite_add_test(suite, "RESOLVENAMES", "Resolve usernames", mapitest_nspi_ResolveNames);
 	mapitest_suite_add_test(suite, "GETGALTABLE", "Fetches the Global Address List", mapitest_nspi_GetGALTable);
 

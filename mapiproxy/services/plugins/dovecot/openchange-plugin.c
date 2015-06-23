@@ -156,28 +156,32 @@ static void openchange_mail_user_created(struct mail_user *user)
 	}
 }
 
+static void openchange_append_mail_message(struct openchange_mail_txn_context *ctx,
+					   struct mail *mail, enum openchange_event event)
+{
+	struct openchange_message		*msg;
+
+	msg = p_new(ctx->pool, struct openchange_message, 1);
+	msg->event = event;
+	msg->uid = 0;
+	msg->sep = ctx->sep;
+	msg->destination_folder = p_strdup(ctx->pool, mailbox_get_name(mail->box));
+	DLLIST2_APPEND(&ctx->messages, &ctx->messages_tail, msg);
+}
 static void openchange_mail_save(void *txn, struct mail *mail)
 {
-	i_debug("%s", __func__);
+	struct openchange_mail_txn_context	*ctx;
+
+	ctx = (struct openchange_mail_txn_context *) txn;
+	openchange_append_mail_message(ctx, mail, OPENCHANGE_EVENT_SAVE);
 }
 
 static void openchange_mail_copy(void *txn, struct mail *src, struct mail *dst)
 {
 	struct openchange_mail_txn_context	*ctx;
-	struct openchange_message		*msg;
-	struct openchange_user			*user;
 
 	ctx = (struct openchange_mail_txn_context *) txn;
-	user = OPENCHANGE_USER_CONTEXT(dst->box->storage->user);
-	if (strcmp(src->box->storage->name, "raw") == 0) {
-		/* special case: lda/ltmp is saving email */
-		msg = p_new(ctx->pool, struct openchange_message, 1);
-		msg->event = OPENCHANGE_EVENT_COPY;
-		msg->uid = 0;
-		msg->sep = ctx->sep;
-		msg->destination_folder = p_strdup(ctx->pool, mailbox_get_name(dst->box));
-		DLLIST2_APPEND(&ctx->messages, &ctx->messages_tail, msg);
-	}
+	openchange_append_mail_message(ctx, dst, OPENCHANGE_EVENT_COPY);
 }
 
 static void *openchange_mail_transaction_begin(struct mailbox_transaction_context *t)
@@ -323,7 +327,8 @@ static void openchange_mail_transaction_commit(void *txn, struct mail_transactio
 
 	seq_range_array_iter_init(&iter, &changes->saved_uids);
 	for (msg = ctx->messages; msg != NULL; msg = msg->next) {
-		if (msg->event == OPENCHANGE_EVENT_COPY) {
+		if (msg->event == OPENCHANGE_EVENT_COPY ||
+		    msg->event == OPENCHANGE_EVENT_SAVE) {
 			if (seq_range_array_iter_nth(&iter, n++, &uid)) {
 				msg->uid = uid;
 				openchange_newmail(user, msg);

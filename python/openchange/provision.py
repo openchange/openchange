@@ -5,6 +5,7 @@
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008-2009
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
 # Copyright (C) Enrique J. Hernández <ejhernandez@zentyal.com> 2015
+# Copyright (C) Javier Amor Garcia <jamor@zentyal.com> 2015
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -732,7 +733,7 @@ def delete_user(names, lp, creds, username=None):
         print "[!] User '%s' not found" % username
         return
 
-    to_delete = ['mailNickName', 'homeMDB', 'homeMTA',' legacyExchangeDN',
+    to_delete = ['mailNickName', 'homeMDB', 'homeMTA', 'legacyExchangeDN',
                  'proxyAddresses', 'msExchUserAccountControl',
                  'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
     _delete_attrs_ignore_nonexistent(db, user_dn, to_delete)
@@ -788,7 +789,12 @@ def enable_all_groups_in_organization(names, lp, creds, org_name):
     """enable all groups in the given organization
 
     Groups without mail atrtibute are ignored
-    This methods only works in schemas where the groups reside under "CN=Groups,CN=%s,CN=Users,%s" % (org_name, domain_dn)
+    This method only works in schemas where the groups reside under "CN=Groups,CN=%s,CN=Users,%s" % (org_name, domain_dn)
+
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param org_name: Name of the organization where the groups reside
     """
     basedn = "CN=Groups,CN=%s,CN=Users,%s" % (org_name, names.domaindn)
     ldap_filter = "(&(objectClass=group)(mail=*))"
@@ -804,7 +810,7 @@ def enable_all_groups_in_organization(names, lp, creds, org_name):
         _enable_group(db, names, dn, cn, mail)
 
 
-def _enable_group(db, names, group_dn, groupname, mail=None,):
+def _enable_group(db, names, group_dn, groupname, mail=None):
     smtp_user, mail_domain = _smtp_user_and_domain_by_dn(group_dn, groupname, mail, names)
     (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
     extended_group = """

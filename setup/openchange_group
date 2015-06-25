@@ -43,30 +43,39 @@ parser.add_option("--delete", action="store_true", metavar="DISABLE",
                   help="Delete OpenChange attributes for group")
 parser.add_option("--update", action="store_true", metavar="DISABLE",
                   help="Update OpenChange attributes for group after switching between ditribution and security group")
+parser.add_option("--enable-all-groups", action="store_true",
+                  help="Enable all groups when provisioning organization")
 parser.add_option("--mail", type="string", metavar="MAIL",
                   help="Group email address. If not specified, the email "
                        "will be samaccountname@realm")
+
 opts, args = parser.parse_args()
 
-if len(args) != 1:
+if len(args) != 1 and not opts.enable_all_groups:
     parser.print_usage()
     sys.exit(1)
 
-action_options = filter(lambda(x): x, [opts.create, opts.delete, opts.update])
+action_options = filter(lambda(x): x, [opts.create, opts.delete, opts.update, opts.enable_all_groups])
 if len(action_options) == 0:
-    parser.error("missing action option: --create, --delete and --update")
+    parser.error("missing action option: --create, --delete, --update or --enable-all-groups")
 elif len(action_options) > 1:
-    parser.error("--create, delete and update options are incompatible")
+    parser.error("--create, delete, update and enable-all-groups options are incompatible")
 
-groupname = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 provisionnames = provision.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
 if opts.create:
+    groupname = args[0]
     provision.newgroup(provisionnames, lp, creds, groupname, mail=opts.mail)
 elif opts.delete:
+    groupname = args[0]
     provision.delete_group(provisionnames, lp, creds, groupname)
 elif opts.update:
+    groupname = args[0]
     provision.update_group(provisionnames, lp, creds, groupname)
+elif opts.enable_all_groups:
+    if not opts.firstorg:
+        parser.error("--firstorg parameter is required for --enable-all-groups option")
+    provision.enable_all_groups_in_organization(provisionnames, lp, creds, provisionnames.firstorg)

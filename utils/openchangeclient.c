@@ -2851,6 +2851,7 @@ int main(int argc, const char *argv[])
 	const char		*opt_mapi_cc = NULL;
 	const char		*opt_mapi_bcc = NULL;
 	const char		*opt_debug = NULL;
+	char			*opt_aux = NULL;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_PASSWORD, OPT_SENDAPPOINTMENT, 
 	      OPT_SENDCONTACT, OPT_SENDTASK, OPT_FETCHMAIL, OPT_STOREMAIL,  OPT_DELETEMAIL, 
@@ -2937,10 +2938,14 @@ int main(int argc, const char *argv[])
 			oclient.pf = true;
 			break;
 		case OPT_FOLDER:
-			oclient.folder = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.folder = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_DEBUG:
-			opt_debug = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_debug = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
@@ -2955,43 +2960,63 @@ int main(int argc, const char *argv[])
 			opt_rmdir = true;
 			break;
 		case OPT_FOLDER_NAME:
-			oclient.folder_name = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.folder_name = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_FOLDER_COMMENT:
-			oclient.folder_comment = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.folder_comment = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_NOTIFICATIONS:
 			opt_notifications = true;
 			break;
 		case OPT_PROFILE_DB:
-			opt_profdb = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_profdb = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_PROFILE:
-			opt_profname = talloc_strdup(mem_ctx, poptGetOptArg(pc));
+			opt_aux = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_PASSWORD:
-			opt_password = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_password = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_USERNAME:
-			opt_username = talloc_strdup(mem_ctx, poptGetOptArg(pc));
+			opt_aux = poptGetOptArg(pc);
+			opt_username = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAILBOX:
 			opt_mailbox = true;
 			break;
 		case OPT_FETCHITEMS:
-			opt_fetchitems = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_fetchitems = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_FETCHSUMMARY:
 			oclient.summary = true;
 			break;
 		case OPT_DELETEITEMS:
-			oclient.delete = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.delete = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_FREEBUSY:
-			oclient.freebusy = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.freebusy = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_UPDATE:
-			oclient.update = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.update = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_SENDMAIL:
 			opt_sendmail = true;
@@ -3012,43 +3037,67 @@ int main(int argc, const char *argv[])
 			opt_fetchmail = true;
 			break;
 		case OPT_STOREMAIL:
-			oclient.store_folder = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.store_folder = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_DELETEMAIL:
 			opt_deletemail = true;
 			break;
 		case OPT_ATTACH:
-			opt_attachments = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_attachments = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_HTML_INLINE:
-			oclient.pr_html_inline = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.pr_html_inline = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_HTML_FILE:
-			opt_html_file = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_html_file = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_TO:
-			opt_mapi_to = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_mapi_to = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_CC:
-			opt_mapi_cc = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_mapi_cc = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_BCC:
-			opt_mapi_bcc = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			opt_mapi_bcc = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_SUBJECT:
-			oclient.subject = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.subject = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_BODY:
-			oclient.pr_body = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.pr_body = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_LOCATION:
-			oclient.location = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.location = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_STARTDATE:
-			oclient.dtstart = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.dtstart = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_ENDDATE:
-			oclient.dtend = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.dtend = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_BUSYSTATUS:
 			oclient.busystatus = oc_get_argument(poptGetOptArg(pc),
@@ -3056,33 +3105,47 @@ int main(int argc, const char *argv[])
 							     "busystatus");
 			break;
 		case OPT_MAPI_LABEL:
-			oclient.label = oc_get_argument(poptGetOptArg(pc),
+			opt_aux = poptGetOptArg(pc);
+			oclient.label = oc_get_argument(opt_aux,
 							oc_label,
 							"label");
+			free(opt_aux);
 			break;
 		case OPT_MAPI_IMPORTANCE:
-			oclient.importance = oc_get_argument(poptGetOptArg(pc), 
+			opt_aux = poptGetOptArg(pc);
+			oclient.importance = oc_get_argument(opt_aux,
 							     oc_importance, 
 							     "importance");
+			free(opt_aux);
 			break;
 		case OPT_MAPI_TASKSTATUS:
-			oclient.taskstatus = oc_get_argument(poptGetOptArg(pc),
+			opt_aux = poptGetOptArg(pc);
+			oclient.taskstatus = oc_get_argument(opt_aux,
 							     oc_taskstatus,
 							     "taskstatus");
+			free(opt_aux);
 			break;
 		case OPT_MAPI_COLOR:
-			oclient.color = oc_get_argument(poptGetOptArg(pc),
+			opt_aux = poptGetOptArg(pc);
+			oclient.color = oc_get_argument(opt_aux,
 							oc_color,
 							"color");
+			free(opt_aux);
 			break;
 		case OPT_MAPI_EMAIL:
-			oclient.email = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.email = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_FULLNAME:
-			oclient.full_name = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.full_name = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_CARDNAME:
-			oclient.card_name = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.card_name = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_MAPI_PRIVATE:
 			oclient.private = true;
@@ -3096,8 +3159,10 @@ int main(int argc, const char *argv[])
 			}
 			
 			element = talloc_zero(mem_ctx, struct ocpf_file);
-			element->filename = talloc_strdup(mem_ctx, poptGetOptArg(pc));
+			opt_aux = poptGetOptArg(pc);
+			element->filename = talloc_strdup(mem_ctx, opt_aux);
 			DLIST_ADD(oclient.ocpf_files, element);
+			free(opt_aux);
 			break;
 		}
 		case OPT_OCPF_SYNTAX:
@@ -3107,7 +3172,9 @@ int main(int argc, const char *argv[])
 			opt_ocpf_sender = true;
 			break;
 		case OPT_OCPF_DUMP:
-			oclient.ocpf_dump = poptGetOptArg(pc);
+			opt_aux = poptGetOptArg(pc);
+			oclient.ocpf_dump = talloc_strdup(mem_ctx, opt_aux);
+			free(opt_aux);
 			break;
 		case OPT_FORCE:
 			oclient.force = true;

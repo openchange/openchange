@@ -100,10 +100,10 @@ static int asyncemsmdb_mapistore_destructor(void *data)
 	enum mapistore_error		retval;
 
 	retval = mapistore_release(mstore_ctx);
-	if (retval != MAPISTORE_SUCCESS) return false;
+	if (retval != MAPISTORE_SUCCESS) return -1;
 
 	OC_DEBUG(0, "MAPIStore context released");
-	return true;
+	return 0;
 }
 
 

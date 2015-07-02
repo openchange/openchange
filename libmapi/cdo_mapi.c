@@ -283,7 +283,9 @@ _PUBLIC_ void MAPIUninitialize(struct mapi_context *mapi_ctx)
 		shutdown(session->notify_ctx->fd, SHUT_RDWR);
 		close(session->notify_ctx->fd);
 	}
-	
+
+	gfree_debugsyms();
+
 	mem_ctx = mapi_ctx->mem_ctx;
 	talloc_free(mem_ctx);
 	mapi_ctx = NULL;

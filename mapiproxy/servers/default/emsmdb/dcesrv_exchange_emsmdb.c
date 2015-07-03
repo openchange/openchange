@@ -210,14 +210,14 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	}
 	else {
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 		session->pullTimeStamp = *r->out.pullTimeStamp;
-		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+		session->session = mpm_session_init(session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
-                session->uuid = handle->wire_handle.uuid;
+		session->uuid = handle->wire_handle.uuid;
 
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
@@ -1345,11 +1345,11 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 	else {
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 		session->pullTimeStamp = *r->out.pulTimeStamp;
-		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+		session->session = mpm_session_init(session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 		
 		session->uuid = handle->wire_handle.uuid;

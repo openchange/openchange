@@ -100,10 +100,10 @@ static int asyncemsmdb_mapistore_destructor(void *data)
 	enum mapistore_error		retval;
 
 	retval = mapistore_release(mstore_ctx);
-	if (retval != MAPISTORE_SUCCESS) return false;
+	if (retval != MAPISTORE_SUCCESS) return -1;
 
-	OC_DEBUG(0, "MAPIStore context released");
-	return true;
+	OC_DEBUG(5, "MAPIStore context released");
+	return 0;
 }
 
 
@@ -1152,8 +1152,8 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 		OC_DEBUG(0, "[asyncemsmdb] unable to delete resolver entry %s from record %s", session->bind_addr, session->cn);
 	}
 
-	mapistore_release(session->mstore_ctx);
 	DLIST_REMOVE(asyncemsmdb_session, session);
+	talloc_free(session);
 
 	/* flush pending call on connection */
 	context->conn->pending_call_list = NULL;

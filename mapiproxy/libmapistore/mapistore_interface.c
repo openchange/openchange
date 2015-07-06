@@ -129,8 +129,10 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
    \param mstore_ctx pointer to the mapistore context
 
-   \note The function needs to rely on talloc destructors which is not
-   implemented in code yet.
+   \note Right now nothing is released because mapistore_init
+   creates all members in the same memory context tree, so when
+   you free the mapistore_context everything will be freed and
+   no further action is required in this method.
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -140,11 +142,6 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	OC_DEBUG(5, "freeing up mstore_ctx ref: %p", mstore_ctx);
-
-	talloc_free(mstore_ctx->nprops_ctx);
-	talloc_free(mstore_ctx->processing_ctx);
-	talloc_free(mstore_ctx->context_list);
-	talloc_free(mstore_ctx->indexing_list);
 
 	return MAPISTORE_SUCCESS;
 }

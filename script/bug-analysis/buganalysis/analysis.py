@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) Enrique J. Hernández 2014
+# Copyright (C) Enrique J. Hernández 2014-2015
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ def guess_components(report):
     micro_comps_re = re.compile(r'ox')
     nspi_server_re = re.compile(r'nspi')
     rfr_server_re = re.compile(r'rfr')
+    asyncemsmdb_server_re = re.compile(r'asyncemsmdb')
 
     # Check based on the filename
     for frame in full_stacktrace:
@@ -81,6 +82,8 @@ def guess_components(report):
                 comps.add('nspi')
             elif rfr_server_re.search(frame['file_name']):
                 comps.add('rfr')
+            elif asyncemsmdb_server_re.search(frame['file_name']):
+                comps.add('asyncemsmdb')
             elif frame['fname'] == 'emsmdbp_mailbox_provision':
                 comps.add('emsmdbp_mailbox_provision')
 

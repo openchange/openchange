@@ -191,6 +191,44 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	return -1;
 }
 
+static int ndr_parse_property(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
+			      struct ndr_pull *ndr_pull, uint32_t element)
+{
+	struct XID 	xid;
+	struct SizedXid	SizedXid;
+	struct ndr_pull	*_ndr_buffer;
+	uint32_t	len;
+	char		*propValue;
+
+	switch (element) {
+	case PidTagChangeKey:
+	case PidTagSourceKey:
+		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
+		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
+		NDR_CHECK((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
+		NDR_CHECK(ndr_pull_XID(_ndr_buffer, NDR_SCALARS, &xid));
+		ndr_print_XID(ndr, propValue, &xid);
+		NDR_CHECK(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
+		return 0;
+	case PidTagPredecessorChangeList:
+		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
+		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
+		NDR_CHECK((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
+		ndr->print(ndr, "%s:", propValue);
+		ndr->depth++;
+		while (_ndr_buffer->offset < _ndr_buffer->data_size) {
+			NDR_CHECK(ndr_pull_SizedXid(_ndr_buffer, NDR_SCALARS, &SizedXid));
+			ndr_print_XID(ndr, NULL, &SizedXid.XID);
+		}
+		ndr->depth--;
+		NDR_CHECK(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
+		return 0;
+	default:
+		return -1;
+	}
+	return -1;
+}
+
 static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
@@ -323,6 +361,9 @@ static int ndr_parse_FastTransferElement(TALLOC_CTX *mem_ctx, struct ndr_print *
 	if (ret == 0) return 0;
 
 	ret = ndr_parse_ics_state(mem_ctx, ndr, ndr_pull, element);
+	if (ret == 0) return 0;
+
+	ret = ndr_parse_property(mem_ctx, ndr, ndr_pull, element);
 	if (ret == 0) return 0;
 
 	ret = ndr_parse_propValue(mem_ctx, ndr, ndr_pull, element);

@@ -145,11 +145,11 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 	ndr->depth++;
 	while (idset) {
 		if (idset->idbased) {
-			ndr->print(ndr, COLOR_GREEN "%.4x: %d elements" COLOR_END, idset->repl.id, idset->range_count);
+			ndr->print(ndr, COLOR_CYAN "%.4x (%d elements):" COLOR_END, idset->repl.id, idset->range_count);
 		}
 		else {
 			guid_str = GUID_string(NULL, &idset->repl.guid);
-			ndr->print(ndr, COLOR_GREEN "%s: %d elements" COLOR_END, guid_str, idset->range_count);
+			ndr->print(ndr, COLOR_CYAN "{%s} (%d elements):" COLOR_END, guid_str, idset->range_count);
 			talloc_free(guid_str);
 		}
 
@@ -159,7 +159,7 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
 				ndr->print(ndr, COLOR_BOLD COLOR_RED "Incorrect GLOBCNT range as high value is larger than low value" COLOR_END COLOR_END);
 			}
-			ndr->print(ndr, COLOR_GREEN "0x%.12" PRIx64 ":0x%.12" PRIx64 COLOR_END, range->low, range->high);
+			ndr->print(ndr, COLOR_CYAN "0x%.12" PRIx64 ":0x%.12" PRIx64 COLOR_END, range->low, range->high);
 			range = range->next;
 		}
 		ndr->depth--;
@@ -183,7 +183,7 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;
 		idset = IDSET_parse(mem_ctx, buffer, false);
-		ndr_print_IDSET(ndr, idset, NDR_GREEN(MetaTagIdsetGiven));
+		ndr_print_IDSET(ndr, idset, COLOR_BOLD NDR_CYAN(MetaTagIdsetGiven) COLOR_BOLD_OFF);
 		return 0;
 	default:
 		return -1;

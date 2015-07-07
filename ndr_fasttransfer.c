@@ -288,15 +288,15 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		ndr_print_SBinary(ndr, propValue, &PtypBinary);
 		break;
 	default:
-		{
-			uint32_t _flags_save_default = ndr_pull->flags;
+	{
+		uint32_t _flags_save_default = ndr_pull->flags;
 
-			ndr->print(ndr, COLOR_RED "Not supported: %s" COLOR_END, propValue);
-			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
-			ndr_pull->flags = _flags_save_default;
-			ndr_print_DATA_BLOB(ndr, propValue, datablob);
-		}
+		ndr->print(ndr, COLOR_RED "Not supported: %s" COLOR_END, propValue);
+		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_REMAINING);
+		NDR_CHECK(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
+		ndr_pull->flags = _flags_save_default;
+		ndr_dump_data(ndr, datablob.data, datablob.length);
+	}
 	}
 	talloc_free(propValue);
 	return 0;

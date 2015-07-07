@@ -25,6 +25,27 @@
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_property.h"
 
+#define COLOR_BLACK    "\x1b[30m"
+#define COLOR_RED      "\x1b[31m"
+#define COLOR_GREEN    "\x1b[32m"
+#define COLOR_YELLOW   "\x1b[33m"
+#define COLOR_BLUE     "\x1b[34m"
+#define COLOR_MAGENTA  "\x1b[35m"
+#define COLOR_CYAN     "\x1b[36m"
+#define COLOR_WHITE    "\x1b[37m"
+#define COLOR_BOLD     "\x1b[1m"
+#define COLOR_INVERSE  "\x1b[7m"
+#define COLOR_BOLD_OFF "\x1b[22m"
+#define COLOR_END      "\x1b[0m"
+
+#define NDR_RED(s)     COLOR_RED     #s COLOR_END
+#define NDR_GREEN(s)   COLOR_GREEN   #s COLOR_END
+#define NDR_YELLOW(s)  COLOR_YELLOW  #s COLOR_END
+#define NDR_BLUE(s)    COLOR_BLUE    #s COLOR_END
+#define NDR_MAGENTA(s) COLOR_MAGENTA #s COLOR_END
+#define NDR_CYAN(s)    COLOR_CYAN    #s COLOR_END
+#define NDR_WHITE(s)   COLOR_WHITE   #s COLOR_END
+
 /**
  */
 static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
@@ -60,31 +81,31 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 
 	switch (marker) {
 		/* Folders */
-	case StartTopFld: val = "\x1b[33mStartTopFld\x1b[0m"; break;
-	case StartSubFld: val = "\x1b[33mStartSubFld\x1b[0m"; break;
-	case EndFolder: val = "\x1b[33mEndFolder\x1b[0m"; break;
+	case StartTopFld: val = NDR_YELLOW("StartTopFld"); break;
+	case StartSubFld: val = NDR_YELLOW("StartSubFld"); break;
+	case EndFolder: val = NDR_YELLOW("EndFolder"); break;
 		/* Messages and their parts */
-	case StartMessage: val = "\x1b[33mStartMessage\x1b[0m"; break;
-	case StartFAIMsg: val = "\x1b[33mStartFAIMsg\x1b[0m"; break;
-	case EndMessage: val = "\x1b[33mEndMessage\x1b[0m"; break;
-	case StartEmbed: val = "\x1b[33mStartEmbed\x1b[0m"; break;
-	case EndEmbed: val = "\x1b[33mEndEmbed\x1b[0m"; break;
-	case StartRecip: val = "\x1b[33mStartRecip\x1b[0m"; break;
-	case EndToRecip: val = "\x1b[33mEndToRecip\x1b[0m"; break;
-	case NewAttach: val = "\x1b[33mNewAttach\x1b[0m"; break;
-	case EndAttach: val = "\x1b[33mEndAttach\x1b[0m"; break;
+	case StartMessage: val = NDR_YELLOW("StartMessage"); break;
+	case StartFAIMsg: val = NDR_YELLOW("StartFAIMsg"); break;
+	case EndMessage: val = NDR_YELLOW("EndMessage"); break;
+	case StartEmbed: val = NDR_YELLOW("StartEmbed"); break;
+	case EndEmbed: val = NDR_YELLOW("EndEmbed"); break;
+	case StartRecip: val = NDR_YELLOW("StartRecip"); break;
+	case EndToRecip: val = NDR_YELLOW("EndToRecip"); break;
+	case NewAttach: val = NDR_YELLOW("NewAttach"); break;
+	case EndAttach: val = NDR_YELLOW("EndAttach"); break;
 		/* Synchronization download */
-	case IncrSyncChg: val = "\x1b[33mIncrSyncChg\x1b[0m"; noend = true; break;
-	case IncrSyncChgPartial: val = "\x1b[33mIncrSyncChgPartial\x1b[0m"; noend = true; break;
-	case IncrSyncDel: val = "\x1b[33mIncrSyncDel\x1b[0m"; break;
-	case IncrSyncEnd: val = "\x1b[33mIncrSyncEnd\x1b[0m"; break;
-	case IncrSyncRead: val = "\x1b[33mIncrSyncRead\x1b[0m"; break;
-	case IncrSyncStateBegin: val = "\x1b[33mIncrSyncStateBegin\x1b[0m"; noend = true; break;
-	case IncrSyncStateEnd: val = "\x1b[33mIncrSyncStateEnd\x1b[0m"; break;
-	case IncrSyncProgressMode: val = "\x1b[33mIncrSyncProgressMode\x1b[0m"; break;
-	case IncrSyncProgressPerMsg: val = "\x1b[33mIncrSyncProgressPerMsg\x1b[0m"; break;
-	case IncrSyncMessage: val = "\x1b[33mIncrSyncMessage\x1b[0m"; break;
-	case IncrSyncGroupInfo: val = "\x1b[33mIncrSyncGroupInfo\x1b[0m"; break;
+	case IncrSyncChg: val = NDR_YELLOW("IncrSyncChg"); noend = true; break;
+	case IncrSyncChgPartial: val = NDR_YELLOW("IncrSyncChgPartial"); noend = true; break;
+	case IncrSyncDel: val = NDR_YELLOW("IncrSyncDel"); break;
+	case IncrSyncEnd: val = NDR_YELLOW("IncrSyncEnd"); break;
+	case IncrSyncRead: val = NDR_YELLOW("IncrSyncRead"); break;
+	case IncrSyncStateBegin: val = NDR_YELLOW("IncrSyncStateBegin"); noend = true; break;
+	case IncrSyncStateEnd: val = NDR_YELLOW("IncrSyncStateEnd"); break;
+	case IncrSyncProgressMode: val = NDR_YELLOW("IncrSyncProgressMode"); break;
+	case IncrSyncProgressPerMsg: val = NDR_YELLOW("IncrSyncProgressPerMsg"); break;
+	case IncrSyncMessage: val = NDR_YELLOW("IncrSyncMessage"); break;
+	case IncrSyncGroupInfo: val = NDR_YELLOW("IncrSyncGroupInfo"); break;
 		/* Special */
 	case FXErrorInfo: val = "FXErrorInfo"; break;
 	}
@@ -92,7 +113,7 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 		return -1;
 	}
 
-	ndr_print_enum(ndr, "\x1b[33mMarker\x1b[0m", "ENUM", val, marker);
+	ndr_print_enum(ndr, NDR_YELLOW(Marker), "ENUM", val, marker);
 
 	/* Adjust ndr depth */
 	switch (marker) {
@@ -124,11 +145,11 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 	ndr->depth++;
 	while (idset) {
 		if (idset->idbased) {
-			ndr->print(ndr, "\x1b[32m%.4x: %d elements\x1b[0m", idset->repl.id, idset->range_count);
+			ndr->print(ndr, COLOR_GREEN "%.4x: %d elements" COLOR_END, idset->repl.id, idset->range_count);
 		}
 		else {
 			guid_str = GUID_string(NULL, &idset->repl.guid);
-			ndr->print(ndr, "\x1b[32m%s: %d elements\x1b[0m", guid_str, idset->range_count);
+			ndr->print(ndr, COLOR_GREEN "%s: %d elements" COLOR_END, guid_str, idset->range_count);
 			talloc_free(guid_str);
 		}
 
@@ -136,9 +157,9 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 		range = idset->ranges;
 		for (i = 0; i < idset->range_count; i++) {
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
-				ndr->print(ndr, "\x1b[31mIncorrect GLOBCNT range as high value is larger than low value\x1b[0m");
+				ndr->print(ndr, COLOR_BOLD COLOR_RED "Incorrect GLOBCNT range as high value is larger than low value" COLOR_END COLOR_END);
 			}
-			ndr->print(ndr, "\x1b[32m[0x%.12" PRIx64 ":0x%.12" PRIx64 "]\x1b[0m", range->low, range->high);
+			ndr->print(ndr, COLOR_GREEN "0x%.12" PRIx64 ":0x%.12" PRIx64 COLOR_END, range->low, range->high);
 			range = range->next;
 		}
 		ndr->depth--;
@@ -162,7 +183,7 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;
 		idset = IDSET_parse(mem_ctx, buffer, false);
-		ndr_print_IDSET(ndr, idset, "\x1b[32mMetaTagIdsetGiven\x1b[0m");
+		ndr_print_IDSET(ndr, idset, NDR_GREEN(MetaTagIdsetGiven));
 		return 0;
 	default:
 		return -1;
@@ -190,10 +211,9 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 
 	_propValue = get_proptag_name(element);
 	if (_propValue == NULL) {
-		propValue = talloc_asprintf(mem_ctx, "0x%X", element);
+		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(0x%X) COLOR_BOLD_OFF, element);
 	} else {
-		//propValue = talloc_strdup(mem_ctx, _propValue);
-		propValue = talloc_asprintf(mem_ctx, "\x1b[1m\x1b[35m%s\x1b[0m\x1b[0m", _propValue);
+		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, _propValue);
 	}
 
 	/* named property with propid > 0x8000 or known property */
@@ -271,7 +291,7 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		{
 			uint32_t _flags_save_default = ndr_pull->flags;
 
-			ndr->print(ndr, "Not supported: %s", propValue);
+			ndr->print(ndr, COLOR_RED "Not supported: %s" COLOR_END, propValue);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_REMAINING);
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
 			ndr_pull->flags = _flags_save_default;

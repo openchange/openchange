@@ -186,6 +186,7 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	struct SBinary PtypBinary;
 	const char      *_propValue;
 	char            *propValue;
+	DATA_BLOB				datablob;
 
 	_propValue = get_proptag_name(element);
 	if (_propValue == NULL) {
@@ -267,7 +268,15 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		ndr_print_SBinary(ndr, propValue, &PtypBinary);
 		break;
 	default:
-		ndr->print(ndr, "Not supported: %s", propValue);
+		{
+			uint32_t _flags_save_default = ndr_pull->flags;
+
+			ndr->print(ndr, "Not supported: %s", propValue);
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
+			ndr_pull->flags = _flags_save_default;
+			ndr_print_DATA_BLOB(ndr, propValue, datablob);
+		}
 	}
 	talloc_free(propValue);
 	return 0;

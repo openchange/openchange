@@ -2807,3 +2807,22 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PersistElementArray(struct ndr_pull *ndr, in
 	}
 	return NDR_ERR_SUCCESS;
 }
+
+_PUBLIC_ void ndr_print_FILETIME(struct ndr_print *ndr, const char *name, const struct FILETIME *r)
+{
+	TALLOC_CTX		*mem_ctx;
+	NTTIME			time;
+	const char		*date;
+
+	mem_ctx = talloc_named(NULL, 0, "FILETIME");
+	if (!mem_ctx) { ndr_print_string(ndr, name, "ERROR"); return; }
+	if (r == NULL) { ndr_print_string(ndr, name, "NULL"); return; }
+
+	time = r->dwHighDateTime;
+	time = time << 32;
+	time |= r->dwLowDateTime;
+	date = nt_time_string(mem_ctx, time);
+	ndr_print_string(ndr, name, date);
+
+	talloc_free(mem_ctx);
+}

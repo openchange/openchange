@@ -299,7 +299,7 @@ System Attendant Private Interface
 		[size_is(cb)] uint8		*lpb;
 	} Binary_r;
 
-	typedef [public] struct {
+	typedef [public,noprint] struct {
 		uint32 dwLowDateTime;
 		uint32 dwHighDateTime;
 	} FILETIME;

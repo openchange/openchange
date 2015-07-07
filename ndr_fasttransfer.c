@@ -49,6 +49,9 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case IncrSyncStateBegin:
 		if (noend == true) ndr->depth--;
 		break;
+	case IncrSyncEnd:
+		ndr->depth++;
+		break;
 	}
 
 	switch (marker) {
@@ -97,6 +100,8 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case IncrSyncStateEnd:
 		ndr->depth--;
 		break;
+	case IncrSyncEnd:
+		ndr->depth--;
 	default:
 		ndr->depth++;
 	}

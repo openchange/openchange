@@ -2172,11 +2172,15 @@ System Attendant Private Interface
 		[switch_is(1)] GLOBCNT	GLOBCNT;
 	} ShortTermID; /* MID, FID, CN */
 
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		GUID			GUID;
-		uint8			Size;
-		uint8			Data[Size];
+	typedef [public,noprint,flag(NDR_NOALIGN)] struct {
+		GUID			NameSpaceGuid;
+		[flag(NDR_REMAINING)] DATA_BLOB LocalId;
 	} XID;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8     XidSize;
+		[subcontext(0),subcontext_size(XidSize)] XID XID;
+	} SizedXid;
 
 	typedef [enum16bit] enum {
 		TABLE_CHANGED		=	0x1,

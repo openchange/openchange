@@ -4714,3 +4714,14 @@ System Attendant Private Interface
 {
 	void unknown_dummy();
 }
+
+[
+ uuid("8ac6ad47-9cbb-4518-8b8d-38e755bfdf01"),
+ pointer_default(unique),
+ helpstring("Debug")
+] interface exchange_debug
+{
+  [public,noprint] void FastTransferSourceGetBuffer(
+	       [in,out][flag(NDR_REMAINING)] DATA_BLOB data
+	       );
+}

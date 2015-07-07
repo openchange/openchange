@@ -31,6 +31,11 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 {
 	const char *val = NULL;
 	static bool noend = false;
+	static uint32_t _saved_depth = 0;
+
+	if (_saved_depth == 0) {
+		_saved_depth = ndr->depth;
+	}
 
 	ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 
@@ -42,15 +47,14 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case EndToRecip:
 	case EndAttach:
 	case IncrSyncStateEnd:
-		ndr->depth--;
+		if (_saved_depth != ndr->depth) {
+			ndr->depth--;
+		}
 		break;
 	case IncrSyncChg:
 	case IncrSyncChgPartial:
 	case IncrSyncStateBegin:
 		if (noend == true) ndr->depth--;
-		break;
-	case IncrSyncEnd:
-		ndr->depth++;
 		break;
 	}
 
@@ -75,7 +79,7 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case IncrSyncDel: val = "\x1b[33mIncrSyncDel\x1b[0m"; break;
 	case IncrSyncEnd: val = "\x1b[33mIncrSyncEnd\x1b[0m"; break;
 	case IncrSyncRead: val = "\x1b[33mIncrSyncRead\x1b[0m"; break;
-	case IncrSyncStateBegin: val = "\x1b[33mIncrSyncStateBegin\x1b[0m"; break;
+	case IncrSyncStateBegin: val = "\x1b[33mIncrSyncStateBegin\x1b[0m"; noend = true; break;
 	case IncrSyncStateEnd: val = "\x1b[33mIncrSyncStateEnd\x1b[0m"; break;
 	case IncrSyncProgressMode: val = "\x1b[33mIncrSyncProgressMode\x1b[0m"; break;
 	case IncrSyncProgressPerMsg: val = "\x1b[33mIncrSyncProgressPerMsg\x1b[0m"; break;
@@ -98,10 +102,10 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case EndToRecip:
 	case EndAttach:
 	case IncrSyncStateEnd:
+	if (_saved_depth != ndr->depth) {
 		ndr->depth--;
+	}
 		break;
-	case IncrSyncEnd:
-		ndr->depth--;
 	default:
 		ndr->depth++;
 	}

@@ -1,24 +1,25 @@
-/* 
+/*
    OpenChange implementation.
 
    libndr mapi support
 
    Copyright (C) Julien Kerihuel 2005-2014
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <ctype.h>
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include <ndr.h>
@@ -2055,6 +2056,84 @@ _PUBLIC_ void ndr_print_Binary_r(struct ndr_print *ndr, const char *name, const 
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
 		dump_data(0, r->lpb, r->cb);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+_PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
+{
+	TALLOC_CTX *mem_ctx;
+	char *line = NULL;
+	int i=0, j=0;
+
+	if (len<=0) return;
+
+	mem_ctx = talloc_named(NULL, 0, "ndr_dump_data");
+	if (!mem_ctx) return;
+
+	for (i=0;i<len;) {
+
+		if (i%16 == 0) {
+			if (i<len)  {
+				line = talloc_asprintf(mem_ctx, "[%04X] ", i);
+			}
+		}
+
+		line = talloc_asprintf_append(line, "%02X ", (int)buf[i]);
+		i++;
+		if (i%8 == 0) {
+			line = talloc_asprintf_append(line, "  ");
+		}
+		if (i%16 == 0) {
+
+			for (j =0; j < 8; j++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			}
+
+			line = talloc_asprintf_append(line, " ");
+			for (j=8; j < 16; j++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			}
+			ndr->print(ndr, "%s", line);
+			talloc_free(line);
+		}
+	}
+
+	if (i%16) {
+		int n;
+		n = 16 - (i%16);
+		line = talloc_asprintf_append(line, " ");
+		if (n>8) {
+			line = talloc_asprintf_append(line, " ");
+		}
+		while (n--) {
+			line = talloc_asprintf_append(line, "   ");
+		}
+		n = MIN(8,i%16);
+		for (j =(i -(i%16)); j < n; j++) {
+			line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+		}
+		line = talloc_asprintf_append(line, " ");
+		n = (i%16) - n;
+		if (n>0) {
+			for (j = i - n; j < n; j++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			}
+		}
+		ndr->print(ndr, "%s", line);
+		talloc_free(line);
+	}
+}
+
+_PUBLIC_ void ndr_print_SBinary(struct ndr_print *ndr, const char *name, const struct SBinary *r)
+{
+	ndr->print(ndr, "%-25s: SBinary cb=%u", name, (unsigned)r->cb);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_dump_data(ndr, r->lpb, r->cb);
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}

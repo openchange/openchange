@@ -997,6 +997,11 @@ System Attendant Private Interface
 		[flag(NDR_BUFFERS)]uint8	lpb[cb];
 	} SBinary_short;
 
+	typedef [public,noprint,flag(NDR_NOALIGN)] struct {
+		uint32         cb;
+		[flag(NDR_BUFFERS)]uint8   lpb[cb];
+	} SBinary;
+
 	typedef [public] struct {
 		uint32 cValues;
 		uint32 lpl[cValues];
@@ -2962,7 +2967,7 @@ System Attendant Private Interface
 		TransferStatus_Done	= 0x0003
 	} TransferStatus;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [noprint,flag(NDR_NOALIGN)] struct {
 		TransferStatus	TransferStatus;
 		uint16		InProgressCount;
 		uint16		TotalStepCount;

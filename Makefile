@@ -318,6 +318,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/idset.po				\
 	libmapi/oc_log.po			\
 	ndr_mapi.po					\
+	ndr_fasttransfer.po	\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
 	gen_ndr/ndr_asyncemsmdb.po			\

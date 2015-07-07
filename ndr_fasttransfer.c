@@ -123,9 +123,9 @@ static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
 	case EndToRecip:
 	case EndAttach:
 	case IncrSyncStateEnd:
-	if (_saved_depth != ndr->depth) {
-		ndr->depth--;
-	}
+		if (_saved_depth != ndr->depth) {
+			ndr->depth--;
+		}
 		break;
 	default:
 		ndr->depth++;

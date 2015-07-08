@@ -136,7 +136,7 @@ re:: clean install
 # IDL compilation rules
 #################################################################
 
-idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h
+idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h gen_ndr/ndr_exchange_debug.h
 
 exchange.idl: properties_enum.h mapicodes_enum.h
 
@@ -197,6 +197,7 @@ endif
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
+	rm -f ndr_fasttransfer.o ndr_fasttransfer.po
 	rm -f ndr_mapi.gcno ndr_mapi.gcda
 	rm -f *~
 	rm -f */*~
@@ -316,14 +317,16 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/fxparser.po				\
 	libmapi/notif.po				\
 	libmapi/idset.po				\
-	libmapi/oc_log.po			\
+	libmapi/oc_log.po				\
 	ndr_mapi.po					\
-	ndr_fasttransfer.po	\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
+	gen_ndr/ndr_exchange_debug.po			\
+	gen_ndr/ndr_exchange_debug_c.po			\
 	gen_ndr/ndr_asyncemsmdb.po			\
 	gen_ndr/ndr_asyncemsmdb_c.po			\
 	gen_ndr/ndr_property.po				\
+	ndr_fasttransfer.po				\
 	libmapi/socket/interface.po			\
 	libmapi/socket/netif.po
 	@echo "Linking $@"
@@ -1823,7 +1826,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h gen_ndr/ndr_exchange_debug.h gen_ndr/ndr_exchange_debug.c gen_ndr/ndr_exchange_debug_c.c gen_ndr/ndr_exchange_debug_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
 
 test:: check
 

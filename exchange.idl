@@ -3519,7 +3519,7 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x76 */
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [noprint,flag(NDR_NOALIGN)] struct {
 		uint32			StreamDataSize;
 		uint8			StreamData[StreamDataSize];
 	} SyncUploadStateStreamContinue_req;

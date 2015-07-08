@@ -264,7 +264,6 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 			ret = mpm_session_release(session->session);
 			if (ret == true) {
 				DLIST_REMOVE(emsmdb_session, session);
-				talloc_free(session);
 				OC_DEBUG(5, "Session found and released\n");
 			} else {
 				OC_DEBUG(5, "Session found and ref_count decreased\n");

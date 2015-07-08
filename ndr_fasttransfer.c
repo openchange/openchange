@@ -25,6 +25,21 @@
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_property.h"
 
+#if (!defined(NDR_COLOR))
+#define NDR_COLOR
+#define COLOR_BLACK
+#define COLOR_RED
+#define COLOR_GREEN
+#define COLOR_YELLOW
+#define COLOR_BLUE
+#define COLOR_MAGENTA
+#define COLOR_CYAN
+#define COLOR_WHITE
+#define COLOR_BOLD
+#define COLOR_INVERSE
+#define COLOR_BOLD_OFF
+#define COLOR_END
+#else
 #define COLOR_BLACK    "\x1b[30m"
 #define COLOR_RED      "\x1b[31m"
 #define COLOR_GREEN    "\x1b[32m"
@@ -37,6 +52,7 @@
 #define COLOR_INVERSE  "\x1b[7m"
 #define COLOR_BOLD_OFF "\x1b[22m"
 #define COLOR_END      "\x1b[0m"
+#endif
 
 #define NDR_RED(s)     COLOR_RED     #s COLOR_END
 #define NDR_GREEN(s)   COLOR_GREEN   #s COLOR_END

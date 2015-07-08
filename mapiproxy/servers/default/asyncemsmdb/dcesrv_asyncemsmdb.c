@@ -1153,7 +1153,6 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 	}
 
 	DLIST_REMOVE(asyncemsmdb_session, session);
-	talloc_free(session);
 
 	/* flush pending call on connection */
 	context->conn->pending_call_list = NULL;

@@ -24,6 +24,7 @@
 #include <ndr.h>
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_property.h"
+#include "gen_ndr/ndr_exchange_debug.h"
 
 #if (!defined(NDR_COLOR))
 #define NDR_COLOR

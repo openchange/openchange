@@ -190,17 +190,28 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
-	struct idset *idset;
-	struct SBinary PtypBinary;
-	DATA_BLOB buffer;
+	struct idset	*idset;
+	struct SBinary	PtypBinary;
+	DATA_BLOB	buffer;
+	const char	*name = NULL;
+
+	switch (element) {
+	case MetaTagIdsetGiven:   name = COLOR_BOLD NDR_CYAN(MetaTagIdsetGiven) COLOR_BOLD_OFF; break;
+	case MetaTagCnsetSeen:    name = COLOR_BOLD NDR_CYAN(MetaTagCnsetSeen) COLOR_BOLD_OFF; break;
+	case MetaTagCnsetSeenFAI: name = COLOR_BOLD NDR_CYAN(MetaTagCnsetSeenFAI) COLOR_BOLD_OFF; break;
+	case MetaTagCnsetRead:    name = COLOR_BOLD NDR_CYAN(MetaTagCnsetRead) COLOR_BOLD_OFF; break;
+	}
 
 	switch (element) {
 	case MetaTagIdsetGiven:
+	case MetaTagCnsetSeen:
+	case MetaTagCnsetSeenFAI:
+	case MetaTagCnsetRead:
 		NDR_CHECK(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;
 		idset = IDSET_parse(mem_ctx, buffer, false);
-		ndr_print_IDSET(ndr, idset, COLOR_BOLD NDR_CYAN(MetaTagIdsetGiven) COLOR_BOLD_OFF);
+		ndr_print_IDSET(ndr, idset, name);
 		return 0;
 	default:
 		return -1;

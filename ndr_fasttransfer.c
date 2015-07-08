@@ -468,6 +468,34 @@ _PUBLIC_ void ndr_print_FastTransferSourceGetBuffer_repl(struct ndr_print *ndr, 
 }
 
 
+_PUBLIC_ void ndr_print_SyncUploadStateStreamContinue_req(struct ndr_print *ndr, const char *name, const struct SyncUploadStateStreamContinue_req *r)
+{
+	ndr_print_struct(ndr, name, "SyncUploadStateStreamContinue_req");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		{
+			TALLOC_CTX	*mem_ctx;
+			struct idset	*idset;
+			DATA_BLOB	buffer;
+
+			mem_ctx = talloc_named(NULL, 0, "SyncUploadStateStreamContinue");
+			if (!mem_ctx) return;
+
+			buffer.length = r->StreamDataSize;
+			buffer.data = r->StreamData;
+			idset = IDSET_parse(mem_ctx, buffer, false);
+			ndr_print_IDSET(ndr, idset, name);
+			talloc_free(mem_ctx);
+		}
+
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
 /* Debug interface */
 _PUBLIC_ void ndr_print_FastTransferSourceGetBuffer(struct ndr_print *ndr, const char *name, int flags, const struct FastTransferSourceGetBuffer *r)
 {

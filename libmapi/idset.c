@@ -363,7 +363,7 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
         DATA_BLOB		guid_blob, globset;
 	uint32_t		total_bytes, byte_count;
 
-	if (buffer.length < 17) return NULL;
+	if (buffer.length < 16) return NULL;
 
 	total_bytes = 0;
 	while (total_bytes < buffer.length) {

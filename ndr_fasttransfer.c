@@ -200,6 +200,7 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	case MetaTagCnsetSeen:    name = COLOR_BOLD NDR_CYAN(MetaTagCnsetSeen) COLOR_BOLD_OFF; break;
 	case MetaTagCnsetSeenFAI: name = COLOR_BOLD NDR_CYAN(MetaTagCnsetSeenFAI) COLOR_BOLD_OFF; break;
 	case MetaTagCnsetRead:    name = COLOR_BOLD NDR_CYAN(MetaTagCnsetRead) COLOR_BOLD_OFF; break;
+	case MetaTagIdsetDeleted: name = COLOR_BOLD NDR_CYAN(MetaTagIdsetDeleted) COLOR_BOLD_OFF; break;
 	}
 
 	switch (element) {
@@ -207,6 +208,7 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	case MetaTagCnsetSeen:
 	case MetaTagCnsetSeenFAI:
 	case MetaTagCnsetRead:
+	case MetaTagIdsetDeleted:
 		NDR_CHECK(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;

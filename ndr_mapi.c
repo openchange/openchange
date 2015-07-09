@@ -2093,7 +2093,7 @@ _PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 {
 	TALLOC_CTX *mem_ctx;
 	char *line = NULL;
-	int i=0, j=0;
+	int i=0, j=0, idx=0;
 
 	if (len<=0) return;
 
@@ -2101,7 +2101,7 @@ _PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 	if (!mem_ctx) return;
 
 	for (i=0;i<len;) {
-
+		idx = i;
 		if (i%16 == 0) {
 			if (i<len)  {
 				line = talloc_asprintf(mem_ctx, "[%04X] ", i);
@@ -2114,14 +2114,14 @@ _PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 			line = talloc_asprintf_append(line, "  ");
 		}
 		if (i%16 == 0) {
-
-			for (j =0; j < 8; j++) {
-				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			idx = i - 16;
+			for (j=0; j < 8; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
 			}
 
 			line = talloc_asprintf_append(line, " ");
-			for (j=8; j < 16; j++) {
-				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			for (j=8; j < 16; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
 			}
 			ndr->print(ndr, "%s", line);
 			talloc_free(line);
@@ -2130,23 +2130,25 @@ _PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 
 	if (i%16) {
 		int n;
+
 		n = 16 - (i%16);
-		line = talloc_asprintf_append(line, " ");
+		idx = i - (i%16);
 		if (n>8) {
-			line = talloc_asprintf_append(line, " ");
+			line = talloc_asprintf_append(line, "  ");
 		}
 		while (n--) {
 			line = talloc_asprintf_append(line, "   ");
 		}
+		line = talloc_asprintf_append(line, "  ");
 		n = MIN(8,i%16);
-		for (j =(i -(i%16)); j < n; j++) {
-			line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+		for (j = 0; j < n; j++, idx++) {
+			line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
 		}
 		line = talloc_asprintf_append(line, " ");
 		n = (i%16) - n;
 		if (n>0) {
-			for (j = i - n; j < n; j++) {
-				line = talloc_asprintf_append(line, "%c", isprint(buf[j]) ? buf[j] : '.');
+			for (j = i - n; j < i + n; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
 			}
 		}
 		ndr->print(ndr, "%s", line);

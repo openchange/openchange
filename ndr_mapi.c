@@ -2042,7 +2042,7 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
-		dump_data(0, r->lpb, r->cb);
+		ndr_dump_data(ndr, r->lpb, r->cb);
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}

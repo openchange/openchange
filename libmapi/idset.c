@@ -245,6 +245,15 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 	bool end = false;
 	uint8_t command;
 
+	/* Sanity checks */
+	if (buffer.length == 0) {
+		if (byte_countP) {
+			*byte_countP = 0;
+		}
+		return NULL;
+	}
+
+
 	parser = talloc_zero(NULL, struct GLOBSET_parser);
 	parser->buffer = buffer;
 

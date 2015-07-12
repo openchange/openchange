@@ -190,6 +190,7 @@ static void ndr_print_IDSET(struct ndr_print *ndr, const struct idset *idset,
 static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
+	bool		idbased;
 	struct idset	*idset;
 	struct SBinary	PtypBinary;
 	DATA_BLOB	buffer;
@@ -212,7 +213,8 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		NDR_CHECK(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;
-		idset = IDSET_parse(mem_ctx, buffer, false);
+		idbased = (element == MetaTagIdsetDeleted) ? true : false;
+		idset = IDSET_parse(mem_ctx, buffer, idbased);
 		ndr_print_IDSET(ndr, idset, name);
 		return 0;
 	default:

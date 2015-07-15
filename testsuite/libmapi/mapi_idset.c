@@ -37,15 +37,19 @@ START_TEST (test_IDSET_parse) {
 	const uint8_t		case_0[] =
 		{0x1, 0x0, 0x6, 0x0, 0x0, 0x0, 0x1, 0x4, 0x2e, 0x05, 0x0, 0x0, 0x0, 0x1,
 		 0x4, 0x52, 0x35, 0x37, 0x50, 0x0};
+        /* A REPLID-based IDSET whose length is smaller than REPLGUID-based IDSET minimum length */
+	const uint8_t		case_1[] =
+		{0x1, 0x0, 0x5, 0x0, 0x0, 0x0, 0x1, 0x4, 0x52, 0x19, 0x1A, 0x50, 0x0};
 	/* REPLGUID-based IDSET case (MetaTagCnsetSeen) */
-	const uint8_t		 case_1[] =
+	const uint8_t		 case_2[] =
 		{0x9b, 0xb9, 0xff, 0xb5, 0xf, 0x44, 0x77, 0x4f, 0xb4, 0x88, 0xc5, 0xc6, 0x70,
 		 0x2e, 0xe3, 0xa8, 0x4, 0x0, 0x0, 0x0, 0x0, 0x52, 0x0, 0xa5, 0x1, 0x51, 0x50, 0x0};
-	const uint8_t		 *cases[] = {case_0, case_1};
+	const uint8_t		 *cases[] = {case_0, case_1, case_2};
 	const size_t		 cases_size[] = { sizeof(case_0)/sizeof(uint8_t),
-						  sizeof(case_1)/sizeof(uint8_t) };
-	const bool		 id_based[] = {true, false};
-	const uint32_t		 range_count[] = {2, 1};
+						  sizeof(case_1)/sizeof(uint8_t),
+						  sizeof(case_2)/sizeof(uint8_t) };
+	const bool		 id_based[] = {true, true, false};
+	const uint32_t		 range_count[] = {2, 1, 1};
 	const size_t		 CASES_NUM = sizeof(cases)/sizeof(uint8_t*);
 
 	for (i = 0; i < CASES_NUM; i++) {

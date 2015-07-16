@@ -1167,9 +1167,15 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			}
 			if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
 				for (i = 0; i < deleted_eids->cValues; i++) {
-					RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpui8[i] >> 16) & 0x0000ffffffffffff);
+                                        if (IDSET_includes_guid_glob(synccontext->idset_given, &sync_data->replica_guid, (deleted_eids->lpui8[i] >> 16) & 0x0000ffffffffffff)) {
+                                                RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpui8[i] >> 16) & 0x0000ffffffffffff);
+                                        } else {
+                                                /* See [MS-OXCFXICS] 3.2.5.3 for details */
+                                                OC_DEBUG(5, "Skipping 0x%"PRIx64 " as not included in IdsetGiven",
+                                                         deleted_eids->lpui8[i]);
+                                        }
 				}
-				if (deleted_eids->cValues > 0) {
+				if (sync_data->deleted_eid_set->count > 0) {
 					RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, (cn >> 16) & 0x0000ffffffffffff);
 				}
 			}

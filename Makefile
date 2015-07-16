@@ -1441,6 +1441,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/mapiproxy/util/schema_migration.c		\
 				testsuite/libmapiproxy/openchangedb_logger.c		\
 				mapiproxy/libmapiproxy/backends/openchangedb_logger.c	\
+				testsuite/libmapi/mapi_idset.c				\
 				testsuite/libmapi/mapi_property.c			\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)

@@ -245,6 +245,15 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 	bool end = false;
 	uint8_t command;
 
+	/* Sanity checks */
+	if (buffer.length == 0) {
+		if (byte_countP) {
+			*byte_countP = 0;
+		}
+		return NULL;
+	}
+
+
 	parser = talloc_zero(NULL, struct GLOBSET_parser);
 	parser->buffer = buffer;
 
@@ -359,11 +368,13 @@ static void check_idset(const struct idset *idset)
 */
 _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool idbased)
 {
-	struct idset		*idset, *prev_idset = NULL;
-        DATA_BLOB		guid_blob, globset;
-	uint32_t		total_bytes, byte_count;
+	struct idset		*idset = NULL, *prev_idset = NULL;
+	DATA_BLOB		guid_blob, globset;
+	uint32_t		total_bytes, byte_count, id_length;
 
-	if (buffer.length < 17) return NULL;
+	id_length = (idbased == true) ? 2 : 16;
+
+	if (buffer.length < id_length) return NULL;
 
 	total_bytes = 0;
 	while (total_bytes < buffer.length) {
@@ -372,19 +383,18 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
 			prev_idset->next = idset;
 		}
 
+		idset->idbased = idbased;
 		if (idbased) {
 			idset->repl.id = (buffer.data[total_bytes] | (buffer.data[total_bytes+1] << 8));
-			total_bytes += 2;
-		}
-		else {
+		} else {
 			guid_blob.data = buffer.data;
-			guid_blob.length = 16;
+			guid_blob.length = id_length;
 			GUID_from_data_blob(&guid_blob, &idset->repl.guid);
-			total_bytes += 16;
 		}
 
-		globset.length = buffer.length - 16;
-		globset.data = (uint8_t *) buffer.data + 16;
+		total_bytes += id_length;
+		globset.length = buffer.length - id_length;
+		globset.data = (uint8_t *) buffer.data + id_length;
 		idset->ranges = GLOBSET_parse(idset, globset, &idset->range_count, &byte_count);
 		
 		total_bytes += byte_count;

@@ -41,12 +41,22 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
 parser.add_option("--firstou", type="string", metavar="FIRSTOU",
                   default="First Administrative Group",
                   help="set OpenChange Administrative Group (otherwise 'First Administrative Group')")
+parser.add_option("--ignore-already-exists", action="store_true",
+                  help="Ignore errors when installing schemas that already exists")
+parser.add_option("--provision", action="store_true", help="Provision the organization")
 parser.add_option("--deprovision", action="store_true", help="Deprovision the organization")
+
 
 opts, args = parser.parse_args()
 if len(args) != 0:
     parser.print_help()
     sys.exit(1)
+
+if not opts.provision and not opts.deprovision:
+    # TODO: this defaults to true for backwards compability. Remove on the future.
+    opts.provision = True
+elif opts.provision and opts.deprovision:
+    parser.error("--provision and --deprovision actions are incompatible")
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
@@ -60,13 +70,19 @@ def setup_path(*args):
     global _setupdir
     return os.path.join(_setupdir, *args)
 
+
 provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
-if opts.deprovision:
+if opts.provision:
+    provisioned = openchange.provision_organization(setup_path,
+                                                    provisionnames,
+                                                    lp,
+                                                    creds,
+                                                    ignore_already_exists=opts.ignore_already_exists)
+    if provisioned:
+        openchange.register(setup_path, provisionnames, lp, creds, ignore_already_exists=opts.ignore_already_exists)
+        openchange.openchangedb_new_organization(provisionnames, lp)
+elif opts.deprovision:
     openchange.deprovision_organization(setup_path, provisionnames, lp, creds)
     openchange.unregister(setup_path, provisionnames, lp, creds)
-else:
-    if openchange.provision_organization(setup_path, provisionnames, lp, creds):
-        openchange.register(setup_path, provisionnames, lp, creds)
-        openchange.openchangedb_new_organization(provisionnames, lp)

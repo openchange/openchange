@@ -668,25 +668,27 @@ def newuser(names, lp, creds, username=None, mail=None):
         extended_user = """
 dn: %(user_dn)s
 changetype: modify
-add: mailNickName
+replace: mailNickName
 mailNickname: %(username)s
-add: homeMDB
+replace: homeMDB
 homeMDB: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=%(firstou)s,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
-add: homeMTA
+replace: homeMTA
 homeMTA: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=%(firstou)s,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
-add: legacyExchangeDN
+replace: legacyExchangeDN
 legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
-add: proxyAddresses
+replace: proxyAddresses
 proxyAddresses: SMTP:%(smtp_user)s
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
 proxyAddresses: smtp:postmaster@%(mail_domain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
-add: msExchRecipientTypeDetails
+replace: msExchRecipientTypeDetails
 msExchRecipientTypeDetails: 6
-add: msExchRecipientDisplayType
+replace: msExchRecipientDisplayType
 msExchRecipientDisplayType: 0
+replace: msExchOmaAdminWirelessEnable
+msExchOmaAdminWirelessEnable: 0
 """
         # According to [MS-OXCMAIL] Section 1.1, the primary
         # proxyAddresses entry is the SMTP one and the secondaries
@@ -735,6 +737,7 @@ def delete_user(names, lp, creds, username=None):
 
     to_delete = ['mailNickName', 'homeMDB', 'homeMTA', 'legacyExchangeDN',
                  'proxyAddresses', 'msExchUserAccountControl',
+                 'msExchOmaAdminWirelessEnable',
                  'msExchRecipientTypeDetails', 'msExchRecipientDisplayType']
     _delete_attrs_ignore_nonexistent(db, user_dn, to_delete)
 
@@ -816,18 +819,18 @@ def _enable_group(db, names, group_dn, groupname, mail=None):
     extended_group = """
 dn: %(group_dn)s
 changetype: modify
-add: mailNickName
+replace: mailNickName
 mailNickname: %(groupname)s
-add: legacyExchangeDN
+replace: legacyExchangeDN
 legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
-add: proxyAddresses
+replace: proxyAddresses
 proxyAddresses: SMTP:%(smtp_user)s
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
 proxyAddresses: smtp:postmaster@%(mail_domain)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(groupname)s
-add: msExchRecipientTypeDetails
+replace: msExchRecipientTypeDetails
 msExchRecipientTypeDetails: %(recipient_type_details)s
-add: msExchRecipientDisplayType
+replace: msExchRecipientDisplayType
 msExchRecipientDisplayType: %(recipient_display_type)s
 """
     ldif_value = extended_group % {"group_dn": group_dn,

@@ -45,6 +45,8 @@ parser.add_option("--create", action="store_true", metavar="CREATE",
                   help="Create the OpenChange user account")
 parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
                   help="Create the OpenChange user mailbox")
+parser.add_option("--delete", action="store_true", metavar="DELETE",
+                  help="Delete OpenChange user LDAP data")
 parser.add_option("--mail", type="string", metavar="MAIL",
                   help="User email address. If not specified, the email "
                        "will be samaccountname@realm")
@@ -53,10 +55,12 @@ opts, args = parser.parse_args()
 if len(args) != 1:
     parser.print_usage()
     sys.exit(1)
-elif not opts.create and not opts.enable and not opts.disable:
-    parser.error("missing action option: --create, --enable or --disable")
+elif not opts.create and not opts.enable and not opts.disable and not opts.delete:
+    parser.error("missing action option: --create, --enable, --disable or --delete")
 elif opts.enable and opts.disable:
     parser.error("--enable and --disable options are incompatible")
+elif opts.delete and (opts.create or opts.enable or opts.disable):
+    parser.error("--delete is incompatible with any other action option")
 
 
 username = args[0]
@@ -67,6 +71,8 @@ provisionnames = provision.guess_names_from_smbconf(
 
 if opts.create:
     provision.newuser(provisionnames, lp, creds, username=username, mail=opts.mail)
+elif opts.delete:
+    provision.delete_user(provisionnames, lp, creds, username=username)
 
 if opts.mailbox:
     print "Mailbox provisioning is now performed automatically at user logon"

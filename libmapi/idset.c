@@ -961,7 +961,7 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 			done = true;
 		}
 		else if (range->high == eid) {
-			range->high = exchange_globcnt(work_eid + 1);
+			range->high = exchange_globcnt(work_eid - 1);
 			done = true;
 		}
 		else if ((exchange_globcnt(range->low) < work_eid) && (exchange_globcnt(range->high) > work_eid)) {

@@ -105,6 +105,72 @@ START_TEST (test_IDSET_includes_guid_glob) {
 
 } END_TEST
 
+START_TEST (test_IDSET_remove_rawidset) {
+	const uint64_t		ids[] = {0x1d0401000000,
+					0x1e0401000000,
+					0x1f0401000000,
+					0x200401000000,
+					0x210401000000,
+					0x220401000000,
+					0x230401000000,
+					0x240401000000};
+	int			i;
+	size_t			ids_size = sizeof(ids)/sizeof(uint64_t);
+	struct idset		*idset_in;
+	uint16_t		repl_id = 0x0001;
+	struct globset_range	*range;
+	struct rawidset		*rawidset_in, *rawidset_rm_0, *rawidset_rm_1, *rawidset_rm_2;
+
+	/* Generate idsets */
+	rawidset_in = RAWIDSET_make(mem_ctx, true, false);
+	ck_assert(rawidset_in != NULL);
+	for (i = 0; i < ids_size; i++) {
+		RAWIDSET_push_eid(rawidset_in, (ids[i] << 16) | repl_id);
+	}
+
+	idset_in = RAWIDSET_convert_to_idset(mem_ctx, rawidset_in);
+	ck_assert(idset_in != NULL);
+
+	rawidset_rm_0 = RAWIDSET_make(mem_ctx, true, true);
+	ck_assert(rawidset_rm_0 != NULL);
+	RAWIDSET_push_eid(rawidset_rm_0, (ids[0] << 16) | repl_id);
+
+	rawidset_rm_1 = RAWIDSET_make(mem_ctx, true, true);
+	ck_assert(rawidset_rm_1 != NULL);
+	RAWIDSET_push_eid(rawidset_rm_1, (ids[ids_size - 1] << 16) | repl_id);
+
+	rawidset_rm_2 = RAWIDSET_make(mem_ctx, true, true);
+	ck_assert(rawidset_rm_2 != NULL);
+	RAWIDSET_push_eid(rawidset_rm_2, (ids[3] << 16) | repl_id);
+	RAWIDSET_push_eid(rawidset_rm_2, (ids[4] << 16) | repl_id);
+
+	/* Case: Remove first element */
+	IDSET_remove_rawidset(idset_in, rawidset_rm_0);
+
+	range = idset_in->ranges;
+	ck_assert_int_eq(idset_in->range_count, 1);
+	ck_assert_int_eq(range->low, ids[1]);
+	ck_assert_int_eq(range->high, ids[ids_size - 1]);
+
+	/* Case: Remove last element */
+	IDSET_remove_rawidset(idset_in, rawidset_rm_1);
+
+	ck_assert_int_eq(idset_in->range_count, 1);
+	ck_assert_int_eq(range->low, ids[1]);
+	ck_assert_int_eq(range->high, ids[ids_size - 2]);
+
+	/* Case: Remove middle elements (3rd & 4th in the original set) */
+	IDSET_remove_rawidset(idset_in, rawidset_rm_2);
+
+	ck_assert_int_eq(idset_in->range_count, 2);
+	ck_assert_int_eq(range->low, ids[1]);
+	ck_assert_int_eq(range->high, ids[2]);
+	range = range->next;
+	ck_assert_int_eq(range->low, ids[5]);
+	ck_assert_int_eq(range->high, ids[ids_size - 2]);
+
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
@@ -124,7 +190,17 @@ static void tc_IDSET_includes_guid_glob_setup(void)
 	mem_ctx = talloc_new(talloc_autofree_context());
 }
 
+static void tc_IDSET_remove_rawidset_setup(void)
+{
+	mem_ctx = talloc_new(talloc_autofree_context());
+}
+
 static void tc_IDSET_includes_guid_glob_teardown(void)
+{
+	mem_ctx = talloc_new(talloc_autofree_context());
+}
+
+static void tc_IDSET_remove_rawidset_teardown(void)
 {
 	talloc_free(mem_ctx);
 }
@@ -142,6 +218,11 @@ Suite *libmapi_idset_suite(void)
 	tc = tcase_create("IDSET_includes_guid_glob");
 	tcase_add_checked_fixture(tc, tc_IDSET_includes_guid_glob_setup, tc_IDSET_includes_guid_glob_teardown);
 	tcase_add_test(tc, test_IDSET_includes_guid_glob);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("IDSET_remove_rawidset");
+	tcase_add_checked_fixture(tc, tc_IDSET_remove_rawidset_setup, tc_IDSET_remove_rawidset_teardown);
+	tcase_add_test(tc, test_IDSET_remove_rawidset);
 	suite_add_tcase(s, tc);
 
 	return s;

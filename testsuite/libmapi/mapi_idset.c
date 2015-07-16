@@ -60,6 +60,51 @@ START_TEST (test_IDSET_parse) {
 
 } END_TEST
 
+START_TEST (test_IDSET_includes_guid_glob) {
+        struct GUID       server_guid = GUID_random();
+        struct GUID       random_guid = GUID_random();
+        int               i;
+        struct idset      *idset_in;
+        struct rawidset   *rawidset_in;
+        const uint16_t    repl_id = 0x0001;
+        const uint64_t    ids[] = {0x180401000000,
+                                   0x190401000000,
+                                   0x1a0401000000,
+                                   0x1b0401000000,
+                                   0x500401000000,
+                                   0x520401000000,
+                                   0x530401000000,
+                                   0x710401000000};
+        const uint64_t    not_in_id = 0x2a0401000000;
+        const size_t      ids_size = sizeof(ids) / sizeof(uint64_t);
+
+        rawidset_in = RAWIDSET_make(mem_ctx, true, false);
+        ck_assert(rawidset_in != NULL);
+        for (i = 0; i < ids_size; i++) {
+                RAWIDSET_push_eid(rawidset_in, (ids[i] << 16) | repl_id);
+        }
+        ck_assert_int_eq(rawidset_in->count, ids_size);
+        rawidset_in->idbased = false;
+        rawidset_in->repl.guid = server_guid;
+        idset_in = RAWIDSET_convert_to_idset(mem_ctx, rawidset_in);
+        ck_assert(idset_in != NULL);
+
+        /* Case: All inserted elements in the range */
+        for (i = 0; i < ids_size; i++) {
+                ck_assert(IDSET_includes_guid_glob(idset_in, &server_guid, ids[i]));
+        }
+
+        /* Case: a different guid for the same id */
+        ck_assert(!IDSET_includes_guid_glob(idset_in, &random_guid, ids[0]));
+
+        /* Case: Not in range and different guid */
+        ck_assert(!IDSET_includes_guid_glob(idset_in, &random_guid, not_in_id));
+
+        /* Case: Not in range */
+        ck_assert(!IDSET_includes_guid_glob(idset_in, &server_guid, not_in_id));
+
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
@@ -74,6 +119,16 @@ static void tc_IDSET_parse_teardown(void)
 	talloc_free(mem_ctx);
 }
 
+static void tc_IDSET_includes_guid_glob_setup(void)
+{
+	mem_ctx = talloc_new(talloc_autofree_context());
+}
+
+static void tc_IDSET_includes_guid_glob_teardown(void)
+{
+	talloc_free(mem_ctx);
+}
+
 Suite *libmapi_idset_suite(void)
 {
 	Suite *s = suite_create("libmapi idset");
@@ -82,6 +137,11 @@ Suite *libmapi_idset_suite(void)
 	tc = tcase_create("IDSET_parse");
 	tcase_add_checked_fixture(tc, tc_IDSET_parse_setup, tc_IDSET_parse_teardown);
 	tcase_add_test(tc, test_IDSET_parse);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("IDSET_includes_guid_glob");
+	tcase_add_checked_fixture(tc, tc_IDSET_includes_guid_glob_setup, tc_IDSET_includes_guid_glob_teardown);
+	tcase_add_test(tc, test_IDSET_includes_guid_glob);
 	suite_add_tcase(s, tc);
 
 	return s;

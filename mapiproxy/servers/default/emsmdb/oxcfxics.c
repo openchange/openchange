@@ -2978,7 +2978,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageMove_repl	*response;
 	struct GUID				replica_guid;
 	uint64_t				sourceFID, sourceMID, destMID;
-	struct Binary_r				*change_key;
+	struct Binary_r				*change_key, *predecessor_change_list;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
 	struct mapi_handles			*synccontext_rec;
@@ -3048,11 +3048,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(synccontext_object) && emsmdbp_is_mapistore(source_folder_object);
 
 	change_key = talloc_zero(mem_ctx, struct Binary_r);
+	if (!change_key) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	change_key->cb = request->ChangeNumberSize;
 	change_key->lpb = request->ChangeNumber;
+
+	predecessor_change_list = talloc_zero(mem_ctx, struct Binary_r);
+	if (!predecessor_change_list) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
+	predecessor_change_list->cb = request->PredecessorChangeListSize;
+	predecessor_change_list->lpb = request->PredecessorChangeList;
+
 	if (mapistore) {
 		/* We invoke the backend method */
-		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, mem_ctx, 1, &sourceMID, &destMID, &change_key, false);
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID,
+						    synccontext_object->parent_object->backend_object,
+						    source_folder_object->backend_object, mem_ctx, 1, &sourceMID, &destMID,
+						    &change_key, &predecessor_change_list, false);
 	}
 	else {
 		OC_DEBUG(0, "mapistore support not implemented yet - shouldn't occur\n");

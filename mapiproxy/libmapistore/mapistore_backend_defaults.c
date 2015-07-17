@@ -140,6 +140,7 @@ static enum mapistore_error mapistore_op_defaults_move_copy_messages(void *targe
 								     uint64_t *source_mids,
 								     uint64_t *target_mids,
 								     struct Binary_r **target_change_keys,
+								     struct Binary_r **target_predecessor_change_lists,
 								     uint8_t want_copy)
 {
 	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");

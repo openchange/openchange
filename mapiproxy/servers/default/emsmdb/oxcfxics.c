@@ -903,6 +903,8 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 						if (retvals[1] == MAPI_E_SUCCESS) {
 							message_sync_data->cns[message_sync_data->max] = *(uint64_t *) data_pointers[1];
 						} else {
+							OC_DEBUG(5, "Unable to get change number for mid: %" PRIx64,
+								 *(uint64_t *) data_pointers[0]);
 							message_sync_data->cns[message_sync_data->max] = 0;
 						}
 						message_sync_data->max++;
@@ -929,11 +931,21 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		msg_ctx = talloc_new(NULL);
 		msg_properties = properties;
 
+		eid = *(message_sync_data->mids + message_sync_data->count);
+		if (eid == 0x7fffffffffffffffLL) {
+			OC_DEBUG(0, "message without a valid eid\n");
+			goto end_row;
+		}
+		/* Always include the mid in the updated IdsetGiven to
+		   notify the client the mid is still valid in the server */
+		emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
+		RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
+
 		if (folder_is_mapistore && message_sync_data->cns[message_sync_data->count] != 0) {
 			cn = ((message_sync_data->cns[message_sync_data->count] >> 16) & 0x0000ffffffffffff);
 			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 				synccontext->skipped_objects++;
-				OC_DEBUG(5, "message changes: cn %.16"PRIx64" already present\n", cn);
+				OC_DEBUG(5, "Skip message %"PRIx64" as cn %.12"PRIx64" already present\n", eid, cn);
 				goto end_row;
 			}
 		}
@@ -947,12 +959,6 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 				preload_mids.cValues = message_sync_data->max - message_sync_data->count;
 			}
 			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, mstore_type, &preload_mids);
-		}
-
-		eid = *(message_sync_data->mids + message_sync_data->count);
-		if (eid == 0x7fffffffffffffffLL) {
-			OC_DEBUG(0, "message without a valid eid\n");
-			goto end_row;
 		}
 
 		if (emsmdbp_object_message_open(msg_ctx, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
@@ -1004,10 +1010,6 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
 		i = 0;
-
-		/* source key */
-		emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
-		RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 
 		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
 		emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);

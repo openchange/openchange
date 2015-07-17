@@ -3,6 +3,7 @@
 
    Copyright (C) Julien Kerihuel 2005 - 2011.
    Copyright (C) Gregory Schiro 2006
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include <gen_ndr/ndr_exchange.h>
 #include <gen_ndr/ndr_property.h>
 #include <param.h>
 
@@ -1979,6 +1981,67 @@ _PUBLIC_ struct PersistDataArray *get_PersistDataArray(TALLOC_CTX *mem_ctx, stru
 	}
 
 	return PersistDataArray;
+}
+
+/**
+   \details Retrieve a SizedXid structure array from a binary blob. This structure is meant
+   to store the PredecessorChangeList property.
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw PredecessorChangeList property value
+   \param count_p pointer to the counter where the number of SizedXID structures are stored
+
+   \return Allocated SizedXID array structure on success, otherwise NULL
+
+   \note Developers must free the allocated SizedXID array when finished.
+ */
+_PUBLIC_ struct SizedXid *get_SizedXidArray(TALLOC_CTX *mem_ctx, struct Binary_r *bin, uint32_t *count_p)
+{
+	enum ndr_err_code	ndr_err_code;
+	struct ndr_pull		*ndr;
+	struct SizedXid		*sized_xid_list, sized_xid;
+	uint32_t		count;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
+
+	count = 0;
+	sized_xid_list = talloc_zero_array(mem_ctx, struct SizedXid, 1);
+	if (!sized_xid_list) {
+		talloc_free(ndr);
+		return NULL;
+	}
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	while (ndr->offset < ndr->data_size) {
+		ndr_err_code = ndr_pull_SizedXid(ndr, NDR_SCALARS, &sized_xid);
+		if (ndr_err_code != NDR_ERR_SUCCESS) goto error;
+
+		memcpy(&sized_xid_list[count], &sized_xid, sizeof(struct SizedXid));
+		count++;
+
+		sized_xid_list = talloc_realloc(mem_ctx, sized_xid_list, struct SizedXid, count + 1);
+		if (!sized_xid_list) goto error;
+	}
+	talloc_free(ndr);
+
+	if (count_p) {
+		*count_p = count;
+	}
+	return sized_xid_list;
+
+error:
+	talloc_free(sized_xid_list);
+	talloc_free(ndr);
+	return NULL;
 }
 
 /**

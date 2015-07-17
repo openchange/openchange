@@ -272,6 +272,49 @@ START_TEST (test_push_PersistDataArray) {
 
 } END_TEST
 
+START_TEST (test_get_SizedXidArray) {
+	struct Binary_r		bin;
+	int			i;
+	struct SizedXid         *res;
+        uint32_t                count;
+	/* Empty SizedXid Array */
+	const uint8_t		case_0[] = {};
+	/* Predecessor Change List with a single change */
+	const uint8_t		case_1[] =
+		{0x14, 0xbb, 0x1c, 0x15, 0x82, 0x39, 0x31, 0x93, 0x41, 0xbf, 0x51, 0x52, 0x52, 0xd1, 0x2a,
+                 0xe8, 0xaa, 0x0, 0x0, 0x8, 0xd};
+	/* Predecessor Change List with two changes */
+	const uint8_t		 case_2[] =
+		{0x16, 0xa8, 0xc1, 0x14, 0x3, 0x7, 0x8d, 0xc3, 0x47, 0x9d, 0x9e, 0x5e, 0x84, 0xfd,
+                 0x4a, 0xad, 0x99, 0x0, 0x0, 0x0, 0x0, 0x0, 0x92, 0x14, 0xbb, 0x1c, 0x15, 0xb2, 0x39,
+                 0x31, 0x93, 0x41, 0xbf, 0x51, 0x52, 0x52, 0xd1, 0x2a, 0xe8, 0xaa, 0x0, 0x0, 0x8, 0xc};
+	const uint8_t		 *cases[] = {case_0, case_1, case_2};
+	const size_t		 cases_size[] = { sizeof(case_0)/sizeof(uint8_t),
+						  sizeof(case_1)/sizeof(uint8_t),
+						  sizeof(case_2)/sizeof(uint8_t) };
+	const uint32_t		 cases_count[] = {0, 1, 2};
+	const size_t		 cases_num = sizeof(cases)/sizeof(uint8_t*);
+
+	for (i = 0; i < cases_num; i++) {
+		bin.cb = cases_size[i];
+		bin.lpb = (uint8_t *) cases[i];
+		res = get_SizedXidArray(mem_ctx, &bin, &count);
+                if (cases_count[i]) {
+                        ck_assert(res != NULL);
+                        ck_assert_int_eq(count, cases_count[i]);
+                        if (count > 1) {
+                                ck_assert(!GUID_equal(&res[0].XID.NameSpaceGuid, &res[1].XID.NameSpaceGuid));
+                                ck_assert(res[0].XidSize > res[1].XidSize);
+                                ck_assert(res[0].XID.LocalId.length > res[1].XID.LocalId.length);
+
+                        }
+                } else {
+                        ck_assert(res == NULL);
+                }
+	}
+
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
@@ -339,6 +382,16 @@ static void get_PersistDataArray_teardown(void)
 	talloc_free(mem_ctx);
 }
 
+static void get_SizedXidArray_setup(void)
+{
+	mem_ctx = talloc_new(talloc_autofree_context());
+}
+
+static void get_SizedXidArray_teardown(void)
+{
+	talloc_free(mem_ctx);
+}
+
 Suite *libmapi_property_suite(void)
 {
 	Suite *s = suite_create("libmapi property");
@@ -359,6 +412,11 @@ Suite *libmapi_property_suite(void)
 	tcase_add_unchecked_fixture(tc, get_PersistDataArray_setup, get_PersistDataArray_teardown);
 	tcase_add_test(tc, test_get_PersistDataArray);
 	tcase_add_test(tc, test_push_PersistDataArray);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("get_SizedXidArray");
+	tcase_add_unchecked_fixture(tc, get_SizedXidArray_setup, get_SizedXidArray_teardown);
+	tcase_add_test(tc, test_get_SizedXidArray);
 	suite_add_tcase(s, tc);
 
 	return s;

@@ -290,6 +290,7 @@ struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *, struct Binary_r 
 struct OneOffEntryId	*get_OneOffEntryId(TALLOC_CTX *, struct Binary_r *);
 struct PersistData      *get_PersistData(TALLOC_CTX *, struct Binary_r *);
 struct PersistDataArray *get_PersistDataArray(TALLOC_CTX *, struct Binary_r *);
+struct SizedXid         *get_SizedXidArray(TALLOC_CTX *, struct Binary_r *, uint32_t *);
 const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
 bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);

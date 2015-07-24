@@ -1012,7 +1012,11 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		i = 0;
 
 		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-		emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
+		if (emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data) != MAPISTORE_SUCCESS) {
+			synccontext->skipped_objects++;
+			OC_DEBUG(5, "Skip message %"PRIx64" as source key couldn't be retrieved\n", eid);
+			goto end_row;
+		}
 		query_props.aulPropTag[i] = PidTagSourceKey;
 		header_data_pointers[i] = bin_data;
 		i++;

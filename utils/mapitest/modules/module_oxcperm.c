@@ -53,6 +53,49 @@ static void mapitest_dump_permissions_SRowSet(struct mapitest *mt, struct SRowSe
 	}
 }
 
+/*
+  \details Utility function to get a user different from ourselves.
+
+  \return a username on success, NULL otherwise
+*/
+static const char * mapitest_get_other_user(struct mapitest *mt)
+{
+	bool			found = false;
+	const char		*username = NULL;
+	enum MAPISTATUS		retval;
+	struct PropertyRowSet_r *rowset;
+	struct SPropTagArray	*s_prop_tag_array;
+	uint32_t		i;
+
+	s_prop_tag_array = set_SPropTagArray(mt->mem_ctx, 0x2,
+					     PR_INSTANCE_KEY,
+					     PR_ACCOUNT);
+
+	retval = GetGALTable(mt->session, s_prop_tag_array, &rowset, 2, TABLE_START);
+	if (retval != MAPI_E_SUCCESS || !rowset || !(rowset->aRow)) {
+		return NULL;
+	}
+
+	for (i = 0; i < rowset->cRows && !found; i++) {
+		username = (const char *) find_PropertyValue_data(&rowset->aRow[i], PR_ACCOUNT);
+		if (username) {
+			found = (strncmp(mt->session->profile->username, username, strlen(username)) != 0);
+			if (found) {
+				talloc_steal(mt->mem_ctx, username);
+			}
+		}
+	}
+
+	if (!found) {
+		username = NULL;
+	}
+
+	MAPIFreeBuffer(rowset);
+
+	return username;
+}
+
+
 /**
    \details Test the GetPermissionsTable (0x3e) operation
 
@@ -136,14 +179,16 @@ cleanup:
    This function:
    -# Log on private message store
    -# Open the top store folder
+   -# Get another user to use for permissions
    -# Creates a temporary folder
-   -# Adds permissions for the admin user, and checks them
-   -# Modifies permissions for the admin user, and checks them
-   -# Removes permissions for the admin user, and checks them
+   -# Adds permissions for other user, and checks them
+   -# Modifies permissions for other user, and checks them
+   -# Removes permissions for other user, and checks them
    -# Deletes the folder
  */
 _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 {
+	const char			*other_username;
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_permtable;
@@ -185,8 +230,15 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		goto cleanup;
 	}
 
+	/* Step 4. Get other user */
+	other_username = mapitest_get_other_user(mt);
+	if (!other_username) {
+		ret = false;
+		goto cleanup;
+	}
+
 	/* Step 4. Add user permissions on the folder, and check it */
-	retval = AddUserPermission(&obj_temp_folder, "Administrator", RightsReadItems);
+	retval = AddUserPermission(&obj_temp_folder, other_username, RightsReadItems);
 	mapitest_print_retval(mt, "AddUserPermission");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -220,7 +272,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 
 	/* Step 5. Modify user permissions on the folder, and check it */
-	retval = ModifyUserPermission(&obj_temp_folder, "Administrator", RightsAll);
+	retval = ModifyUserPermission(&obj_temp_folder, other_username, RightsAll);
 	mapitest_print_retval(mt, "ModifyUserPermission");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -254,7 +306,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 
 	/* Step 6. Remove user permissions on the folder, and check it */
-	retval = RemoveUserPermission(&obj_temp_folder, "Administrator");
+	retval = RemoveUserPermission(&obj_temp_folder, other_username);
 	mapitest_print_retval(mt, "RemoveUserPermission");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

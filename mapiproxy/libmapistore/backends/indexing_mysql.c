@@ -123,7 +123,8 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	if (!mem_ctx) return NULL;
 
 	sql = talloc_asprintf(mem_ctx, "SELECT fmid,url FROM "INDEXING_TABLE" "
-			      "WHERE username = '%s'", _sql(mem_ctx, username));
+			      "WHERE username = '%s' AND soft_deleted = '%d'",
+			      _sql(mem_ctx, username), 0);
 
 	mret = select_without_fetch(MYSQL(ictx), sql, &res);
 	if (mret != MYSQL_SUCCESS) {

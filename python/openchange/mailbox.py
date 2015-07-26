@@ -498,7 +498,7 @@ class OpenChangeDBWithMysqlBackend(MysqlBackendMixin):
     def change_number(self):
         if self._change_number is None:
             cur = self._execute("SELECT change_number FROM servers WHERE id = %s",
-                                self.server_id)
+                                (self.server_id,))
             data = cur.fetchone()
             if data:
                 self._change_number = data[0]

@@ -87,7 +87,7 @@ class MigrationManager(object):
         if self._version[app] is None:
             cur = self.db.cursor()
             cur.execute('SELECT MAX(version) FROM {0} WHERE app = %s'.format(self.table_name),
-                        app)
+                        (app,))
             row = cur.fetchone()
             if row and row[0]:
                 self._version[app] = int(row[0])

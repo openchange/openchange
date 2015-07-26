@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 
 # OpenChange provisioning
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2009

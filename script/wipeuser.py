@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # OpenChange DB user wipe script
 #
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2014

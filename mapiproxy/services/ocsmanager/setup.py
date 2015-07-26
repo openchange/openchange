@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 try:
     from setuptools import setup, find_packages
 except ImportError:

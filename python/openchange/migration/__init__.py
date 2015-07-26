@@ -65,7 +65,7 @@ class MigrationManager(object):
         """Create the table_name table if not exists
         """
         cur = self.db.cursor()
-        cur.execute("""SHOW TABLES LIKE %s""", self.table_name)
+        cur.execute("""SHOW TABLES LIKE %s""", (self.table_name,))
         row = cur.fetchone()
         if row is None or row[0] is None:
             cur.execute("""CREATE TABLE IF NOT EXISTS `{0}` (

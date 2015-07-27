@@ -715,6 +715,9 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 	/* WriteStream operation */
 	printf("We are about to write %u bytes in the stream\n", bin.cb);
 	size = MAX_READ_SIZE;
+	if (size > bin.cb) {
+		size = bin.cb;
+	}
 	offset = 0;
 	while (offset <= bin.cb) {
 		stream.length = size;

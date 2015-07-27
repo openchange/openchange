@@ -925,9 +925,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			props_attach[0].value.l = ATTACH_BY_VALUE;
 			props_attach[1].ulPropTag = PR_RENDERING_POSITION;
 			props_attach[1].value.l = 0;
-			props_attach[2].ulPropTag = PR_ATTACH_FILENAME;
+			props_attach[2].ulPropTag = PR_ATTACH_FILENAME_UNICODE;
 			printf("Sending %s:\n", oclient->attach[i].filename);
-			props_attach[2].value.lpszA = get_filename(oclient->attach[i].filename);
+			props_attach[2].value.lpszW = get_filename(oclient->attach[i].filename);
 			props_attach[3].ulPropTag = PR_ATTACH_CONTENT_ID;
 			props_attach[3].value.lpszA = get_filename(oclient->attach[i].filename);
 			count_props_attach = 4;

@@ -746,7 +746,7 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 }
 
 
-#define SETPROPS_COUNT	4
+#define SETPROPS_COUNT	5
 
 /**
  * Send a mail
@@ -766,6 +766,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	mapi_object_t			obj_outbox;
 	mapi_object_t			obj_message;
 	mapi_object_t			obj_stream;
+	struct timeval                  now;
 	uint32_t			index = 0;
 	uint32_t			msgflag;
 	struct SPropValue		props[SETPROPS_COUNT];
@@ -893,6 +894,13 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			mapi_object_init(&obj_stream);
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_HTML, 2, oclient->pr_html);
 		}
+	}
+
+	/* Send the submit time */
+	if (gettimeofday(&now, NULL) == 0) {
+		set_SPropValue_proptag_date_timeval(&props[prop_count - 1],
+						    PR_CLIENT_SUBMIT_TIME, &now);
+		prop_count++;
 	}
 
 	retval = SetProps(&obj_message, 0, props, prop_count);

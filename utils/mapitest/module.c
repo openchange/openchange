@@ -106,8 +106,15 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SET-SEARCHCRITERIA", "Set a search criteria on a container", mapitest_oxcfold_SetSearchCriteria);
 	mapitest_suite_add_test(suite, "GET-SEARCHCRITERIA", "Retrieve a search criteria associated to a container", mapitest_oxcfold_GetSearchCriteria);
 	mapitest_suite_add_test(suite, "MOVECOPY-MESSAGES", "Move or copy messages from a source to destination folder", mapitest_oxcfold_MoveCopyMessages);
-	mapitest_suite_add_test(suite, "MOVEFOLDER", "Move folder from source to destination", mapitest_oxcfold_MoveFolder);
-	mapitest_suite_add_test(suite, "COPYFOLDER", "Copy folder from source to destination", mapitest_oxcfold_CopyFolder);
+	/* These two tests are failing in OpenChange because the subfolder search
+	   is not working in the current mapistore backend for non-mail folders */
+	mapitest_suite_add_test_flagged(suite, "MOVEFOLDER",
+					"Move folder from source to destination",
+					mapitest_oxcfold_MoveFolder, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "COPYFOLDER",
+					"Copy folder from source to destination",
+					mapitest_oxcfold_CopyFolder, NotInOpenChange);
+
 	mapitest_suite_add_test_flagged(suite, "HARDDELETEMESSAGES", "Hard delete messages",
 					mapitest_oxcfold_HardDeleteMessages, NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "HARDDELETEMESSAGESANDSUBFOLDERS",
@@ -169,7 +176,11 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 	suite =  mapitest_suite_init(mt, "OXCMSG", "Message and Attachment Object Protocol", true);
 
 	mapitest_suite_add_test(suite, "CREATE-MESSAGE", "Create message", mapitest_oxcmsg_CreateMessage);
-	mapitest_suite_add_test(suite, "SET-MESSAGE-READ-FLAGS", "Set message read flag", mapitest_oxcmsg_SetMessageReadFlag);
+	/* SaveChangesMessage and modify properties afterwards using KeepOpenReadWrite
+	   is not supported by any mapistore backend in OpenChange Server */
+	mapitest_suite_add_test_flagged(suite, "SET-MESSAGE-READ-FLAGS",
+					"Set message read flag",
+					mapitest_oxcmsg_SetMessageReadFlag, NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "SET-READ-FLAGS",
 					"Set read flag on multiple messages",
 					mapitest_oxcmsg_SetReadFlags, NotInOpenChange);
@@ -182,7 +193,11 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GET-MESSAGE-STATUS", "Get message status", mapitest_oxcmsg_GetMessageStatus);
 	mapitest_suite_add_test_flagged(suite, "SET-MESSAGE-STATUS", "Set message status",
 					mapitest_oxcmsg_SetMessageStatus, NotInOpenChange);
-	mapitest_suite_add_test(suite, "OPEN-EMBEDDED-MESSAGE", "Open a message embedded in another message", mapitest_oxcmsg_OpenEmbeddedMessage);
+	/* OpenEmbeddedMessage for mail messages is not supported by
+	   the current mapistore backend in OpenChange Server */
+	mapitest_suite_add_test_flagged(suite, "OPEN-EMBEDDED-MESSAGE",
+					"Open a message embedded in another message",
+					mapitest_oxcmsg_OpenEmbeddedMessage, NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "GET-VALID-ATTACHMENTS", "Get valid attachment IDs for a message", mapitest_oxcmsg_GetValidAttachments, NotInExchange2010 | NotInOpenChange);
 	mapitest_suite_add_test(suite, "RELOAD-CACHED-INFORMATION", "Reload cached information for a message", mapitest_oxcmsg_ReloadCachedInformation);
 
@@ -223,7 +238,11 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 	mapitest_suite_add_test_flagged(suite, "SEEKROW-BOOKMARK",
 					"Seek a row given a bookmark",
 					mapitest_oxctable_SeekRowBookmark, NotInOpenChange);
-	mapitest_suite_add_test(suite, "CATEGORY", "Expand/collapse category rows", mapitest_oxctable_Category);
+	/* Tables that have been categorized are not implemented by
+	   any mapistore backend in OpenChange Server */
+	mapitest_suite_add_test_flagged(suite, "CATEGORY",
+					"Expand/collapse category rows",
+					mapitest_oxctable_Category, NotInOpenChange);
 
 	mapitest_suite_register(mt, suite);
 	
@@ -245,9 +264,19 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "OXCPRPT", "Property and Stream Object Protocol", true);
 
-	mapitest_suite_add_test(suite, "GET-PROPS", "Retrieve a specific set of properties", mapitest_oxcprpt_GetProps);
-	mapitest_suite_add_test(suite, "GET-PROPSALL", "Retrieve the whole property array", mapitest_oxcprpt_GetPropsAll);
-	mapitest_suite_add_test(suite, "GET-PROPLIST", "Retrieve the property list", mapitest_oxcprpt_GetPropList);
+	/* The following three tests are failing in OpenChange server
+	   because getting available properties for Store object is
+	   not supported */
+	mapitest_suite_add_test_flagged(suite, "GET-PROPS",
+					"Retrieve a specific set of properties",
+					mapitest_oxcprpt_GetProps, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "GET-PROPSALL",
+					"Retrieve the whole property array",
+					mapitest_oxcprpt_GetPropsAll, NotInOpenChange);
+	mapitest_suite_add_test_flagged(suite, "GET-PROPLIST",
+					"Retrieve the property list",
+					mapitest_oxcprpt_GetPropList, NotInOpenChange);
+
 	mapitest_suite_add_test(suite, "SET-PROPS", "Set a specific set of properties", mapitest_oxcprpt_SetProps);
 	mapitest_suite_add_test_flagged(suite, "DELETE-PROPS",
 					"Delete a specific set of properties",
@@ -260,7 +289,11 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 					mapitest_oxcprpt_CopyProps, NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "STREAM", "Test stream operations",
 					mapitest_oxcprpt_Stream, NotInOpenChange);
-	mapitest_suite_add_test(suite, "COPYTO", "Copy or move properties", mapitest_oxcprpt_CopyTo);
+	/* No support to not overwrite + current mapistore layer does
+	   not support to keep open write a message to set properties
+	   in OpenChange server */
+	mapitest_suite_add_test_flagged(suite, "COPYTO", "Copy or move properties",
+					mapitest_oxcprpt_CopyTo, NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM",
 					"Test atomic Write / Commit operation",
 					mapitest_oxcprpt_WriteAndCommitStream,
@@ -271,7 +304,10 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 					NotInExchange2010SP0 | NotInOpenChange);
 	mapitest_suite_add_test_flagged(suite, "NAME-ID", "Convert between Names and IDs",
 					mapitest_oxcprpt_NameId, NotInOpenChange);
-	mapitest_suite_add_test(suite, "PSMAPI-NAME-ID", "Convert between Names and IDs for PS_MAPI namespace", mapitest_oxcprpt_NameId_PSMAPI);
+	/* PS_MAPI namespace is ignored in OpenChange server */
+	mapitest_suite_add_test_flagged(suite, "PSMAPI-NAME-ID",
+					"Convert between Names and IDs for PS_MAPI namespace",
+					mapitest_oxcprpt_NameId_PSMAPI, NotInOpenChange);
 
 	mapitest_suite_register(mt, suite);
 

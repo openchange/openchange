@@ -1226,7 +1226,7 @@ NTSTATUS samba_init_module(void)
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Initialize exchange_async_emsmdb session */
-	asyncemsmdb_session = talloc_zero(talloc_autofree_context(), struct exchange_asyncemsmdb_session);
+	asyncemsmdb_session = talloc_zero(NULL, struct exchange_asyncemsmdb_session);
 	if (!asyncemsmdb_session) return NT_STATUS_NO_MEMORY;
 	asyncemsmdb_session->data = NULL;
 

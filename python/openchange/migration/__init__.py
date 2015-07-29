@@ -65,7 +65,7 @@ class MigrationManager(object):
         """Create the table_name table if not exists
         """
         cur = self.db.cursor()
-        cur.execute("""SHOW TABLES LIKE %s""", self.table_name)
+        cur.execute("""SHOW TABLES LIKE %s""", (self.table_name,))
         row = cur.fetchone()
         if row is None or row[0] is None:
             cur.execute("""CREATE TABLE IF NOT EXISTS `{0}` (
@@ -87,7 +87,7 @@ class MigrationManager(object):
         if self._version[app] is None:
             cur = self.db.cursor()
             cur.execute('SELECT MAX(version) FROM {0} WHERE app = %s'.format(self.table_name),
-                        app)
+                        (app,))
             row = cur.fetchone()
             if row and row[0]:
                 self._version[app] = int(row[0])
@@ -227,7 +227,7 @@ class MigrationManager(object):
         cursor = self.db.cursor()
         cursor.execute("""SELECT version, applied FROM {0}
                           WHERE app = %s""".format(self.table_name),
-                       app)
+                       (app,))
         rows = cursor.fetchall()
         for row in rows:
             if row[0] in migrations:

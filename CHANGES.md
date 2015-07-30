@@ -13,6 +13,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Send event invitation mails to several attendees, mixing internal and external recipients
 * Fix folder hierarchy synchronization issues on mailbox subfolders
 * Old mails are now synchronized after account cleanup
+* File name and correct size in small sized attachments, and submit time are now sent
+  by OpenChange client against OpenChange server
 
 ### Performances
 * Optimize the download of contents when you were in the middle of the first synchronization process in a business size mailbox.

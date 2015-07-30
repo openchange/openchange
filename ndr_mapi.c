@@ -2060,6 +2060,34 @@ _PUBLIC_ void ndr_print_Binary_r(struct ndr_print *ndr, const char *name, const 
 	}
 }
 
+_PUBLIC_ void ndr_print_XID(struct ndr_print *ndr, const char *name, const struct XID *r)
+{
+	uint32_t	_flags_save_STRUCT = ndr->flags;
+	char		*guid_str;
+	char		*line;
+	int		i;
+
+	if (r == NULL) {
+		ndr->print(ndr, "%s: NULL", name);
+		return;
+	}
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	guid_str = GUID_string(NULL, &r->NameSpaceGuid);
+	line = talloc_asprintf(NULL, " ");
+	for (i = 0; i < r->LocalId.length; i++) {
+		line = talloc_asprintf_append(line, "%02X ", r->LocalId.data[i]);
+	}
+	if (name) {
+		ndr->print(ndr, "%s: {%s}:%s", name, guid_str, line);
+	} else {
+		ndr->print(ndr, "{%s}:%s", guid_str, line);
+	}
+	talloc_free(guid_str);
+	talloc_free(line);
+	ndr->flags = _flags_save_STRUCT;
+}
+
 _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint32_t r)
 {
 	ndr_print_uint32(ndr, name, r);

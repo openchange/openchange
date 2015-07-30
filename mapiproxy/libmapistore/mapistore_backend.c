@@ -573,9 +573,9 @@ enum mapistore_error mapistore_backend_folder_delete_message(struct backend_cont
         return bctx->backend->folder.delete_message(folder, mid, flags);
 }
 
-enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_context *bctx, void *target_folder, void *source_folder, TALLOC_CTX *mem_ctx, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, struct Binary_r **target_change_keys, uint8_t want_copy)
+enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_context *bctx, void *target_folder, void *source_folder, TALLOC_CTX *mem_ctx, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, struct Binary_r **target_change_keys, struct Binary_r **target_predecessor_change_lists, uint8_t want_copy)
 {
-	return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mem_ctx, mid_count, source_mids, target_mids, target_change_keys, want_copy);
+	return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mem_ctx, mid_count, source_mids, target_mids, target_change_keys, target_predecessor_change_lists, want_copy);
 }
 
 enum mapistore_error mapistore_backend_folder_move_folder(struct backend_context *bctx, void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, const char *new_folder_name)

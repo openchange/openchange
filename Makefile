@@ -36,7 +36,7 @@ configure: configure.ac
 samba:
 	./script/installsamba4.sh all
 
-samba-git: 
+samba-git:
 	./script/installsamba4.sh git-all
 
 samba-git-update:
@@ -136,7 +136,7 @@ re:: clean install
 # IDL compilation rules
 #################################################################
 
-idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h
+idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h gen_ndr/ndr_exchange_debug.h
 
 exchange.idl: properties_enum.h mapicodes_enum.h
 
@@ -166,7 +166,7 @@ LIBMAPI_SO_VERSION = 0
 
 libmapi:	idl					\
 		libmapi/version.h			\
-		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)	
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapi-install:	libmapi			\
 			libmapi-installpc	\
@@ -197,6 +197,7 @@ endif
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
+	rm -f ndr_fasttransfer.o ndr_fasttransfer.po
 	rm -f ndr_mapi.gcno ndr_mapi.gcda
 	rm -f *~
 	rm -f */*~
@@ -227,8 +228,8 @@ endif
 
 libmapi-installheader:
 	@echo "[*] install: libmapi headers"
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi 
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket
 	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
 	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/
@@ -316,15 +317,18 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/fxparser.po				\
 	libmapi/notif.po				\
 	libmapi/idset.po				\
-	libmapi/oc_log.po			\
+	libmapi/oc_log.po				\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
+	gen_ndr/ndr_exchange_debug.po			\
+	gen_ndr/ndr_exchange_debug_c.po			\
 	gen_ndr/ndr_asyncemsmdb.po			\
 	gen_ndr/ndr_asyncemsmdb_c.po			\
 	gen_ndr/ndr_property.po				\
+	ndr_fasttransfer.po				\
 	libmapi/socket/interface.po			\
-	libmapi/socket/netif.po				
+	libmapi/socket/netif.po
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
@@ -366,7 +370,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	libmapi++/src/session.po \
 	libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
+	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapixx-installpc:
 	@echo "[*] install: libmapi++ pc files"
@@ -447,7 +451,7 @@ bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-test-clean
 
@@ -467,7 +471,7 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
 clean:: libmapixx-attach-clean
 
 libmapixx-exception: bin/libmapixx-exception
- 
+
 bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -570,7 +574,7 @@ endif
 
 libmapiadmin-installheader:
 	@echo "[*] install: libmapiadmin headers"
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin
 	$(INSTALL) -m 0644 libmapiadmin/libmapiadmin.h $(DESTDIR)$(includedir)/libmapiadmin/
 	@$(SED) $(DESTDIR)$(includedir)/libmapiadmin/*.h
 
@@ -588,7 +592,7 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
 	libmapiadmin/mapiadmin.po 		\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
+	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS)
 
 
 
@@ -602,11 +606,11 @@ libocpf:		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libocpf-install:	libocpf-installpc	\
 			libocpf-installlib	\
-			libocpf-installheader	
+			libocpf-installheader
 
 libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstalllib	\
-			libocpf-uninstallheader	
+			libocpf-uninstallheader
 
 libocpf-clean::
 	rm -f libocpf/*.o libocpf/*.po
@@ -737,7 +741,7 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 						mapiproxy/dcesrv_mapiproxy_rfr.po	\
 						mapiproxy/dcesrv_mapiproxy_unused.po	\
 						ndr_mapi.po				\
-						gen_ndr/ndr_exchange.po				
+						gen_ndr/ndr_exchange.po
 
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -1015,7 +1019,7 @@ clean:: mapistore_clean
 mapiproxy-modules:	mapiproxy/modules/mpm_downgrade.$(SHLIBEXT)	\
 			mapiproxy/modules/mpm_pack.$(SHLIBEXT)		\
 			mapiproxy/modules/mpm_cache.$(SHLIBEXT)		\
-			mapiproxy/modules/mpm_dummy.$(SHLIBEXT)		
+			mapiproxy/modules/mpm_dummy.$(SHLIBEXT)
 
 mapiproxy-modules-install: mapiproxy-modules
 	$(INSTALL) -d $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
@@ -1119,7 +1123,7 @@ clean:: mapiproxy-servers-clean
 mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesrv_exchange_nsp.po	\
 						mapiproxy/servers/default/nspi/emsabp.po		\
 						mapiproxy/servers/default/nspi/emsabp_tdb.po		\
-						mapiproxy/servers/default/nspi/emsabp_property.po	
+						mapiproxy/servers/default/nspi/emsabp_property.po
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(TDB_LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
@@ -1159,7 +1163,7 @@ mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT):	mapiproxy/servers/default/rfr/dce
 openchangeclient:	bin/openchangeclient
 
 openchangeclient-install:	openchangeclient
-	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
 
 openchangeclient-uninstall:
@@ -1191,7 +1195,7 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 mapiprofile:		bin/mapiprofile
 
 mapiprofile-install:	mapiprofile
-	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
 
 mapiprofile-uninstall:
@@ -1293,7 +1297,7 @@ bin/mapipropsdump: 	utils/mapipropsdump.o				\
 openchangepfadmin:	bin/openchangepfadmin
 
 openchangepfadmin-install:	openchangepfadmin
-	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
 
 openchangepfadmin-uninstall:
@@ -1312,7 +1316,7 @@ bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt
 
 
 ###################
@@ -1514,7 +1518,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_lcid.o		\
 		utils/mapitest/modules/module_mapidump.o	\
 		utils/mapitest/modules/module_lzxpress.o	\
-		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
 
@@ -1697,7 +1701,7 @@ clean-python:
 clean:: clean-python
 
 pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)			\
-		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)		
+		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 #		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
@@ -1789,7 +1793,7 @@ installman: doxygen
 uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
 
-doxygen:	
+doxygen:
 	echo "Doxify API documentation: HTML and man pages"
 	mkdir -p apidocs/html
 	mkdir -p apidocs/man
@@ -1822,7 +1826,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h gen_ndr/ndr_exchange_debug.h gen_ndr/ndr_exchange_debug.c gen_ndr/ndr_exchange_debug_c.c gen_ndr/ndr_exchange_debug_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
 
 test:: check
 
@@ -1856,7 +1860,7 @@ openchange_qt4:	qt-lib qt-demoapp
 
 qt-lib: libqtmapi
 
-qt-demoapp: qt/demo/demoapp.moc qt/demo/demoapp 
+qt-demoapp: qt/demo/demoapp.moc qt/demo/demoapp
 
 # No install yet - we need to finish this first
 
@@ -1904,7 +1908,7 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT)
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION)
 
-# This should be the last line in the makefile since other distclean rules may 
+# This should be the last line in the makefile since other distclean rules may
 # need config.mk
 distclean::
 	rm -f config.mk

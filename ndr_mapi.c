@@ -1,24 +1,25 @@
-/* 
+/*
    OpenChange implementation.
 
    libndr mapi support
 
    Copyright (C) Julien Kerihuel 2005-2014
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <ctype.h>
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include <ndr.h>
@@ -75,7 +76,7 @@ static enum ndr_err_code ndr_push_lxpress_chunk(struct ndr_push *ndrpush,
 
 	plain_chunk.data = ndrpull->data + plain_chunk_offset;
 	plain_chunk.length = plain_chunk_size;
-	
+
 	if (plain_chunk_size < max_plain_size) {
 		*last = true;
 	};
@@ -245,7 +246,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_request(struct ndr_pull *ndr, int nd
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
 					} else {
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
-						
+
 					}
 				}
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, -1));
@@ -267,23 +268,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_response(struct ndr_pull *ndr, int n
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
 			{
 				struct ndr_pull *_ndr_buffer;
-				
+
 				if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 					NDR_PULL_ALLOC(ndr, r->mapi_response);
 				}
-				
+
 				NDR_CHECK((ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->header.Size)));
 				{
 					if (r->header.Flags & RHEF_Compressed) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
-						
+
 						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->header.SizeActual));
 						NDR_CHECK(ndr_pull_mapi_response(_ndr_data_compressed, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));
 					} else if (r->header.Flags & RHEF_XorMagic) {
 						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
 						NDR_CHECK(ndr_pull_mapi_response(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));
 					} else {
-						NDR_CHECK(ndr_pull_mapi_response(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));			
+						NDR_CHECK(ndr_pull_mapi_response(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));
 					}
 				}
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, r->header.Size));
@@ -436,14 +437,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 
 						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->RPC_HEADER_EXT.SizeActual));
-						
+
 						for (cntr_AUX_HEADER_0 = 0; _ndr_data_compressed->offset < _ndr_data_compressed->data_size; cntr_AUX_HEADER_0++) {
 							NDR_CHECK(ndr_pull_AUX_HEADER(_ndr_data_compressed, NDR_SCALARS, &r->AUX_HEADER[cntr_AUX_HEADER_0]));
 							r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);
 						}
 						r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);
 						r->AUX_HEADER[cntr_AUX_HEADER_0].Size = 0;
-						
+
 					/* obfuscation case */
 					} else if (r->RPC_HEADER_EXT.Flags & RHEF_XorMagic) {
 						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
@@ -534,7 +535,7 @@ void ndr_print_mapi_request(struct ndr_print *ndr, const char *name, const struc
 			if (ret != -1 && idx_0) {
 				ndr_print_EcDoRpc_MAPI_REQ(ndr, "mapi_request", &r->mapi_req[cntr_mapi_req_0]);
 				free(idx_0);
-			} 
+			}
 		}
 		ndr->depth--;
 	}
@@ -571,7 +572,7 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
 	}
 
 	ndr->print(ndr, "%-25s: (handles) number=%u", name, rlength / 4);
-	
+
 	if (rlength) {
 		uint32_t i;
 
@@ -586,9 +587,9 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
 
 
 /*
-  push mapi_request / mapi_response onto the wire.  
+  push mapi_request / mapi_response onto the wire.
 
-  MAPI length field includes length bytes. 
+  MAPI length field includes length bytes.
   But these bytes do not belong to the mapi content in the user
   context. We have to add them when pushing mapi content length
   (uint16_t) and next subtract when pushing the content blob
@@ -601,7 +602,7 @@ enum ndr_err_code ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, con
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
-	
+
 	for (count = 0; ndr->offset < r->length - 2; count++) {
 		NDR_CHECK(ndr_push_EcDoRpc_MAPI_REQ(ndr, NDR_SCALARS, &r->mapi_req[count]));
 	}
@@ -668,12 +669,12 @@ enum ndr_err_code ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, str
 		}
 		r->mapi_req = talloc_realloc(_mem_save_mapi_req_0, r->mapi_req, struct EcDoRpc_MAPI_REQ, cntr_mapi_req_0 + 2);
 		r->mapi_req[cntr_mapi_req_0].opnum = 0;
-		
+
 		if (_ndr_mapi_req->offset != r->length - 2) {
 			return NDR_ERR_BUFSIZE;
 		}
 		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_req, 4, -1));
-	
+
 		_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		count = (r->mapi_len - r->length) / sizeof(uint32_t);
 		r->handles = talloc_array(_mem_save_handles_0, uint32_t, count + 1);
@@ -703,7 +704,7 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
 	r->mapi_len = length;
 
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
-	
+
 	/* If length equals length field then skipping subcontext */
 	if (r->length > sizeof (uint16_t)) {
 		_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -747,7 +748,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc_MAPI_REPL(struct ndr_push *ndr, int 
 			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->opnum));
 			if ((r->opnum == op_MAPI_Notify) || (r->opnum == op_MAPI_Pending)) {
 				NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
-				NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));				
+				NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
 			} else {
 				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->handle_idx));
 				NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->error_code));
@@ -1119,7 +1120,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.pcbAuxOut));
-	}		
+	}
 
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -1311,7 +1312,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		*r->out.pulTimeStamp = *r->in.pulTimeStamp;
 		NDR_PULL_ALLOC(ndr, r->out.pcbAuxOut);
 		*r->out.pcbAuxOut = *r->in.pcbAuxOut;
-	}		
+	}
 
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -2041,7 +2042,7 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
-		dump_data(0, r->lpb, r->cb);
+		ndr_dump_data(ndr, r->lpb, r->cb);
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
@@ -2086,6 +2087,86 @@ _PUBLIC_ void ndr_print_XID(struct ndr_print *ndr, const char *name, const struc
 	talloc_free(guid_str);
 	talloc_free(line);
 	ndr->flags = _flags_save_STRUCT;
+}
+
+_PUBLIC_ void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
+{
+	TALLOC_CTX *mem_ctx;
+	char *line = NULL;
+	int i=0, j=0, idx=0;
+
+	if (len<=0) return;
+
+	mem_ctx = talloc_named(NULL, 0, "ndr_dump_data");
+	if (!mem_ctx) return;
+
+	for (i=0;i<len;) {
+		idx = i;
+		if (i%16 == 0) {
+			if (i<len)  {
+				line = talloc_asprintf(mem_ctx, "[%04X] ", i);
+			}
+		}
+
+		line = talloc_asprintf_append(line, "%02X ", (int)buf[i]);
+		i++;
+		if (i%8 == 0) {
+			line = talloc_asprintf_append(line, "  ");
+		}
+		if (i%16 == 0) {
+			idx = i - 16;
+			for (j=0; j < 8; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
+			}
+
+			line = talloc_asprintf_append(line, " ");
+			for (j=8; j < 16; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
+			}
+			ndr->print(ndr, "%s", line);
+			talloc_free(line);
+		}
+	}
+
+	if (i%16) {
+		int n;
+
+		n = 16 - (i%16);
+		idx = i - (i%16);
+		if (n>8) {
+			line = talloc_asprintf_append(line, "  ");
+		}
+		while (n--) {
+			line = talloc_asprintf_append(line, "   ");
+		}
+		line = talloc_asprintf_append(line, "  ");
+		n = MIN(8,i%16);
+		for (j = 0; j < n; j++, idx++) {
+			line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
+		}
+		line = talloc_asprintf_append(line, " ");
+		n = (i%16) - n;
+		if (n>0) {
+			for (j = i - n; j < i + n; j++, idx++) {
+				line = talloc_asprintf_append(line, "%c", isprint(buf[idx]) ? buf[idx] : '.');
+			}
+		}
+		ndr->print(ndr, "%s", line);
+		talloc_free(line);
+	}
+}
+
+_PUBLIC_ void ndr_print_SBinary(struct ndr_print *ndr, const char *name, const struct SBinary *r)
+{
+	ndr->print(ndr, "%-25s: SBinary cb=%u", name, (unsigned)r->cb);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_dump_data(ndr, r->lpb, r->cb);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
 }
 
 _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint32_t r)
@@ -2445,7 +2526,7 @@ enum ndr_err_code ndr_pull_BufferTooSmall_repl(struct ndr_pull *ndr, int ndr_fla
 
 _PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, const struct ExtendedException *r)
 {
-	bool subjectIsSet, locationIsSet; 
+	bool subjectIsSet, locationIsSet;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 
@@ -2494,7 +2575,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, struct ExtendedException *r)
 {
-	bool subjectIsSet, locationIsSet; 
+	bool subjectIsSet, locationIsSet;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 
@@ -2655,7 +2736,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull
 				return NDR_ERR_BUFSIZE;
 			}
 		}
-                
+
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_RecurrencePattern(ndr, NDR_BUFFERS, &r->RecurrencePattern));
 			_mem_save_ExceptionInfo_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -2806,4 +2887,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_PersistElementArray(struct ndr_pull *ndr, in
 		ndr->flags = _flags_save_STRUCT;
 	}
 	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_FILETIME(struct ndr_print *ndr, const char *name, const struct FILETIME *r)
+{
+	TALLOC_CTX		*mem_ctx;
+	NTTIME			time;
+	const char		*date;
+
+	mem_ctx = talloc_named(NULL, 0, "FILETIME");
+	if (!mem_ctx) { ndr_print_string(ndr, name, "ERROR"); return; }
+	if (r == NULL) { ndr_print_string(ndr, name, "NULL"); return; }
+
+	time = r->dwHighDateTime;
+	time = time << 32;
+	time |= r->dwLowDateTime;
+	date = nt_time_string(mem_ctx, time);
+	ndr_print_string(ndr, name, date);
+
+	talloc_free(mem_ctx);
 }

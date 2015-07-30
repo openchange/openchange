@@ -1005,14 +1005,25 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 		/** fixed header props */
 		header_data_pointers = talloc_array(data_pointers, void *, 9);
-		header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
-		memset(header_retvals, 0, 9 * sizeof(uint32_t));
+		if (header_data_pointers == NULL) {
+			OC_DEBUG(1, "Error allocating header_data_pointers");
+			goto end;
+		}
+		header_retvals = talloc_zero_array(header_data_pointers, enum MAPISTATUS, 9);
+		if (header_retvals == NULL) {
+			OC_DEBUG(1, "Error allocating header_retvals");
+			goto end;
+		}
 		query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
 		i = 0;
 
 		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-		emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
+		if (emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data) != MAPISTORE_SUCCESS) {
+			synccontext->skipped_objects++;
+			OC_DEBUG(5, "Skip message %"PRIx64" as source key couldn't be retrieved\n", eid);
+			goto end_row;
+		}
 		query_props.aulPropTag[i] = PidTagSourceKey;
 		header_data_pointers[i] = bin_data;
 		i++;

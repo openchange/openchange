@@ -1005,14 +1005,25 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 		/** fixed header props */
 		header_data_pointers = talloc_array(data_pointers, void *, 9);
-		header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
-		memset(header_retvals, 0, 9 * sizeof(uint32_t));
+		if (header_data_pointers == NULL) {
+			OC_DEBUG(1, "Error allocating header_data_pointers");
+			goto end;
+		}
+		header_retvals = talloc_zero_array(header_data_pointers, enum MAPISTATUS, 9);
+		if (header_retvals == NULL) {
+			OC_DEBUG(1, "Error allocating header_retvals");
+			goto end;
+		}
 		query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
 		i = 0;
 
 		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-		emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
+		if (emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data) != MAPISTORE_SUCCESS) {
+			synccontext->skipped_objects++;
+			OC_DEBUG(5, "Skip message %"PRIx64" as source key couldn't be retrieved\n", eid);
+			goto end_row;
+		}
 		query_props.aulPropTag[i] = PidTagSourceKey;
 		header_data_pointers[i] = bin_data;
 		i++;
@@ -2980,7 +2991,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageMove_repl	*response;
 	struct GUID				replica_guid;
 	uint64_t				sourceFID, sourceMID, destMID;
-	struct Binary_r				*change_key;
+	struct Binary_r				*change_key, *predecessor_change_list;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
 	struct mapi_handles			*synccontext_rec;
@@ -3050,11 +3061,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(synccontext_object) && emsmdbp_is_mapistore(source_folder_object);
 
 	change_key = talloc_zero(mem_ctx, struct Binary_r);
+	if (!change_key) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	change_key->cb = request->ChangeNumberSize;
 	change_key->lpb = request->ChangeNumber;
+
+	predecessor_change_list = talloc_zero(mem_ctx, struct Binary_r);
+	if (!predecessor_change_list) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
+	predecessor_change_list->cb = request->PredecessorChangeListSize;
+	predecessor_change_list->lpb = request->PredecessorChangeList;
+
 	if (mapistore) {
 		/* We invoke the backend method */
-		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, mem_ctx, 1, &sourceMID, &destMID, &change_key, false);
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID,
+						    synccontext_object->parent_object->backend_object,
+						    source_folder_object->backend_object, mem_ctx, 1, &sourceMID, &destMID,
+						    &change_key, &predecessor_change_list, false);
 	}
 	else {
 		OC_DEBUG(0, "mapistore support not implemented yet - shouldn't occur\n");

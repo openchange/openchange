@@ -715,6 +715,9 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 	/* WriteStream operation */
 	printf("We are about to write %u bytes in the stream\n", bin.cb);
 	size = MAX_READ_SIZE;
+	if (size > bin.cb) {
+		size = bin.cb;
+	}
 	offset = 0;
 	while (offset <= bin.cb) {
 		stream.length = size;
@@ -746,7 +749,7 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 }
 
 
-#define SETPROPS_COUNT	4
+#define SETPROPS_COUNT	5
 
 /**
  * Send a mail
@@ -766,6 +769,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	mapi_object_t			obj_outbox;
 	mapi_object_t			obj_message;
 	mapi_object_t			obj_stream;
+	struct timeval                  now;
 	uint32_t			index = 0;
 	uint32_t			msgflag;
 	struct SPropValue		props[SETPROPS_COUNT];
@@ -895,6 +899,13 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	/* Send the submit time */
+	if (gettimeofday(&now, NULL) == 0) {
+		set_SPropValue_proptag_date_timeval(&props[prop_count - 1],
+						    PR_CLIENT_SUBMIT_TIME, &now);
+		prop_count++;
+	}
+
 	retval = SetProps(&obj_message, 0, props, prop_count);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
@@ -917,9 +928,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			props_attach[0].value.l = ATTACH_BY_VALUE;
 			props_attach[1].ulPropTag = PR_RENDERING_POSITION;
 			props_attach[1].value.l = 0;
-			props_attach[2].ulPropTag = PR_ATTACH_FILENAME;
+			props_attach[2].ulPropTag = PR_ATTACH_FILENAME_UNICODE;
 			printf("Sending %s:\n", oclient->attach[i].filename);
-			props_attach[2].value.lpszA = get_filename(oclient->attach[i].filename);
+			props_attach[2].value.lpszW = get_filename(oclient->attach[i].filename);
 			props_attach[3].ulPropTag = PR_ATTACH_CONTENT_ID;
 			props_attach[3].value.lpszA = get_filename(oclient->attach[i].filename);
 			count_props_attach = 4;

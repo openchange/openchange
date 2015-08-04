@@ -111,7 +111,12 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 	if (profile->localaddr) {
 		binding = talloc_asprintf_append(binding, "localaddress=%s,", profile->localaddr);
 	}
-	
+	/* Removing trailing comma if any */
+	if (strlen(binding) > 0) {
+		if (*(binding + strlen(binding) - 1) == ',') {
+			*(binding + strlen(binding) - 1) = '\0';
+		}
+	}
 	binding = talloc_strdup_append(binding, "]");
 
 	return binding;

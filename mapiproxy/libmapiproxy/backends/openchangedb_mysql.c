@@ -343,7 +343,7 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(execute_query(conn, sql));
-	if (mysql_affected_rows(conn) == 0) {
+	if (mysql_num_rows(conn) == 0) {
 		retval = MAPI_E_NOT_FOUND;
 	}
 
@@ -2071,7 +2071,7 @@ static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(execute_query(conn, sql));
-	if (mysql_affected_rows(conn) == 0) {
+	if (mysql_num_rows(conn) == 0) {
 		retval = MAPI_E_NOT_FOUND;
 	}
 

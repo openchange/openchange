@@ -434,7 +434,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
   \param mapistore_URI mapistore URI string to associate with fmid
 
   \return MAPISTORE_SUCCESS on success,
-	  MAPISTORE_ERR_NOT_FOUND if FMID entry doesn't exists
+	  MAPISTORE_ERR_NOT_FOUND if FMID entry doesn't exist
 	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
 	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
 	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
@@ -469,8 +469,11 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	/* did we updated anything? */
-	/* TODO: Move mysql_affected_rows() in execute_query() */
-	MAPISTORE_RETVAL_IF(mysql_affected_rows(MYSQL(ictx)) == 0, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	if (mysql_affected_rows(MYSQL(ictx)) == 0) {
+		bool _is_soft_deleted;
+		ret = mysql_search_existing_fmid(ictx, username, fmid, &_is_soft_deleted);
+		MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	}
 
 	retval = _memcached_update_record(ictx, mapistore_URI, fmid);
 	if (retval != MAPISTORE_SUCCESS) {

@@ -1016,7 +1016,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!p->emsmdb_session_str) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			return NT_STATUS_OK;
 		}
 		p->r = r;
@@ -1026,7 +1025,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (p->sock == -1) {
 			OC_DEBUG(0, "[asyncemsmdb]: failed to create socket: %s", nn_strerror(errno));
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1035,7 +1033,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (port == -1) {
 			OC_DEBUG(0, "[asyncemsmdb]: no port available!");
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1052,7 +1049,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!bind_addr) {
 			OC_DEBUG(0, "[asyncemsmdb][ERR]: no more memory");
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1060,7 +1056,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (nn_retval == -1) {
 			OC_DEBUG(0, "[asyncemsmdb] nn_bind failed on %s failed: %s", bind_addr, nn_strerror(errno));
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}
@@ -1071,7 +1066,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb] unable to add record to the resolver: %s",
 				 mapistore_errstr(retval));
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}
@@ -1081,7 +1075,6 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (nn_retval == -1) {
 			OC_DEBUG(0, "[asyncemsmdb] nn_getsockopt failed: %s", nn_strerror(errno));
 			talloc_free(p);
-			talloc_free(mstore_ctx);
 			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}

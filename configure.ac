@@ -854,6 +854,20 @@ fi
 AC_SUBST(OPENCHANGE_QT4)
 
 dnl ***********************
+dnl Options
+dnl ***********************
+
+AC_ARG_ENABLE(ansi-color, AC_HELP_STRING([--enable-ansi-color],
+			  [Use ANSI colors in NDR logs]),
+			  ansi_color=yes,
+			  ansi_color=no)
+NDR_COLOR=
+if test x$ansi_color = xyes; then
+   NDR_COLOR=-DNDR_COLOR
+fi
+AC_SUBST(NDR_COLOR)
+
+dnl ***********************
 dnl Makefiles 
 dnl ***********************
 AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
@@ -933,6 +947,9 @@ OpenChange Configuration (Please review)
 	     - Qt4:			$enable_openchange_qt4
 
 	   * Installation prefix:	$prefix
+
+	   * Options:
+	     - Use ANSI colors:		$ansi_color
 
 ===============================================================
 

@@ -320,9 +320,39 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	return retval;
 }
 
-/* forward declaration */
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *mapistore_uri, uint64_t *fidp);
+			       const char *mapistore_uri, uint64_t *fidp)
+{
+	TALLOC_CTX	*mem_ctx;
+	MYSQL		*conn;
+	enum MAPISTATUS	retval;
+	char		*sql, *mapistore_uri_2;
+
+	mem_ctx = talloc_named(NULL, 0, "get_fid");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	conn = self->data;
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
+
+	mapistore_uri_2 = talloc_strdup(mem_ctx, mapistore_uri);
+	OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (mapistore_uri_2[strlen(mapistore_uri_2)-1] == '/') {
+		mapistore_uri_2[strlen(mapistore_uri_2)-1] = '\0';
+	} else {
+		mapistore_uri_2 = talloc_asprintf_append(mapistore_uri_2, "/");
+		OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	}
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT folder_id FROM folders "
+		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
+		_sql(mem_ctx, mapistore_uri), _sql(mem_ctx, mapistore_uri_2));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	retval = status(select_first_uint(conn, sql, fidp));
+
+	talloc_free(mem_ctx);
+	return retval;
+}
 
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 					const char *username, uint64_t fid,
@@ -402,40 +432,6 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(select_first_uint(conn, sql, parent_fidp));
-
-	talloc_free(mem_ctx);
-	return retval;
-}
-
-static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *mapistore_uri, uint64_t *fidp)
-{
-	TALLOC_CTX	*mem_ctx;
-	MYSQL		*conn;
-	enum MAPISTATUS	retval;
-	char		*sql, *mapistore_uri_2;
-
-	mem_ctx = talloc_named(NULL, 0, "get_fid");
-	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-	conn = self->data;
-	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
-
-	mapistore_uri_2 = talloc_strdup(mem_ctx, mapistore_uri);
-	OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-	if (mapistore_uri_2[strlen(mapistore_uri_2)-1] == '/') {
-		mapistore_uri_2[strlen(mapistore_uri_2)-1] = '\0';
-	} else {
-		mapistore_uri_2 = talloc_asprintf_append(mapistore_uri_2, "/");
-		OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-	}
-
-	sql = talloc_asprintf(mem_ctx,
-		"SELECT folder_id FROM folders "
-		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
-		_sql(mem_ctx, mapistore_uri), _sql(mem_ctx, mapistore_uri_2));
-	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-
-	retval = status(select_first_uint(conn, sql, fidp));
 
 	talloc_free(mem_ctx);
 	return retval;

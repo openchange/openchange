@@ -259,6 +259,28 @@ START_TEST(test_update_fmid_should_fail) {
 	ck_assert_int_eq(retval,  MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
+START_TEST(test_update_fmid_same_value) {
+	enum mapistore_error	retval;
+	char			*mapistore_uri = NULL;
+	bool			soft_deleted = true;
+
+	/* prepare some data */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* actual test */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI_2);
+	ck_assert_int_eq(retval,  MAPISTORE_SUCCESS);
+
+	/* Recheck update a matched value successes */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI_2);
+	ck_assert_int_eq(retval,  MAPISTORE_SUCCESS);
+
+	/* check what is in db */
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_TEST_FMID, &mapistore_uri, &soft_deleted);
+	ck_assert(!soft_deleted);
+	ck_assert_str_eq(mapistore_uri, INDEXING_TEST_URI_2);
+} END_TEST
 
 /* del_fmid */
 
@@ -531,6 +553,7 @@ static TCase *create_test_case_indexing_interface(const char *name, SFun setup,
 	tcase_add_test(tc_interface, test_add_fmid_duplicate_value_should_fail);
 	tcase_add_test(tc_interface, test_update_fmid_sanity);
 	tcase_add_test(tc_interface, test_update_fmid);
+	tcase_add_test(tc_interface, test_update_fmid_same_value);
 	tcase_add_test(tc_interface, test_update_fmid_should_fail);
 	tcase_add_test(tc_interface, test_del_fmid_sanity);
 	tcase_add_test(tc_interface, test_del_fmid_unknown_fmid);

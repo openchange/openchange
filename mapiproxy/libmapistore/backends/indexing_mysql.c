@@ -713,10 +713,14 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, NULL);
 
 	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT next_fmid FROM %s "
 		"WHERE username = '%s'",
 		INDEXING_ALLOC_TABLE, _sql(mem_ctx, username));
+	MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
 	ret = select_first_uint(MYSQL(ictx), sql, &next_fmid);
 	switch (ret) {
 	case MYSQL_SUCCESS:
@@ -730,6 +734,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 			INDEXING_ALLOC_TABLE,
 			next_fmid + count,
 			_sql(mem_ctx, username));
+		MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 		break;
 	case MYSQL_NOT_FOUND:
 		// First allocation, insert in the database
@@ -740,6 +745,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 			INDEXING_ALLOC_TABLE,
 			_sql(mem_ctx, username),
 			next_fmid + count);
+		MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 		break;
 
 	default:

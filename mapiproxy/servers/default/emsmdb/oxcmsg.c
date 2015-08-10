@@ -326,7 +326,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*folder_object = NULL;
 	struct emsmdbp_object		*message_object = NULL;
 	uint32_t			handle;
-	uint64_t			folderID, messageID;
+	uint64_t			folderID;
+	uint64_t			messageID = 0;
 	uint32_t			contextID;
 	bool				mapistore = false;
 	void				*data;

@@ -1,7 +1,7 @@
 # channels.py -- OpenChange RPC-over-HTTP implementation
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2012-2014  Julien Kerihuel <j.kerihuel@openchange.org>
+# Copyright (C) 2012-2015  Julien Kerihuel <j.kerihuel@openchange.org>
 #                          Wolfgang Sourdeau <wsourdeau@inverse.ca>
 #                          Enrique J. Hernández <ejhernandez@zentyal.com>
 #
@@ -38,7 +38,14 @@ from openchange.utils.packets import (RTS_CMD_CONNECTION_TIMEOUT,
                                       RTS_CMD_RECEIVE_WINDOW_SIZE,
                                       RTS_CMD_VERSION,
                                       RTS_FLAG_ECHO,
-                                      RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket)
+                                      RTS_FLAG_PING,
+                                      RTS_CMD_DATA_LABELS,
+                                      RPCPacket, RPCRTSPacket, RPCRTSOutPacket)
+
+
+# Connection Timeout Timer (in ms)
+INBOUND_PROXY_CONN_TIMEOUT = 120000
+OUTBOUND_PROXY_CONN_TIMEOUT = 120000
 
 
 """Documentation:
@@ -189,7 +196,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
             # send window_size to 256Kib (max size allowed)
             # and conn_timeout (in milliseconds, max size allowed)
-            unix_socket.sendall(pack("<ll", self.window_size, 120000))
+            unix_socket.sendall(pack("<ll", self.window_size, INBOUND_PROXY_CONN_TIMEOUT))
 
             # recv oc socket
             self.oc_conn = receive_socket(unix_socket)
@@ -348,7 +355,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         packet = RPCRTSOutPacket(self.logger)
         # we set the min timeout value allowed, as we would actually need
         # either configuration values from Apache or from some config file
-        packet.add_command(RTS_CMD_CONNECTION_TIMEOUT, 120000)
+        packet.add_command(RTS_CMD_CONNECTION_TIMEOUT, OUTBOUND_PROXY_CONN_TIMEOUT)
         self.bytes_written = self.bytes_written + packet.size
 
         return packet.make()
@@ -362,6 +369,14 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         packet.add_command(RTS_CMD_VERSION, 1)
         packet.add_command(RTS_CMD_RECEIVE_WINDOW_SIZE, self.in_window_size)
         packet.add_command(RTS_CMD_CONNECTION_TIMEOUT, self.in_conn_timeout)
+        self.bytes_written = self.bytes_written + packet.size
+
+        return packet.make()
+
+    def _send_ping(self):
+        self.logger.debug("sending PING RTS PDU to client")
+        packet = RPCRTSOutPacket(self.logger)
+        packet.flags = RTS_FLAG_PING
         self.bytes_written = self.bytes_written + packet.size
 
         return packet.make()
@@ -501,11 +516,12 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         status = True
         while status:
             self.logger.debug("step in loop")
-            chunks = fd_pool.poll(2000.0)
+            chunks = fd_pool.poll(0.9 * OUTBOUND_PROXY_CONN_TIMEOUT)
 
             if len(chunks) == 0:
-                # send ping packets?
-                pass
+                # According to [MS-RPCH] Section 3.2.4.6 we must maintain connection
+                # alive using Ping RTS PDUs
+                yield self._send_ping()
             else:
                 for data in chunks:
                     event_status, server_data \

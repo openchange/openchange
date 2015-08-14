@@ -179,27 +179,12 @@ failure:
 static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 			      TALLOC_CTX *mem_ctx, struct NspiUnbind *r)
 {
-	struct dcesrv_handle		*h;
-	struct mpm_session		*session;
-
 	OC_DEBUG(5, "exchange_nsp: NspiUnbind (0x1)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-	}
-
-	/* Step 1. Retrieve handle and free if emsabp context and session are available */
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (h) {
-		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
-		if (session) {
-			mpm_session_release(session);
-		}
-		else {
-			OC_DEBUG(5, "  nsp_session NOT found\n");
-		}
 	}
 
 	r->out.handle->uuid = GUID_zero();
@@ -1604,6 +1589,7 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
 	OC_DEBUG(0, "dcesrv_exchange_nsp_unbind: server_id=%d, context_id=0x%x", server_id, context_id);
+	mpm_session_unbind(&server_id, context_id);
 	return NT_STATUS_OK;
 }
 

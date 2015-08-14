@@ -74,7 +74,7 @@ struct mpm_session {
 	uint32_t			context_id;
 	bool				(*destructor)(void *);
 	void				*private_data;
-	const char			*username;
+	char				*username;
 	struct GUID			uuid;
 	bool				released;
 	struct mpm_session		*next, *prev;
@@ -194,7 +194,7 @@ struct mpm_session *mpm_session_new(struct server_id, uint32_t, const char *, st
 struct mpm_session *mpm_session_init(struct dcesrv_call_state *, struct GUID *);
 bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
 bool mpm_session_set_private_data(struct mpm_session *, void *);
-bool mpm_session_release(struct mpm_session *);
+bool mpm_session_unbind(struct server_id *, uint32_t);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 struct mpm_session *mpm_session_find_by_uuid(struct GUID *uuid);

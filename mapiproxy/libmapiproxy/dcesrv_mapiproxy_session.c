@@ -22,6 +22,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
+#include "libmapi/libmapi.h"
 #include "utils/dlinklist.h"
 
 /**
@@ -134,28 +135,56 @@ bool mpm_session_set_private_data(struct mpm_session *session,
 
 
 /**
-   \details Release a mapiproxy session, private data (if any) will be released
-   when all user sessions are gone
+   \details Release RPC session
 
-   \param session pointer to the mpm session context
+   This code will release mapiproxy session data (and remove it from
+   mpm_sessions array) when all user sessions are marked as deleted
 
-   \return true on success, otherwise false
+
+   \return true when session was released, false if only marked for release
  */
-bool mpm_session_release(struct mpm_session *session)
+bool mpm_session_unbind(struct server_id *server_id, uint32_t context_id)
 {
-	bool		ret;
+	struct mpm_session	*current = NULL;
+	bool			release = true;
+	char			*username = NULL;
 
-	if (!session) return false;
+	if (!server_id) return false;
 
-	// TODO proper checking before release
-	return false;
-
-	if (session->destructor) {
-		ret = session->destructor(session->private_data);
-		if (ret == false) return ret;
+	// Mark all server_id/context_id sessions as released
+	for (current = mpm_sessions; current; current = current->next) {
+		if (memcmp(server_id, &current->server_id, sizeof(struct server_id)) == 0 &&
+		    context_id == current->context_id) {
+			current->released = release;
+			username = current->username;
+		}
 	}
 
-	talloc_free(session);
+	if (username) {
+		// At least one session marked, are all of them gone?
+		for (current = mpm_sessions; current && release; current = current->next) {
+			if (strcmp(username, current->username) == 0 && !current->released) {
+				OC_DEBUG(5, "Keeping %s sessions as some of context are not unbinded yet", username);
+				release = false;
+			}
+		}
+
+		if (release) {
+			OC_DEBUG(5, "Cleaning sessions for user %s", username);
+			for (current = mpm_sessions; current; current = current->next) {
+				if (strcmp(username, current->username) == 0) {
+					// Destroy private data
+					if (current->destructor) {
+						current->destructor(current->private_data);
+					}
+
+					// Remove and free session entry
+					DLIST_REMOVE(mpm_sessions, current);
+					talloc_free(current);
+				}
+			}
+		}
+	}
 
 	return true;
 }

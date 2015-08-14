@@ -30,30 +30,17 @@
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
 
-static struct exchange_nsp_session	*nsp_session = NULL;
 static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 
-static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
-{
-	struct exchange_nsp_session *session, *found_session = NULL;
-
-	for (session = nsp_session; !found_session && session; session = session->next) {
-		if (GUID_equal(uuid, &session->uuid)) {
-			found_session = session;
-		}
-	}
-
-	return found_session;
-}
 
 static struct emsabp_context *dcesrv_find_emsabp_context(struct GUID *uuid)
 {
-	struct exchange_nsp_session	*session;
-	struct emsabp_context		*emsabp_ctx = NULL;
+	struct mpm_session	*session;
+	struct emsabp_context	*emsabp_ctx = NULL;
 
-	session = dcesrv_find_nsp_session(uuid);
+	session = mpm_session_find_by_uuid(uuid);
 	if (session) {
-		emsabp_ctx = (struct emsabp_context *)session->session->private_data;;
+		emsabp_ctx = (struct emsabp_context *)session->private_data;
 	}
 
 	return emsabp_ctx;
@@ -106,7 +93,8 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx;
 	struct dcesrv_handle		*handle;
 	struct policy_handle		wire_handle;
-	struct exchange_nsp_session	*session;
+	struct mpm_session		*session;
+	char				*uuid_str;
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 
 	OC_DEBUG(5, "exchange_nsp: NspiBind (0x0)\n");
@@ -157,24 +145,26 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	r->out.mapiuid = guid;
 
 	/* Search for an existing session, create if it doesn't exist */
-	session = dcesrv_find_nsp_session(&handle->wire_handle.uuid);
-	if (!session) {
-		OC_DEBUG(5, "Creating new session");
+	session = mpm_session_find_by_uuid(&handle->wire_handle.uuid);
+
+	uuid_str = GUID_string(mem_ctx, &handle->wire_handle.uuid);
+	DCESRV_NSP_RETURN_IF(!uuid_str, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+	if (session) {
+		OC_DEBUG(5, "[exchange_nsp]: Reusing existing nsp_session: %s", uuid_str);
+	} else {
+		OC_DEBUG(5, "[exchange_nsp]: Creating new session");
 
 		/* Step 6. Associate this emsabp context to the session */
-		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
+		session = mpm_session_init(dce_call, &handle->wire_handle.uuid);
 		DCESRV_NSP_RETURN_IF(!session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
-		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
-		DCESRV_NSP_RETURN_IF(!session->session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+		mpm_session_set_private_data(session, (void *) emsabp_ctx);
+		mpm_session_set_destructor(session, emsabp_destructor);
 
-		session->uuid = handle->wire_handle.uuid;
-
-		mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
-		mpm_session_set_destructor(session->session, emsabp_destructor);
-
-		DLIST_ADD_END(nsp_session, session, struct exchange_nsp_session *);
+		OC_DEBUG(5, "[exchange_nsp]: New session added: %s", uuid_str);
 	}
+	talloc_free(uuid_str);
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 
@@ -200,7 +190,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 			      TALLOC_CTX *mem_ctx, struct NspiUnbind *r)
 {
 	struct dcesrv_handle		*h;
-	struct exchange_nsp_session	*session;
+	struct mpm_session		*session;
 
 	OC_DEBUG(5, "exchange_nsp: NspiUnbind (0x1)\n");
 
@@ -213,14 +203,9 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	/* Step 1. Retrieve handle and free if emsabp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
-		session = dcesrv_find_nsp_session(&r->in.handle->uuid);
+		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
 		if (session) {
-			if (mpm_session_release(session->session)) {
-				DLIST_REMOVE(nsp_session, session);
-				OC_DEBUG(5, "Session found and released\n");
-			} else {
-				OC_DEBUG(5, "Session found and ref_count decreased\n");
-			}
+			mpm_session_release(session);
 		}
 		else {
 			OC_DEBUG(5, "  nsp_session NOT found\n");
@@ -1604,10 +1589,6 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 {
 	OC_DEBUG(0, "dcesrv_exchange_nsp_init");
-	/* Initialize exchange_nsp session */
-	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
-	if (!nsp_session) return NT_STATUS_NO_MEMORY;
-	nsp_session->session = NULL;
 
 	/* Open a read-write pointer on the EMSABP TDB database */
 	emsabp_tdb_ctx = emsabp_tdb_init((TALLOC_CTX *)dce_ctx, dce_ctx->lp_ctx);

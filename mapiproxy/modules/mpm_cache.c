@@ -9,19 +9,19 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
    \file mpm_cache.c
-   
+
    \brief Cache messages and attachments so we can reduce WAN traffic
  */
 
@@ -386,14 +386,14 @@ static NTSTATUS cache_pull_OpenMessage(struct dcesrv_call_state *dce_call,
 
 	message = talloc((TALLOC_CTX *)mpm, struct mpm_message);
 	NT_STATUS_HAVE_NO_MEMORY(message);
-	
-	message->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+
+	message->session = mpm_session_init(dce_call, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(message->session);
 
 	message->FolderId = request.FolderId;
 	message->MessageId = request.MessageId;
 	message->handle = 0xFFFFFFFF;
-	
+
 	DLIST_ADD_END(mpm->messages, message, struct mpm_message *);
 
 	return NT_STATUS_OK;
@@ -504,7 +504,7 @@ static NTSTATUS cache_pull_OpenAttach(struct dcesrv_call_state *dce_call,
 	attach = talloc((TALLOC_CTX *)mpm, struct mpm_attachment);
 	NT_STATUS_HAVE_NO_MEMORY(attach);
 
-	attach->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+	attach->session = mpm_session_init(dce_call, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(attach->session);
 
 	attach->AttachmentID = request.AttachmentID;
@@ -635,7 +635,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
 			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			stream->session = mpm_session_init(dce_call, NULL);
 			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;
@@ -664,7 +664,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
 			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			stream->session = mpm_session_init(dce_call, NULL);
 			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;

@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008-2011
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -71,7 +72,6 @@ struct mapiproxy_module_list {
 struct mpm_session {
 	struct server_id		server_id;
 	uint32_t			context_id;
-	uint32_t			ref_count;
 	bool				(*destructor)(void *);
 	void				*private_data;
 };
@@ -188,7 +188,6 @@ void *mapiproxy_server_openchangedb_init(struct loadparm_context *);
 /* definitions from dcesrv_mapiproxy_session. c */
 struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
 struct mpm_session *mpm_session_init(TALLOC_CTX *, struct dcesrv_call_state *);
-bool mpm_session_increment_ref_count(struct mpm_session *);
 bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
 bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);

@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009-2015
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -201,14 +202,9 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	r->out.result = MAPI_E_SUCCESS;
 
-	/* Search for an existing session and increment ref_count, otherwise create it */
+	/* Search for an existing session, create if it doesn't exist */
 	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
-	if (session) {
-		OC_DEBUG(0, "[exchange_emsmdb]: Increment session ref count for %d\n",
-				 session->session->context_id);
-		mpm_session_increment_ref_count(session->session);
-	}
-	else {
+	if (!session) {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
@@ -1336,14 +1332,9 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		r->out.result = MAPI_E_SUCCESS;
 	}
 
-	/* Search for an existing session and increment ref_count, otherwise create it */
+	/* Search for an existing session, create if it doesn't exist */
 	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
-	if (session) {
-		OC_DEBUG(0, "[exchange_emsmdb]: Increment session ref count for %d\n",
-				 session->session->context_id);
-		mpm_session_increment_ref_count(session->session);
-	}
-	else {
+	if (!session) {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);

@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009-2013
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -155,12 +156,9 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	*r->out.handle = handle->wire_handle;
 	r->out.mapiuid = guid;
 
-	/* Search for an existing session and increment ref_count, otherwise create it */
+	/* Search for an existing session, create if it doesn't exist */
 	session = dcesrv_find_nsp_session(&handle->wire_handle.uuid);
-	if (session) {
-		mpm_session_increment_ref_count(session->session);
-		OC_DEBUG(5, "  [unexpected]: existing nsp_session: %p; session: %p (ref++)", session, session->session);
-	} else {
+	if (!session) {
 		OC_DEBUG(5, "Creating new session");
 
 		/* Step 6. Associate this emsabp context to the session */

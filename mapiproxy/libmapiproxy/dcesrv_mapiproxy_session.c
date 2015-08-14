@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -53,28 +54,10 @@ struct mpm_session *mpm_session_new(TALLOC_CTX *mem_ctx,
 
 	session->server_id = serverid;
 	session->context_id = context_id;
-	session->ref_count = 0;
 	session->destructor = NULL;
 	session->private_data = NULL;
 
 	return session;
-}
-
-
-/**
-   \details Increment the ref_count associated to a session
-
-   \param session pointer to the session where to increment ref_count
-
-   \return true on success, otherwise false
- */
-bool mpm_session_increment_ref_count(struct mpm_session *session)
-{
-	if (!session) return false;
-
-	session->ref_count += 1;
-
-	return true;
 }
 
 
@@ -152,10 +135,8 @@ bool mpm_session_release(struct mpm_session *session)
 
 	if (!session) return false;
 
-	if (session->ref_count) {
-		session->ref_count -= 1;
-		return false;
-	}
+	// TODO proper checking before release
+	return false;
 
 	if (session->destructor) {
 		ret = session->destructor(session->private_data);

@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,13 +50,6 @@ struct emsabp_context {
 	TDB_CONTEXT		*tdb_ctx;
 	TDB_CONTEXT		*ttdb_ctx;
 	TALLOC_CTX		*mem_ctx;
-};
-
-struct exchange_nsp_session {
-	struct mpm_session		*session;
-	struct GUID			uuid;
-	struct exchange_nsp_session	*prev;
-	struct exchange_nsp_session	*next;
 };
 
 struct emsabp_MId {

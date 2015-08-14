@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -386,14 +387,14 @@ static NTSTATUS cache_pull_OpenMessage(struct dcesrv_call_state *dce_call,
 
 	message = talloc((TALLOC_CTX *)mpm, struct mpm_message);
 	NT_STATUS_HAVE_NO_MEMORY(message);
-	
-	message->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+
+	message->session = mpm_session_init(dce_call, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(message->session);
 
 	message->FolderId = request.FolderId;
 	message->MessageId = request.MessageId;
 	message->handle = 0xFFFFFFFF;
-	
+
 	DLIST_ADD_END(mpm->messages, message, struct mpm_message *);
 
 	return NT_STATUS_OK;
@@ -504,7 +505,7 @@ static NTSTATUS cache_pull_OpenAttach(struct dcesrv_call_state *dce_call,
 	attach = talloc((TALLOC_CTX *)mpm, struct mpm_attachment);
 	NT_STATUS_HAVE_NO_MEMORY(attach);
 
-	attach->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+	attach->session = mpm_session_init(dce_call, NULL);
 	NT_STATUS_HAVE_NO_MEMORY(attach->session);
 
 	attach->AttachmentID = request.AttachmentID;
@@ -635,7 +636,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
 			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			stream->session = mpm_session_init(dce_call, NULL);
 			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;
@@ -664,7 +665,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
 			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			stream->session = mpm_session_init(dce_call, NULL);
 			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;

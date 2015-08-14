@@ -36,34 +36,20 @@
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
 void					*openchange_db_ctx = NULL;
 
-static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
-{
-	struct exchange_emsmdb_session	*session, *found_session = NULL;
 
-	for (session = emsmdb_session; !found_session && session; session = session->next) {
-		if (GUID_equal(uuid, &session->uuid)) {
-			found_session = session;
-		}
+static struct emsmdbp_context *dcesrv_find_emsmdbp_context(struct GUID *uuid)
+{
+	struct mpm_session	*session;
+	struct emsmdbp_context	*emsabp_ctx = NULL;
+
+	session = mpm_session_find_by_uuid(uuid);
+	if (session) {
+		emsabp_ctx = (struct emsmdbp_context *)session->private_data;
 	}
 
-	return found_session;
+	return emsabp_ctx;
 }
 
-/* FIXME: See _unbind below */
-/* static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session_by_server_id(const struct server_id *server_id, uint32_t context_id) */
-/* { */
-/* 	struct exchange_emsmdb_session	*session; */
-
-/* 	for (session = emsmdb_session; session; session = session->next) { */
-/* 		if (session->session */
-/* 		    && session->session->server_id.id == server_id->id && session->session->server_id.id2 == server_id->id2 && session->session->server_id.node == server_id->node */
-/* 		    && session->session->context_id == context_id) { */
-/* 			return session; */
-/* 		} */
-/* 	} */
-
-/* 	return NULL; */
-/* } */
 
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
@@ -83,7 +69,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	struct emsmdbp_context		*emsmdbp_ctx;
 	struct dcesrv_handle		*handle;
 	struct policy_handle		wire_handle;
-	struct exchange_emsmdb_session	*session;
+	struct mpm_session		*session;
 	struct ldb_message		*msg;
 	const char			*mailNickname;
 	const char			*userDN;
@@ -203,24 +189,16 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	r->out.result = MAPI_E_SUCCESS;
 
 	/* Search for an existing session, create if it doesn't exist */
-	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+	session = mpm_session_find_by_uuid(&handle->wire_handle.uuid);
 	if (!session) {
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
+		session = mpm_session_init(dce_call, &handle->wire_handle.uuid);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
-		session->pullTimeStamp = *r->out.pullTimeStamp;
-		session->session = mpm_session_init(session, dce_call);
-		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+		mpm_session_set_private_data(session, (void *) emsmdbp_ctx);
+		mpm_session_set_destructor(session, emsmdbp_destructor);
 
-		session->uuid = handle->wire_handle.uuid;
-
-		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
-		mpm_session_set_destructor(session->session, emsmdbp_destructor);
-
-		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->session->context_id);
-
-		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->context_id);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -241,8 +219,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 					     struct EcDoDisconnect *r)
 {
 	struct dcesrv_handle		*h;
-	struct exchange_emsmdb_session	*session;
-	bool				ret;
+	struct mpm_session		*session;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoDisconnect (0x1)\n");
 
@@ -255,15 +232,9 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
-		session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
 		if (session) {
-			ret = mpm_session_release(session->session);
-			if (ret == true) {
-				DLIST_REMOVE(emsmdb_session, session);
-				OC_DEBUG(5, "Session found and released\n");
-			} else {
-				OC_DEBUG(5, "Session found and ref_count decreased\n");
-			}
+			mpm_session_release(session);
 		} else {
 			OC_DEBUG(5, "  emsmdb_session NOT found\n");
 		}
@@ -957,7 +928,6 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
 				      struct EcDoRpc *r)
 {
-	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -974,11 +944,8 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-        session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-        if (session) {
-                emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-	}
-	else {
+        emsmdbp_ctx = dcesrv_find_emsmdbp_context(&r->in.handle->uuid);
+        if (!emsmdbp_ctx) {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
@@ -1035,8 +1002,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 							  struct EcRRegisterPushNotification *r)
 {
 	int				retval;
-	struct exchange_emsmdb_session	*session;
-	/* struct emsmdbp_context		*emsmdbp_ctx = NULL; */
+	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcRRegisterPushNotification (0x4)\n");
 
@@ -1049,10 +1015,8 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-	if (session) {
-		/* emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data; */
-	} else {
+	emsmdbp_ctx = dcesrv_find_emsmdbp_context(&r->in.handle->uuid);
+	if (!emsmdbp_ctx) {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
@@ -1065,7 +1029,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 		r->out.handle = r->in.handle;
 		/* FIXME: Create a notification object and return associated handle */
 		*r->out.hNotification = 244;
-	} 
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -1184,10 +1148,10 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 					    TALLOC_CTX *mem_ctx,
 					    struct EcDoConnectEx *r)
 {
+	struct mpm_session		*session;
 	struct emsmdbp_context		*emsmdbp_ctx;
 	struct dcesrv_handle		*handle;
 	struct policy_handle		wire_handle;
-	struct exchange_emsmdb_session	*session;
 	struct ldb_message		*msg;
 	const char			*mailNickname;
 	const char			*userDN;
@@ -1333,24 +1297,16 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Search for an existing session, create if it doesn't exist */
-	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+	session = mpm_session_find_by_uuid(&handle->wire_handle.uuid);
 	if (!session) {
 		/* Step 7. Associate this emsmdbp context to the session */
-		session = talloc_zero(emsmdb_session, struct exchange_emsmdb_session);
+		session = mpm_session_init(dce_call, &handle->wire_handle.uuid);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
-		session->pullTimeStamp = *r->out.pulTimeStamp;
-		session->session = mpm_session_init(session, dce_call);
-		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
-		
-		session->uuid = handle->wire_handle.uuid;
+		mpm_session_set_private_data(session, (void *) emsmdbp_ctx);
+		mpm_session_set_destructor(session, emsmdbp_destructor);
 
-		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
-		mpm_session_set_destructor(session->session, emsmdbp_destructor);
-
-		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->session->context_id);
-
-		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->context_id);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -1370,7 +1326,6 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 					  struct EcDoRpcExt2 *r)
 {
 	enum ndr_err_code		ndr_err;
-	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi2k7_request		mapi2k7_request;
 	struct mapi_response		*mapi_response;
@@ -1400,14 +1355,13 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-        session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-	if (!session) {
+        emsmdbp_ctx = dcesrv_find_emsmdbp_context(&r->in.handle->uuid);
+	if (!emsmdbp_ctx) {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
 	}
-	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
 	/* Sanity checks on pcbOut input parameter */
 	if (*r->in.pcbOut < 0x00000008) {
@@ -1527,7 +1481,6 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 TALLOC_CTX *mem_ctx,
 						 struct EcDoAsyncConnectEx *r)
 {
-	struct exchange_emsmdb_session	*session;
 	enum mapistore_error		retval;
 	struct emsmdbp_context		*emsmdbp_ctx;
 	struct dcesrv_handle		*handle;
@@ -1563,10 +1516,8 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	}
 
 	/* Step 1. Retrieve the existing session */
-	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-	if (session) {
-		emsmdbp_ctx = (struct emsmdbp_context *) session->session->private_data;
-	} else {
+	emsmdbp_ctx = dcesrv_find_emsmdbp_context(&r->in.handle->uuid);
+	if (!emsmdbp_ctx) {
 		OC_DEBUG(0, "[EcDoAsyncConnectEx]: emsmdb session not found");
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
@@ -1690,11 +1641,6 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
  */
 static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 {
-	/* Initialize exchange_emsmdb session */
-	emsmdb_session = talloc_zero(dce_ctx, struct exchange_emsmdb_session);
-	if (!emsmdb_session) return NT_STATUS_NO_MEMORY;
-	emsmdb_session->session = NULL;
-
 	/* Open read/write context on OpenChange dispatcher database */
 	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
 	if (!openchange_db_ctx) {

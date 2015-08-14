@@ -191,6 +191,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct mpm_session		*session;
+	char				*uuid_str;
 
 	OC_DEBUG(5, "exchange_nsp: NspiUnbind (0x1)\n");
 
@@ -200,16 +201,20 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
-	/* Step 1. Retrieve handle and free if emsabp context and session are available */
+	/* Step 1. Retrieve handle and free if nsp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
 		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
+
+		uuid_str = GUID_string(mem_ctx, &session->uuid);
+		DCESRV_NSP_RETURN_IF(!uuid_str, r, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		if (session) {
 			mpm_session_release(session);
+			OC_DEBUG(5, "[exchange_nsp]: Session found and released: %s", uuid_str);
+		} else {
+			OC_DEBUG(0, "[exchange_nsp]: session NOT found: %s", uuid_str);
 		}
-		else {
-			OC_DEBUG(5, "  nsp_session NOT found\n");
-		}
+		talloc_free(uuid_str);
 	}
 
 	r->out.handle->uuid = GUID_zero();
@@ -1613,7 +1618,14 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
-	OC_DEBUG(0, "dcesrv_exchange_nsp_unbind: server_id=%d, context_id=0x%x", server_id, context_id);
+	char	*server_str;
+	server_str = server_id_str(NULL, &server_id);
+	if (!server_str) return NT_STATUS_OK;
+
+	OC_DEBUG(5, "dcesrv_exchange_nsp_unbind: server_id=%s, context_id=%u", server_str, context_id);
+	talloc_free(server_str);
+
+	mpm_session_unbind(&server_id, context_id);
 	return NT_STATUS_OK;
 }
 

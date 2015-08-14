@@ -229,6 +229,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct mpm_session		*session;
+	char				*uuid_str;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoDisconnect (0x1)\n");
 
@@ -242,11 +243,16 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
 		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
+
+		uuid_str = GUID_string(mem_ctx, &session->uuid);
+		OPENCHANGE_RETVAL_IF(!uuid_str, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		if (session) {
 			mpm_session_release(session);
+			OC_DEBUG(5, "[exchange_emsmdb]: Session found and released: %s", uuid_str);
 		} else {
-			OC_DEBUG(5, "  emsmdb_session NOT found\n");
+			OC_DEBUG(0, "[exchange_emsmdb]: session NOT found: %s", uuid_str);
 		}
+		talloc_free(uuid_str);
 	}
 
 	r->out.handle->handle_type = 0;
@@ -1682,27 +1688,17 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
    \return NT_STATUS_OK on success
  */
 
-/* FIXME: code temporarily disabled as we don't master the logic behind session handles yet... */
+
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
 {
-	/* struct exchange_emsmdb_session	*session; */
-	/* bool ret; */
+	char	*server_str;
+	server_str = server_id_str(NULL, &server_id);
+	if (!server_str) return NT_STATUS_OK;
 
-	OC_DEBUG(0, "dcesrv_exchange_emsmdb_unbind: server_id=%d, context_id=0x%x", server_id, context_id);
+	OC_DEBUG(5, "dcesrv_exchange_emsmdb_unbind: server_id=%s, context_id=%u", server_str, context_id);
+	talloc_free(server_str);
 
-	/* session = dcesrv_find_emsmdb_session_by_server_id(&server_id, context_id); */
-	/* if (session) { */
-	/* 	ret = mpm_session_release(session->session); */
-	/* 	if (ret == true) { */
-	/* 		DLIST_REMOVE(emsmdb_session, session); */
-	/* 		OC_DEBUG(5, ("[%s:%d]: Session found and released\n",  */
-	/* 			  __FUNCTION__, __LINE__)); */
-	/* 	} else { */
-	/* 		OC_DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n", */
-	/* 			  __FUNCTION__, __LINE__)); */
-	/* 	} */
-	/* } */
-
+	mpm_session_unbind(&server_id, context_id);
 	return NT_STATUS_OK;
 }
 

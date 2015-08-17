@@ -21,6 +21,7 @@
 
 #include <ctype.h>
 #include "mapiproxy/libmapistore/mapistore_notification.h"
+#include "mapiproxy/util/oc_memcached.h"
 
 /**
    \details Map memcached to mapistore error mapping
@@ -70,9 +71,10 @@ static int mapistore_notification_destructor(void *data)
 	struct mapistore_notification_context	*notification_ctx = (struct mapistore_notification_context *) data;
 
 	if (notification_ctx->memc_ctx) {
-		memcached_free(notification_ctx->memc_ctx);
+		oc_memcached_release_connection(notification_ctx->memc_ctx);
 	}
-	return true;
+
+	return 0;
 }
 
 /**
@@ -91,8 +93,6 @@ enum mapistore_error mapistore_notification_init(TALLOC_CTX *mem_ctx,
 {
 	struct mapistore_notification_context	*notification_ctx = NULL;
 	const char				*url = NULL;
-	memcached_server_st			*servers = NULL;
-	memcached_return			rc;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -103,21 +103,11 @@ enum mapistore_error mapistore_notification_init(TALLOC_CTX *mem_ctx,
 	notification_ctx->memc_ctx = NULL;
 
 	url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "notification_cache");
-	if (url) {
-		notification_ctx->memc_ctx = memcached(url, strlen(url));
-		MAPISTORE_RETVAL_IF(!notification_ctx->memc_ctx, MAPISTORE_ERR_CONTEXT_FAILED, notification_ctx);
-	} else {
-		notification_ctx->memc_ctx = (memcached_st *) memcached_create(NULL);
-		MAPISTORE_RETVAL_IF(!notification_ctx->memc_ctx, MAPISTORE_ERR_CONTEXT_FAILED, notification_ctx);
-
-		servers = memcached_server_list_append(servers, MSTORE_MEMC_DFLT_HOST, 0, &rc);
-		MAPISTORE_RETVAL_IF(!servers, MAPISTORE_ERR_CONTEXT_FAILED, notification_ctx);
-
-		rc = memcached_server_push(notification_ctx->memc_ctx, servers);
-		memcached_server_list_free(servers);
-		MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, MAPISTORE_ERR_CONTEXT_FAILED, notification_ctx);
+	notification_ctx->memc_ctx = oc_memcached_new_connection(url);
+	if (!notification_ctx->memc_ctx) {
+		OC_DEBUG(1, "Error trying to get memcached connection");
+		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	}
-
 	talloc_set_destructor((void *)notification_ctx, (int (*)(void *))mapistore_notification_destructor);
 
 	*_notification_ctx = notification_ctx;

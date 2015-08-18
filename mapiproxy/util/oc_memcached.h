@@ -28,8 +28,8 @@
 #define MSTORE_MEMC_DFLT_PORT 11211
 
 
-memcached_st *oc_memcached_new_connection(const char *config_string);
-void oc_memcached_release_connection(memcached_st *memc_ctx);
+memcached_st *oc_memcached_new_connection(const char *config_string, bool shared);
+void oc_memcached_release_connection(memcached_st *memc_ctx, bool shared);
 
 
 #endif /* __OC_MEMCACHED_H_ */

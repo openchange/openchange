@@ -51,46 +51,17 @@ static bool _ht_cmp(const void *e, void *string)
 static struct htable ht = HTABLE_INITIALIZER(ht, _ht_rehash, NULL);
 
 
-/**
-   \details Returns a memcached_st pointer to use it in all libmemcached
-   functions. Internally this connections will be reused between different
-   calls (it will be one connection per config_string).
-
-   \param config_string Config string to initialize a memcached context,
-   in case of being NULL it will default to MSTORE_MEMC_DFLT_HOST. For more
-   info about format check online doc of libmemcached:
-
-       http://docs.libmemcached.org/libmemcached_configuration.html
- */
-memcached_st *oc_memcached_new_connection(const char *config_string)
+static memcached_st *_new_connection(const char *config_string)
 {
 	memcached_st		*memc;
 	memcached_server_st     *servers = NULL;
 	memcached_return	rc;
-	struct memc_item	*entry = NULL;
-	bool			custom_config = false;
-	uint32_t		hashed_string;
-	const char		*value_string;
 
 	if (config_string) {
-		custom_config = true;
-		value_string = config_string;
-	} else {
-		value_string = DEFAULT_CONFIG;
-	}
-	hashed_string = hash_string(value_string);
-	entry = htable_get(&ht, hashed_string, _ht_cmp, value_string);
-	if (entry) {
-		OC_DEBUG(5, "[memcached] Found connection, reusing it %"PRIu32, hashed_string);
-		return entry->memc;
-	}
-
-	/* Initialize memcached connection */
-	if (custom_config) {
-		memc = memcached(value_string, strlen(value_string));
+		memc = memcached(config_string, strlen(config_string));
 		if (!memc) {
 			OC_DEBUG(3, "[memcached] Failed to initialize memcached with config string `%s`",
-				 value_string);
+				 config_string);
 			return NULL;
 		}
 	} else {
@@ -108,20 +79,76 @@ memcached_st *oc_memcached_new_connection(const char *config_string)
 		}
 	}
 
+	return memc;
+}
+
+static bool _save_connection(const char *config_string, memcached_st *memc)
+{
+	struct memc_item	*entry = NULL;
+
 	/* This entries will never be deallocated */
 	entry = talloc_zero(talloc_autofree_context(), struct memc_item);
-	entry->config_string = talloc_strdup(entry, value_string);
+	entry->config_string = talloc_strdup(entry, config_string);
 	if (entry->config_string == NULL) {
 		OC_DEBUG(3, "[memcached] Failed talloc_strdup: out of memory?");
-		return NULL;
+		return false;
 	}
 	entry->memc = memc;
 
 	/* Store the new connection in our table */
-	if (!htable_add(&ht, hashed_string, entry)) {
+	if (!htable_add(&ht, hash_string(config_string), entry)) {
 		OC_DEBUG(3, "[memcached] Error adding new memcached connection");
+		return false;
+	}
+	OC_DEBUG(5, "[memcached] Stored new connection %"PRIu32, hash_string(config_string));
+	return true;
+}
+
+static memcached_st *_get_connection(const char *config_string)
+{
+	struct memc_item	*entry = NULL;
+
+	entry = htable_get(&ht, hash_string(config_string), _ht_cmp, config_string);
+	if (!entry) return NULL;
+	OC_DEBUG(5, "[memcached] Found connection, reusing it %"PRIu32, hash_string(config_string));
+	return entry->memc;
+}
+
+/**
+   \details Returns a memcached_st pointer to use it in all libmemcached
+   functions.
+
+   \param config_string Config string to initialize a memcached context,
+   in case of being NULL it will default to MSTORE_MEMC_DFLT_HOST.
+   For more info about format check online doc of libmemcached:
+
+       http://docs.libmemcached.org/libmemcached_configuration.html
+
+   \param shared if true internally this connections will be cached and
+   reused between different calls (one connection per config_string).
+   If false the connection returned won't be cached or returned to another
+   caller.
+
+ */
+memcached_st *oc_memcached_new_connection(const char *config_string, bool shared)
+{
+	memcached_st	*memc;
+	const char	*key;
+
+	if (shared) {
+		key = config_string ? config_string : DEFAULT_CONFIG;
+		memc = _get_connection(key);
+
+		if (!memc) {
+			memc = _new_connection(config_string);
+
+			if (memc && !_save_connection(key, memc)) {
+				memcached_free(memc);
+				return NULL;
+			}
+		}
 	} else {
-		OC_DEBUG(5, "[memcached] Stored new connection %"PRIu32, hashed_string);
+		memc = _new_connection(config_string);
 	}
 
 	return memc;
@@ -130,10 +157,17 @@ memcached_st *oc_memcached_new_connection(const char *config_string)
 /**
    \details Close and free one memcached connection.
 
-   \note Actually right now the connections are not neither closed nor freed
-   because we reuse them between users and operations.
+   \param memc The memcached_st object
+   \param shared Whether this connection could be shared or not, this
+   parameter must have the same value as when the connection was created
+
+   \note Actually right now the connections if they are shared are not
+   neither closed nor freed because we reuse them between users and operations.
  */
-void oc_memcached_release_connection(memcached_st *memc_ctx)
+void oc_memcached_release_connection(memcached_st *memc, bool shared)
 {
-	// Do nothing, connections shared
+	if (!shared) {
+		memcached_free(memc);
+	}
+	/* else: Do nothing, connection shared and could be reused */
 }

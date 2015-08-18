@@ -103,7 +103,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	}
 
 	/* Request a memcached connection */
-	memc = oc_memcached_new_connection(conn_str);
+	memc = oc_memcached_new_connection(conn_str, true);
 	if (!memc) {
 		OC_DEBUG(1, "Error trying to get memcached connection");
 		return NULL;
@@ -773,7 +773,7 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 	if (ictx && ictx->data) {
 		MYSQL *conn = ictx->data;
 		if (ictx->cache) {
-			oc_memcached_release_connection((memcached_st *)ictx->cache);
+			oc_memcached_release_connection((memcached_st *)ictx->cache, true);
 		}
 		if (ictx->url) {
 			OC_DEBUG(5, "Destroying indexing context `%s`\n", ictx->url);

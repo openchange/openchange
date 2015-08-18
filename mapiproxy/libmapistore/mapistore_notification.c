@@ -71,7 +71,8 @@ static int mapistore_notification_destructor(void *data)
 	struct mapistore_notification_context	*notification_ctx = (struct mapistore_notification_context *) data;
 
 	if (notification_ctx->memc_ctx) {
-		oc_memcached_release_connection(notification_ctx->memc_ctx);
+		oc_memcached_release_connection(notification_ctx->memc_ctx,
+						!notification_ctx->threading);
 	}
 
 	return 0;
@@ -93,6 +94,7 @@ enum mapistore_error mapistore_notification_init(TALLOC_CTX *mem_ctx,
 {
 	struct mapistore_notification_context	*notification_ctx = NULL;
 	const char				*url = NULL;
+	bool					threading = false;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -103,7 +105,9 @@ enum mapistore_error mapistore_notification_init(TALLOC_CTX *mem_ctx,
 	notification_ctx->memc_ctx = NULL;
 
 	url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "notification_cache");
-	notification_ctx->memc_ctx = oc_memcached_new_connection(url);
+	threading = lpcfg_parm_bool(lp_ctx, NULL, "mapistore", "threading", false);
+	notification_ctx->threading = threading;
+	notification_ctx->memc_ctx = oc_memcached_new_connection(url, !threading);
 	if (!notification_ctx->memc_ctx) {
 		OC_DEBUG(1, "Error trying to get memcached connection");
 		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_CONTEXT_FAILED, NULL);

@@ -103,7 +103,8 @@ plugin {
   * __openchange_cn = STRING__ This option specifies the field used by
     the dovecot service to query the resolver service. Acceptable
     values are: __username__ or __email__. If no option is specified,
-    username is used by default.
+    email is used by default. username options means to get the first
+    part of the email (bob instead bob@domain.com)
 
   * __openchange_backend = STRING__ This option specifies the
     mapistore backend used by OpenChange server to deliver and fetch

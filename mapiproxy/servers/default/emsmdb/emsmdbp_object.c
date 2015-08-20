@@ -3011,6 +3011,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
         for (i = 0; i < properties->cValues; i++) {
 		if (properties->aulPropTag[i] == PidTagFolderFlags) {
 			folder_flags = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!folder_flags, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			*folder_flags = FolderFlags_IPM|FolderFlags_Normal;
 			data_pointers[i] = folder_flags;
 		} else if (properties->aulPropTag[i] == PidTagParentFolderId) {
@@ -3035,26 +3036,27 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
-                        /* a hack to avoid fetching dynamic fields from openchange.ldb */
-                        obj_count = talloc_zero(data_pointers, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
 			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-                        mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
+			mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
+			retval = mapistore_error_to_mapi(mretval);
                 }
                 else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
-                        obj_count = talloc_zero(data_pointers, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
 			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-                        mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
+			mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
+			retval = mapistore_error_to_mapi(mretval);
                 }
                 else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
-                        obj_count = talloc_zero(data_pointers, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
 			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-                        retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
+			retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
 			if (retval == MAPI_E_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
@@ -3073,9 +3075,11 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		}
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
 			owner = emsmdbp_get_owner(object);
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
-			data_pointers[i] = binr;
-			retval = MAPI_E_SUCCESS;
+			mretval = emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
+			if (mretval == MAPISTORE_SUCCESS) {
+				data_pointers[i] = binr;
+			}
+			retval = mapistore_error_to_mapi(mretval);
 		}
 		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
 			obj_count = talloc_zero(data_pointers, uint32_t);
@@ -3095,28 +3099,24 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_RIGHTS || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL || properties->aulPropTag[i] == PidTagRights || properties->aulPropTag[i] == PidTagAccessControlListData || properties->aulPropTag[i] == PidTagExtendedACLData) {
 			struct mapistore_property_data prop_data;
 
-			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
-							    object->backend_object,
-							    data_pointers,
-							    1,
-							    properties->aulPropTag + i,
-							    &prop_data);
-			data_pointers[i] = prop_data.data;
-			if (prop_data.error) {
+			mretval = mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
+								      object->backend_object,
+								      data_pointers,
+								      1,
+								      properties->aulPropTag + i,
+								      &prop_data);
+			if (mretval == MAPISTORE_SUCCESS) {
+				if (prop_data.error == MAPISTORE_SUCCESS) {
+					data_pointers[i] = prop_data.data;
+				}
 				retval = mapistore_error_to_mapi(prop_data.error);
-			}
-			else {
-				if (prop_data.data == NULL) {
-					retval = MAPI_E_NOT_FOUND;
-				}
-				else {
-					retval = MAPI_E_SUCCESS;
-				}
+			} else {
+				retval = mapistore_error_to_mapi(mretval);
 			}
 		}
-                else {
-                        /* We are not using emsmdbp_ctx->username because we want to impersonate to get the properties
-                           on shared folders */
+		else {
+			/* We are not using emsmdbp_ctx->username because we want to impersonate to get the properties
+			  on shared folders */
 			owner = emsmdbp_get_owner(object);
 			if (!owner) {
 				/* Public folder? Then, use logged user */
@@ -3126,9 +3126,9 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				properties->aulPropTag[i] = PidTagCreationTime;
 			}
 			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, owner, properties->aulPropTag[i], folder->folderID, data_pointers + i);
-                }
+		}
 		retvals[i] = retval;
-        }
+	}
 
 	return MAPISTORE_SUCCESS;
 }

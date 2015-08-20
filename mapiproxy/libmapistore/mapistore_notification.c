@@ -108,10 +108,7 @@ enum mapistore_error mapistore_notification_init(TALLOC_CTX *mem_ctx,
 	threading = lpcfg_parm_bool(lp_ctx, NULL, "mapistore", "threading", false);
 	notification_ctx->threading = threading;
 	notification_ctx->memc_ctx = oc_memcached_new_connection(url, !threading);
-	if (!notification_ctx->memc_ctx) {
-		OC_DEBUG(1, "Error trying to get memcached connection");
-		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_CONTEXT_FAILED, NULL);
-	}
+	MAPISTORE_RETVAL_IF(!notification_ctx->memc_ctx, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	talloc_set_destructor((void *)notification_ctx, (int (*)(void *))mapistore_notification_destructor);
 
 	*_notification_ctx = notification_ctx;

@@ -104,10 +104,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 
 	/* Request a memcached connection */
 	memc = oc_memcached_new_connection(conn_str, true);
-	if (!memc) {
-		OC_DEBUG(1, "Error trying to get memcached connection");
-		return NULL;
-	}
+	if (!memc) return NULL;
 
 	/* Retrieve indexing records for user */
 	mem_ctx = talloc_new(NULL);

@@ -137,16 +137,7 @@ static void openchange_mail_user_created(struct mail_user *user)
 		ocuser->resolver = i_strdup(str);
 	}
 
-	str = mail_user_plugin_getenv(user, "openchange_cn");
-	if (str && !strcmp(str, "username")) {
-		aux = i_strdup(user->username);
-		ocuser->username = i_strdup(strtok(aux, "@"));
-		free(aux);
-	} else if (str == NULL || !strcmp(str, "email")) {
-		ocuser->username = i_strdup(user->username);
-	} else {
-		i_fatal("Invalid openchange_cn parameter in dovecot.conf");
-	}
+	ocuser->username = i_strdup(user->username);
 
 	str = mail_user_plugin_getenv(user, "openchange_backend");
 	if (str == NULL) {

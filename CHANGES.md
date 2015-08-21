@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Support notifications when the username is different from mail address (e.g. user bob with bobby@domain.com as his email)
 * Rpcproxy handles client disconnections better
 * Out of office message supports non-ascii characters
 * Support notifications when the username is a mail address (e.g. Zentyal Cloud)

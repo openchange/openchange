@@ -351,7 +351,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
-            log.error(e)
+            log.exception(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -398,6 +398,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
+            log.exception(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -423,6 +424,7 @@ class OofHandler(object):
             oof.from_xml(settings_element)
             oof.to_sieve(mailbox)
         except Exception as e:
+            log.exception(e)
             response_message_element.set('ResponseClass', 'Error')
             response_code_element.text = 'ErrorInvalidParameter'
             message_text = Element('MessageText')

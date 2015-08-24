@@ -330,8 +330,9 @@ static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self,
 	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
 					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_new_changeNumber(priv_data->backend, username, cn);
-	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
-					priv_data->log_prefix, mapi_get_errstr(retval));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s] cn=[0x%016"PRIx64"]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 (retval == MAPI_E_SUCCESS) ? *cn : 0);
 
 	return retval;
 }
@@ -348,8 +349,9 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], max=[0x%016"PRIx64"]",
 				     priv_data->log_prefix, username, max);
 	retval = priv_data->backend->get_new_changeNumbers(priv_data->backend, mem_ctx, username, max, cns_p);
-	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
-				     priv_data->log_prefix, mapi_get_errstr(retval));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s] last_cn=[0x%016"PRIx64"]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 (retval == MAPI_E_SUCCESS) ? (*cns_p)->lpui8[max - 1] : 0);
 
 	return retval;
 }

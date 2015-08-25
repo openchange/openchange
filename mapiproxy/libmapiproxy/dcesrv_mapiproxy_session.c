@@ -60,8 +60,8 @@ static struct mpm_session *mpm_session_new(struct server_id serverid,
 	session->destructor = NULL;
 	session->private_data = NULL;
 
-	// Released RPC connection, session may be kept to avoid premature release
-	// of private_data, that will be cleared when all user sessions are released
+	/* Released RPC connection, session may be kept to avoid premature release
+	of private_data, that will be cleared when all user sessions are released */
 	session->released = false;
 	session->username = talloc_strdup(session, username);
 	if (!session->username) return NULL;

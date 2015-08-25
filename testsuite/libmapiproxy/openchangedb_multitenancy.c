@@ -1,3 +1,24 @@
+/*
+   OpenChange Unit Testing
+
+   OpenChange Project
+
+   Copyright (C) Jesus García 2013-2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "testsuite.h"
 #include "testsuite_common.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
@@ -1410,8 +1431,8 @@ START_TEST (test_build_table_folders_live_filtering) {
 	enum MAPITAGS prop;
 	uint32_t i;
 	struct mapi_SRestriction res;
-	int ok = 0, bad = 0, idx;
-	int ok_2 = 0, bad_2 = 0, idx_2;
+	int ok = 0, bad = 0, idx = 0;
+	int ok_2 = 0, bad_2 = 0, idx_2 = 0;
 
 	fid = 17438782182108692481ul;
 	ret = openchangedb_table_init(g_mem_ctx, g_oc_ctx, USER1, 1, fid, &table);

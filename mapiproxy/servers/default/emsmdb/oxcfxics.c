@@ -3417,6 +3417,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 
 	folder_object = synccontext_object->parent_object;
 	if (emsmdbp_is_mapistore(folder_object)) {
+		/* For GetTransferState returned data correctly if
+		 * this action is the single one in the
+		 * OpenCollector */
+		if (synccontext_object->object.synccontext->request.contents_mode) {
+			synccontext_object->object.synccontext->request.normal = true;
+			synccontext_object->object.synccontext->request.read_state = true;
+			/* ImportReadStateChanges for a folder for normal messages. FAI ones are ignored */
+		} else {
+			OC_DEBUG(1, "ImportReadStateChanges does not apply for hierarchy changes");
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
 		contextID = emsmdbp_get_contextID(folder_object);
 		bin_data = talloc_zero(mem_ctx, struct Binary_r);
 		bin_data->cb = request->MessageReadStates.length;

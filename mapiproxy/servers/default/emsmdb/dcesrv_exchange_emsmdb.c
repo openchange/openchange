@@ -33,7 +33,6 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-struct exchange_emsmdb_session		*emsmdb_session = NULL;
 void					*openchange_db_ctx = NULL;
 
 

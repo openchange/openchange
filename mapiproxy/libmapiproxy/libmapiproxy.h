@@ -190,7 +190,6 @@ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
 void *mapiproxy_server_openchangedb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
-struct mpm_session *mpm_session_new(struct server_id, uint32_t, const char *, struct GUID *);
 struct mpm_session *mpm_session_init(struct dcesrv_call_state *, struct GUID *);
 bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
 bool mpm_session_set_private_data(struct mpm_session *, void *);

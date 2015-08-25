@@ -44,7 +44,7 @@ static struct mpm_session	*mpm_sessions = NULL;
    \return Pointer to an allocated mpm_session structure on success,
    otherwise NULL
  */
-struct mpm_session *mpm_session_new(struct server_id serverid,
+static struct mpm_session *mpm_session_new(struct server_id serverid,
 				    uint32_t context_id,
 				    const char *username,
 				    struct GUID	*uuid)

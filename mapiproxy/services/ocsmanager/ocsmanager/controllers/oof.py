@@ -351,7 +351,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
-            log.error(e)
+            log.exception(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -398,6 +398,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
+            log.exception(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -423,6 +424,7 @@ class OofHandler(object):
             oof.from_xml(settings_element)
             oof.to_sieve(mailbox)
         except Exception as e:
+            log.exception(e)
             response_message_element.set('ResponseClass', 'Error')
             response_code_element.text = 'ErrorInvalidParameter'
             message_text = Element('MessageText')
@@ -681,7 +683,7 @@ class OofSettings(object):
         if self._config['internal_reply_message'] is not None:
             MessageInternal = Element("Message")
             MessageInternal.text = base64.b64decode(
-                self._config['internal_reply_message'])
+                self._config['internal_reply_message']).decode('utf8')
             InternalReply.append(MessageInternal)
 
         ExternalReply = Element("ExternalReply")
@@ -690,7 +692,7 @@ class OofSettings(object):
         if self._config['external_reply_message'] is not None:
             MessageExternal = Element("Message")
             MessageExternal.text = base64.b64decode(
-                self._config['external_reply_message'])
+                self._config['external_reply_message']).decode('utf8')
             ExternalReply.append(MessageExternal)
 
         AllowExternalOof = Element("AllowExternalOof")
@@ -815,8 +817,10 @@ class OofFileBackend(object):
         log.debug("SIEVE_PATH_SCRIPT %s" % sieve_script_path)
         (head, tail) = os.path.split(sieve_script_path)
         sinfo = os.stat(head)
+        if isinstance(script, unicode):
+            script = script.encode('utf8')
         with open(sieve_script_path, 'w') as f:
-            f.write(script.encode('utf8'))
+            f.write(script)
             os.chmod(sieve_script_path, 0755)
             os.chown(sieve_script_path, sinfo.st_uid, sinfo.st_gid)
 

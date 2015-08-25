@@ -3670,6 +3670,9 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 	sync_data->cnset_seen_fai = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
+	OC_DEBUG(5, "Get transfer state for fid: 0x%.16"PRIx64,
+		 synccontext_object->parent_object->object.folder->folderID);
+
 	if (synccontext->request.contents_mode) {
 		synccontext->properties.aulPropTag[0] = PidTagMid;
 
@@ -3817,7 +3820,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *mem_ctx,
 	owner = emsmdbp_get_owner(synccontext_object);
 	retval = oxcfxics_ndr_push_transfer_state(ndr, owner, synccontext_object);
 	if (retval != MAPI_E_SUCCESS) {
-		OC_DEBUG(5, "ndr_push_transfer_state failed\n");
+		OC_DEBUG(5, "ndr_push_transfer_state failed: %s", mapi_get_errstr(retval));
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}

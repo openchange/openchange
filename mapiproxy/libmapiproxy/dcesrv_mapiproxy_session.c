@@ -199,6 +199,8 @@ struct mpm_session *mpm_session_find_by_uuid(struct GUID *uuid)
 {
 	struct mpm_session	*session;
 
+	if (!uuid) return NULL;
+
 	for (session = mpm_sessions; session; session = session->next) {
 		if (GUID_equal(uuid, &session->uuid)) {
 			return session;

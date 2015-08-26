@@ -18,6 +18,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * File name and correct size in small sized attachments, and submit time are now sent
   by OpenChange client against OpenChange server
 * Avoid race condition uploading changes which made new objects be missed
+* Folder deletion using cached mode
 
 ### Performances
 * Optimize the download of contents when you were in the middle of the first synchronization process in a business size mailbox.

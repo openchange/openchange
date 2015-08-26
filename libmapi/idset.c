@@ -1042,23 +1042,23 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 	uint32_t i;
 	char *guid_str;
 
-	OC_DEBUG(0, "[%s] Dump of idset", label);
+	OC_DEBUG(5, "[%s] Dump of idset", label);
 	while (idset) {
 		if (idset->idbased) {
-			OC_DEBUG(0, "  %.4x: %d elements", idset->repl.id, idset->range_count);
+			OC_DEBUG(5, "  %.4x: %d elements", idset->repl.id, idset->range_count);
 		}
 		else {
 			guid_str = GUID_string(NULL, &idset->repl.guid);
-			OC_DEBUG(0, "  %s: %d elements", guid_str, idset->range_count);
+			OC_DEBUG(5, "  %s: %d elements", guid_str, idset->range_count);
 			talloc_free(guid_str);
 		}
 
 		range = idset->ranges;
 		for (i = 0; i < idset->range_count; i++) {
+			OC_DEBUG(5, "  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]", range->low, range->high);
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
 				oc_log(OC_LOG_ERROR, "Incorrect GLOBCNT range as high value is larger than low value");
 			}
-			OC_DEBUG(0, "  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]", range->low, range->high);
 			range = range->next;
 		}
 

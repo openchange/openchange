@@ -5,7 +5,7 @@ The descriptions should be useful and understandable for end users of OpenChange
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
 ## [unreleased]
-
+* Folder deletion using cached mode
 
 ## [2.4-zentyal9] - 2015-10-02
 

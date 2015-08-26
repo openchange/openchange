@@ -2535,6 +2535,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS				retval;
 	struct mapi_handles			*synccontext_object_handle = NULL;
 	struct emsmdbp_object			*synccontext_object = NULL;
+	struct emsmdbp_object			*parent_folder = NULL;
 	uint32_t				synccontext_handle_id;
 	void					*data;
 	struct SyncImportDeletes_req		*request;
@@ -2548,6 +2549,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	uint8_t					delete_type;
 	uint32_t				i;
 	int						ret;
+	TALLOC_CTX				*local_mem_ctx = NULL;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCFXICS] SyncImportDeletes (0x74)\n");
 
@@ -2598,7 +2600,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 
 	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
 
-	object_ids = talloc_zero_array(synccontext_object, uint64_t, object_array->cValues);
+	local_mem_ctx = talloc_new(NULL);
+	if (!local_mem_ctx) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
+
+	object_ids = talloc_zero_array(local_mem_ctx, uint64_t, object_array->cValues);
 	if (!object_ids) {
 		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
 		goto end;
@@ -2608,8 +2616,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < object_array->cValues; i++) {
 			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
 			if (ret == MAPISTORE_SUCCESS) {
-				emsmdbp_folder_delete(emsmdbp_ctx, synccontext_object->parent_object, objectID, 0xff);
-				object_ids[i] = objectID;
+				retval = emsmdbp_object_open_folder_by_child_fid(local_mem_ctx, emsmdbp_ctx,
+										 synccontext_object->parent_object, objectID,
+										 &parent_folder);
+				if (retval == MAPI_E_SUCCESS) {
+					/* HARD-DELETE is not managed by emsmdbp layer yet */
+					ret = emsmdbp_folder_delete(emsmdbp_ctx, parent_folder, objectID, DEL_MESSAGES | DEL_FOLDERS);
+					if (ret == MAPISTORE_SUCCESS) {
+						object_ids[i] = objectID;
+					} else {
+						OC_DEBUG(5, "folder deletion failed for fid: 0x%.16"PRIx64" %s",
+							 objectID, mapistore_errstr(ret));
+					}
+				} else {
+					OC_DEBUG(5, "open parent folder for delete fid 0x%.16"PRIx64" : %s",
+						 objectID, mapi_get_errstr(retval));
+				}
 			}
 		}
 	}
@@ -2649,8 +2671,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	}
 
 end:
-	if (object_ids) {
-		talloc_free(object_ids);
+	if (local_mem_ctx) {
+		talloc_free(local_mem_ctx);
 	}
 
 	*size += libmapiserver_RopSyncImportDeletes_size(mapi_repl);

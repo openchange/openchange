@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -217,12 +217,24 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
 					     struct EcDoDisconnect *r)
 {
+	struct dcesrv_handle		*h;
+	struct mpm_session		*session;
+
 	OC_DEBUG(3, "exchange_emsmdb: EcDoDisconnect (0x1)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (h) {
+		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
+		if (session) {
+			mpm_session_release(session);
+		}
 	}
 
 	r->out.handle->handle_type = 0;

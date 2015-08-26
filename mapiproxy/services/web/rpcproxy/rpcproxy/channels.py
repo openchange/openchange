@@ -434,8 +434,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         fd_pool.register(self.server_socket.fileno(), POLLIN)
 
         # wait for 10 seconds
-        data = fd_pool.poll(1000.0)
-        if data is not None:
+        data = fd_pool.poll(1000)
+        if data:
             unix_socket = self.server_socket.accept()[0]
             self.logger.debug("connection established with IN channel")
 

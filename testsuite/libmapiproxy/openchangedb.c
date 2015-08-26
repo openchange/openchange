@@ -179,6 +179,42 @@ START_TEST (test_set_mapistoreURI) {
 
 	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, fid, initial_uri);
 	CHECK_SUCCESS;
+
+	/* Test wrong fid to check MAPI_E_NOT_FOUND */
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, 0x2312121212322, initial_uri);
+	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
+
+} END_TEST
+
+START_TEST (test_set_mapistoreURI_same_value) {
+	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
+	char *uri;
+	uint64_t fid = 13980299143264862209ul;
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, USER1, fid, &uri, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(uri, initial_uri);
+
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, fid, "foobar");
+	CHECK_SUCCESS;
+
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, fid, "foobar");
+	CHECK_SUCCESS;
+
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, USER1, fid, &uri, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(uri, "foobar");
+
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, fid, initial_uri);
+	CHECK_SUCCESS;
+} END_TEST
+
+START_TEST (test_set_mapistoreURI_expected_fail) {
+	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
+
+	/* Test wrong fid to check MAPI_E_NOT_FOUND */
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, USER1, 0x2312121212322, initial_uri);
+	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
+
 } END_TEST
 
 START_TEST (test_get_parent_fid) {
@@ -883,6 +919,33 @@ START_TEST (test_set_system_idx) {
 	ck_assert_int_eq(system_idx, initial_system_idx);
 } END_TEST
 
+START_TEST (test_set_system_idx_same_value) {
+        int initial_system_idx, system_idx;
+	uint64_t fid = 13980299143264862209ul;
+
+	retval = openchangedb_get_system_idx(g_oc_ctx, USER1, fid, &initial_system_idx);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, fid, 3);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, fid, 3);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_get_system_idx(g_oc_ctx, USER1, fid, &system_idx);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(system_idx, 3);
+
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, fid, initial_system_idx);
+	CHECK_SUCCESS;
+} END_TEST
+
+START_TEST (test_set_system_idx_expected_fail) {
+	/* Check a wrong fid which leads to MAPI_E_NOT_FOUND */
+	retval = openchangedb_set_system_idx(g_oc_ctx, USER1, 0x323232322, 42);
+	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
+} END_TEST
+
 START_TEST (test_get_system_idx_from_public_folder) {
 	int system_idx = 0;
 	uint64_t fid = 504403158265495553ul;
@@ -1316,6 +1379,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_PublicFolderReplica);
 	tcase_add_test(tc, test_get_mapistoreURI);
 	tcase_add_test(tc, test_set_mapistoreURI);
+	tcase_add_test(tc, test_set_mapistoreURI_same_value);
+	tcase_add_test(tc, test_set_mapistoreURI_expected_fail);
 	tcase_add_test(tc, test_get_parent_fid);
 	tcase_add_test(tc, test_get_parent_fid_which_is_the_mailbox);
 	tcase_add_test(tc, test_get_fid);
@@ -1349,6 +1414,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_message_count_from_public_folder);
 	tcase_add_test(tc, test_get_system_idx);
 	tcase_add_test(tc, test_set_system_idx);
+	tcase_add_test(tc, test_set_system_idx_same_value);
+	tcase_add_test(tc, test_set_system_idx_expected_fail);
 	tcase_add_test(tc, test_get_system_idx_from_public_folder);
 
 	tcase_add_test(tc, test_create_and_edit_message);

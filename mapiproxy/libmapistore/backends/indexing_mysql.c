@@ -434,7 +434,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
   \param mapistore_URI mapistore URI string to associate with fmid
 
   \return MAPISTORE_SUCCESS on success,
-	  MAPISTORE_ERR_NOT_FOUND if FMID entry doesn't exists
+	  MAPISTORE_ERR_NOT_FOUND if FMID entry doesn't exist
 	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
 	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
 	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
@@ -469,8 +469,11 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	/* did we updated anything? */
-	/* TODO: Move mysql_affected_rows() in execute_query() */
-	MAPISTORE_RETVAL_IF(mysql_affected_rows(MYSQL(ictx)) == 0, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	if (mysql_affected_rows(MYSQL(ictx)) == 0) {
+		bool _is_soft_deleted;
+		ret = mysql_search_existing_fmid(ictx, username, fmid, &_is_soft_deleted);
+		MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	}
 
 	retval = _memcached_update_record(ictx, mapistore_URI, fmid);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -713,10 +716,14 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, NULL);
 
 	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT next_fmid FROM %s "
 		"WHERE username = '%s'",
 		INDEXING_ALLOC_TABLE, _sql(mem_ctx, username));
+	MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
 	ret = select_first_uint(MYSQL(ictx), sql, &next_fmid);
 	switch (ret) {
 	case MYSQL_SUCCESS:
@@ -730,6 +737,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 			INDEXING_ALLOC_TABLE,
 			next_fmid + count,
 			_sql(mem_ctx, username));
+		MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 		break;
 	case MYSQL_NOT_FOUND:
 		// First allocation, insert in the database
@@ -740,6 +748,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 			INDEXING_ALLOC_TABLE,
 			_sql(mem_ctx, username),
 			next_fmid + count);
+		MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 		break;
 
 	default:

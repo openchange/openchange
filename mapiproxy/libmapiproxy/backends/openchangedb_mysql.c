@@ -320,6 +320,40 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	return retval;
 }
 
+static enum MAPISTATUS get_fid(struct openchangedb_context *self,
+			       const char *mapistore_uri, uint64_t *fidp)
+{
+	TALLOC_CTX	*mem_ctx;
+	MYSQL		*conn;
+	enum MAPISTATUS	retval;
+	char		*sql, *mapistore_uri_2;
+
+	mem_ctx = talloc_named(NULL, 0, "get_fid");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	conn = self->data;
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
+
+	mapistore_uri_2 = talloc_strdup(mem_ctx, mapistore_uri);
+	OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (mapistore_uri_2[strlen(mapistore_uri_2)-1] == '/') {
+		mapistore_uri_2[strlen(mapistore_uri_2)-1] = '\0';
+	} else {
+		mapistore_uri_2 = talloc_asprintf_append(mapistore_uri_2, "/");
+		OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	}
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT folder_id FROM folders "
+		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
+		_sql(mem_ctx, mapistore_uri), _sql(mem_ctx, mapistore_uri_2));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	retval = status(select_first_uint(conn, sql, fidp));
+
+	talloc_free(mem_ctx);
+	return retval;
+}
+
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 					const char *username, uint64_t fid,
 					const char *mapistoreURL)
@@ -343,8 +377,13 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(execute_query(conn, sql));
-	if (mysql_affected_rows(conn) == 0) {
-		retval = MAPI_E_NOT_FOUND;
+	if (retval == MAPI_E_SUCCESS && mysql_affected_rows(conn) == 0) {
+		/* Check if that fid exists in the database or not */
+		uint64_t _fid;
+		retval = get_fid(self, mapistoreURL, &_fid);
+		if (retval == MAPI_E_SUCCESS && _fid != fid) {
+			retval = MAPI_E_NOT_FOUND;
+		}
 	}
 
 	talloc_free(mem_ctx);
@@ -393,40 +432,6 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(select_first_uint(conn, sql, parent_fidp));
-
-	talloc_free(mem_ctx);
-	return retval;
-}
-
-static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *mapistore_uri, uint64_t *fidp)
-{
-	TALLOC_CTX	*mem_ctx;
-	MYSQL		*conn;
-	enum MAPISTATUS	retval;
-	char		*sql, *mapistore_uri_2;
-
-	mem_ctx = talloc_named(NULL, 0, "get_fid");
-	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-	conn = self->data;
-	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
-
-	mapistore_uri_2 = talloc_strdup(mem_ctx, mapistore_uri);
-	OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-	if (mapistore_uri_2[strlen(mapistore_uri_2)-1] == '/') {
-		mapistore_uri_2[strlen(mapistore_uri_2)-1] = '\0';
-	} else {
-		mapistore_uri_2 = talloc_asprintf_append(mapistore_uri_2, "/");
-		OPENCHANGE_RETVAL_IF(!mapistore_uri_2, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-	}
-
-	sql = talloc_asprintf(mem_ctx,
-		"SELECT folder_id FROM folders "
-		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
-		_sql(mem_ctx, mapistore_uri), _sql(mem_ctx, mapistore_uri_2));
-	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
-
-	retval = status(select_first_uint(conn, sql, fidp));
 
 	talloc_free(mem_ctx);
 	return retval;
@@ -2071,8 +2076,13 @@ static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	retval = status(execute_query(conn, sql));
-	if (mysql_affected_rows(conn) == 0) {
-		retval = MAPI_E_NOT_FOUND;
+	if (retval == MAPI_E_SUCCESS && mysql_affected_rows(conn) == 0) {
+		/* Check if that fid exists in the database or not */
+		int _system_idx;
+		retval = get_system_idx(self, username, fid, &_system_idx);
+		if (retval == MAPI_E_SUCCESS && system_idx != _system_idx) {
+			retval = MAPI_E_NOT_FOUND;
+		}
 	}
 
 	talloc_free(mem_ctx);

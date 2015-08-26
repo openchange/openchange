@@ -12,7 +12,7 @@
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
@@ -30,6 +30,9 @@
 // According to the initial sample data
 #define NEXT_CHANGE_NUMBER 1234
 #define FOLDER_ID_EXPECTED 289356276058554369ul
+#define PARENT_FOLDER_ID 289356276058554368ul
+#define MOCKED_URL "mocked_url"
+#define DFT_MESSAGE_CLASS ""
 
 #define CHECK_SUCCESS(fncall) do { \
 	enum MAPISTATUS ret = fncall; \
@@ -41,10 +44,26 @@
 } while(0)
 
 
+struct openchangedb_context_checker {
+        int get_SpecialFolderID;
+        int get_SystemFolderID;
+        int get_PublicFolderID;
+        int get_distinguishedName;
+        int get_MailboxGuid;
+        int get_MailboxReplica;
+        int get_PublicFolderReplica;
+        int get_parent_fid;
+        int get_MAPIStoreURIs;
+        int get_mapistoreURI;
+        int set_mapistoreURI;
+        int get_fid;
+        int get_ReceiveFolder;
+};
+
+
 static TALLOC_CTX *mem_ctx;
 static struct openchangedb_context *oc_ctx;
-
-static struct openchangedb_context functions_called;
+static struct openchangedb_context_checker functions_called;
 
 // v Unit test ----------------------------------------------------------------
 
@@ -116,6 +135,7 @@ START_TEST(test_call_get_mapistoreURI) {
 	CHECK_SUCCESS(openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "usera", FOLDER_ID_EXPECTED, &mapistoreURL, true));
 
 	ck_assert_int_eq(functions_called.get_mapistoreURI, 1);
+	ck_assert(!strcmp(mapistoreURL, MOCKED_URL));
 } END_TEST
 
 START_TEST(test_call_set_mapistoreURI) {
@@ -131,6 +151,7 @@ START_TEST(test_call_get_parent_fid) {
 	CHECK_SUCCESS(openchangedb_get_parent_fid(oc_ctx, "mail_user", FOLDER_ID_EXPECTED, &parent_fid, true));
 
 	ck_assert_int_eq(functions_called.get_parent_fid, 1);
+	ck_assert_int_eq(parent_fid, PARENT_FOLDER_ID);
 } END_TEST
 
 START_TEST(test_call_get_fid) {
@@ -139,6 +160,7 @@ START_TEST(test_call_get_fid) {
 	CHECK_SUCCESS(openchangedb_get_fid(oc_ctx, "mapistoreURL", &fid));
 
 	ck_assert_int_eq(functions_called.get_fid, 1);
+	ck_assert_int_eq(fid, FOLDER_ID_EXPECTED);
 } END_TEST
 
 START_TEST(test_call_get_MAPIStoreURIs) {
@@ -147,6 +169,8 @@ START_TEST(test_call_get_MAPIStoreURIs) {
 	CHECK_SUCCESS(openchangedb_get_MAPIStoreURIs(oc_ctx, "mail_user", mem_ctx, &uris));
 
 	ck_assert_int_eq(functions_called.get_MAPIStoreURIs, 1);
+	ck_assert_int_eq(uris->cValues, 1);
+	ck_assert(!strcmp(uris->lppszW[0], MOCKED_URL));
 } END_TEST
 
 START_TEST(test_call_get_ReceiveFolder) {
@@ -157,6 +181,8 @@ START_TEST(test_call_get_ReceiveFolder) {
 		      &fid, &ExplicitMessageClass));
 
 	ck_assert_int_eq(functions_called.get_ReceiveFolder, 1);
+	ck_assert_int_eq(fid, FOLDER_ID_EXPECTED);
+	ck_assert(!strcmp(ExplicitMessageClass, DFT_MESSAGE_CLASS));
 } END_TEST
 // ^ Unit test ----------------------------------------------------------------
 
@@ -215,7 +241,7 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 
 static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 					  const char *recipient, uint16_t *ReplID,
-				  	  struct GUID *ReplGUID)
+					  struct GUID *ReplGUID)
 {
 	functions_called.get_MailboxReplica++;
 
@@ -233,32 +259,39 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 }
 
 static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
-				        struct openchangedb_context *self,
-				        const char *username,
-				        uint64_t fid, char **mapistoreURL,
-				        bool mailboxstore)
+					struct openchangedb_context *self,
+					const char *username,
+					uint64_t fid, char **mapistoreURL,
+					bool mailboxstore)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	functions_called.get_mapistoreURI++;
+	*mapistoreURL = MOCKED_URL;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 					const char *username, uint64_t fid,
 					const char *mapistoreURL)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	functions_called.set_mapistoreURI++;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 				      const char *username, uint64_t fid,
 				      uint64_t *parent_fidp, bool mailboxstore)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	functions_called.get_parent_fid++;
+	*parent_fidp = PARENT_FOLDER_ID;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
 			       const char *mapistoreURL, uint64_t *fidp)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	functions_called.get_fid++;
+	*fidp = FOLDER_ID_EXPECTED;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
@@ -266,7 +299,17 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 					 TALLOC_CTX *mem_ctx,
 					 struct StringArrayW_r **urisP)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	struct StringArrayW_r *ra;
+
+	functions_called.get_MAPIStoreURIs++;
+
+	ra = talloc_zero(mem_ctx, struct StringArrayW_r);
+	ra->cValues = 1;
+	ra->lppszW = talloc_zero_array(ra, const char *, 1);
+	ra->lppszW[0] = talloc_strdup(ra, MOCKED_URL);
+	*urisP = ra;
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
@@ -276,7 +319,13 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 					 uint64_t *fid,
 					 const char **ExplicitMessageClass)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	const char *r = DFT_MESSAGE_CLASS;
+
+	functions_called.get_ReceiveFolder++;
+	*fid = FOLDER_ID_EXPECTED;
+	*ExplicitMessageClass = r;
+	return MAPI_E_SUCCESS;
+
 }
 
 static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
@@ -623,7 +672,7 @@ static enum MAPISTATUS mock_backend_init(TALLOC_CTX *mem_ctx,
 static void ocdb_logger_setup(void)
 {
 	enum MAPISTATUS mapi_status;
-	struct openchangedb_context *backend_ctx;
+	struct openchangedb_context *backend_ctx = NULL;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -663,6 +712,12 @@ static Suite *openchangedb_create_suite(SFun setup, SFun teardown)
 	tcase_add_test(tc, test_call_get_MailboxGuid);
 	tcase_add_test(tc, test_call_get_MailboxReplica);
 	tcase_add_test(tc, test_call_get_PublicFolderReplica);
+	tcase_add_test(tc, test_call_get_mapistoreURI);
+	tcase_add_test(tc, test_call_set_mapistoreURI);
+	tcase_add_test(tc, test_call_get_parent_fid);
+	tcase_add_test(tc, test_call_get_fid);
+	tcase_add_test(tc, test_call_get_MAPIStoreURIs);
+	tcase_add_test(tc, test_call_get_ReceiveFolder);
 
 	suite_add_tcase(s, tc);
 	return s;

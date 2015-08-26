@@ -16,6 +16,22 @@ It is required to have the following package and its dependencies:
 
 * `apport-retrace`
 
+Patch
+-----
+
+If the crash you retrace comes from a Zentyal package and the
+backtrace you analyze looks corrupted - duplicated functions in the
+backtrace, incoherent function dependencies or impossible function
+calls - it means the symbols apport-retrace is relying on for the
+analysis come from the wrong package.
+
+To fix this problem, apport-retrace needs to be able to fetch the
+proper symbols from the version specified in Dependencies and Package
+fields. This requires to patch package_impl.py from apport-retrace
+package with the following command:
+
+        $ sudo cp patches/packaging_impl.py /usr/lib/python2.7/dist-packages/apport/
+
 Retrace
 -------
 

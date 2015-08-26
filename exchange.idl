@@ -1030,6 +1030,12 @@ System Attendant Private Interface
 		SBinary_short	bin[cValues];
 	} mapi_SBinaryArray;
 
+	/* This structure is used by PidTagAdditionalRenEntryIds */
+	typedef [public] struct {
+		uint32		cValues;
+		SBinary		bin[cValues];
+	} mapi_SBinaryArray_32;
+
 	typedef [public] struct {
 		uint32		cValues;
 		GUID		lpguid[cValues];

@@ -326,7 +326,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*folder_object = NULL;
 	struct emsmdbp_object		*message_object = NULL;
 	uint32_t			handle;
-	uint64_t			folderID, messageID;
+	uint64_t			folderID;
+	uint64_t			messageID = 0;
 	uint32_t			contextID;
 	bool				mapistore = false;
 	void				*data;
@@ -1422,6 +1423,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	uint32_t		handle;
 	uint32_t		contextID;
 	uint64_t		messageID;
+	uint32_t		attachmentID = 0;
 	struct mapi_handles		*rec = NULL;
 	struct mapi_handles		*attachment_rec = NULL;
 	struct emsmdbp_object		*message_object = NULL;
@@ -1485,7 +1487,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 								   messageID, message_object);
 		if (attachment_object) {
 			mretval = mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object,
-								      attachment_object, &attachment_object->backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
+								      attachment_object, &attachment_object->backend_object, &attachmentID);
+			attachment_object->object.attachment->attachmentID = attachmentID;
+			mapi_repl->u.mapi_CreateAttach.AttachmentID = attachmentID;
 			if (mretval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
 				OC_DEBUG(5, "could not open nor create mapistore message\n");

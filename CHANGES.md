@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Rpcproxy handles client disconnections better
 * Out of office message supports non-ascii characters
 * Support notifications when the username is a mail address (e.g. Zentyal Cloud)
 * Open a shared calendar from address list in Outlook 2013

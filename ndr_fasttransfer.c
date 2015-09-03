@@ -226,6 +226,44 @@ static void ndr_print_PidTagAdditionalRenEntryIds(struct ndr_print *ndr, const s
 	ndr->depth--;
 }
 
+/**
+   \details Enhanced display of the PidTagFreeBusyEntryIds
+   property content as described in [MS-OXOSFLD] Section 2.2.6
+
+   This PT_MV_BINARY property is an array of SBinary values (bin.cb on
+   4 bytes) while MAPI properties generally use an array of
+   SBinary_short (bin.cb on 2 bytes)
+
+   \param ndr pointer to the ndr print structure
+   \param r pointer to the mapi_SBinaryArray_32 pulled structure
+   \param label the name of the property
+
+   \return void
+ */
+static void ndr_print_PidTagFreeBusyEntryIds(struct ndr_print *ndr, const struct mapi_SBinaryArray_32 *r, const char *label)
+{
+	uint32_t	i;
+	const char	*entries[] = { COLOR_MAGENTA "Null"	  COLOR_END,
+				       COLOR_MAGENTA "Delegate Information Object EntryID"     COLOR_END,
+				       COLOR_MAGENTA "Free/Busy Message EntryID"  COLOR_END,
+				       COLOR_MAGENTA "Freebusy Data EntryID" COLOR_END,
+				       COLOR_BOLD COLOR_RED "Suspicious entry" COLOR_END COLOR_END,
+				       NULL };
+	uint32_t	max = 4;
+
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	ndr->print(ndr, "%s: ARRAY(%d)", label, (int)r->cValues);
+	ndr->depth++;
+	for (i = 0; i < r->cValues; i++) {
+		if (i < max) {
+			ndr_print_SBinary(ndr, entries[i], &r->bin[i]);
+		} else {
+			ndr_print_SBinary(ndr, entries[max], &r->bin[i]);
+		}
+	}
+	ndr->depth--;
+}
+
 static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
@@ -299,6 +337,11 @@ static int ndr_parse_property(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
 		NDR_CHECK(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
 		ndr_print_PidTagAdditionalRenEntryIds(ndr, &binarray_32, propValue);
+		return 0;
+	case PidTagFreeBusyEntryIds:
+		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
+		NDR_CHECK(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
+		ndr_print_PidTagFreeBusyEntryIds(ndr, &binarray_32, propValue);
 		return 0;
 	default:
 		return -1;

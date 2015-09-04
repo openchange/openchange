@@ -3300,46 +3300,6 @@ end:
 }
 
 /**
-   \details Retrieve a MessageReadState structure from a binary blob
-
-   \param mem_ctx pointer to the memory context
-   \param bin pointer to the Binary_r structure with raw MessageReadState data
-
-   \return Allocated MessageReadState structure on success, otherwise NULL
-
-   \note Developers must free the allocated MessageReadState when finished.
- */
-static struct MessageReadState *get_MessageReadState(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
-{
-	struct MessageReadState	*message_read_states = NULL;
-	struct ndr_pull			*ndr;
-	enum ndr_err_code		ndr_err_code;
-
-	/* Sanity checks */
-	if (!bin) return NULL;
-	if (!bin->cb) return NULL;
-	if (!bin->lpb) return NULL;
-
-	ndr = talloc_zero(mem_ctx, struct ndr_pull);
-	ndr->offset = 0;
-	ndr->data = bin->lpb;
-	ndr->data_size = bin->cb;
-
-	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	message_read_states = talloc_zero(mem_ctx, struct MessageReadState);
-	ndr_err_code = ndr_pull_MessageReadState(ndr, NDR_SCALARS, message_read_states);
-
-	/* talloc_free(ndr); */
-
-	if (ndr_err_code != NDR_ERR_SUCCESS) {
-		talloc_free(message_read_states);
-		return NULL;
-	}
-
-	return message_read_states;
-}
-
-/**
    \details EcDoRpc SyncImportReadStateChanges (0x80) Rop.
 
    \param mem_ctx pointer to the memory context
@@ -3364,13 +3324,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
 	enum MAPISTATUS				retval;
 	enum mapistore_error			ret;
-	struct MessageReadState			*read_states;
-	uint32_t				read_states_size;
-	struct Binary_r				*bin_data;
+	struct MessageReadState			*msg_read_state;
 	char					*owner;
 	uint64_t				mid, base;
 	uint16_t				replid;
-	int					i;
+	int					i, j;
 	struct mapistore_message		*msg;
 	struct GUID				guid, replica_guid;
 	DATA_BLOB				guid_blob = { .length = 16, .data = NULL };
@@ -3430,17 +3388,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			goto end;
 		}
 		contextID = emsmdbp_get_contextID(folder_object);
-		bin_data = talloc_zero(mem_ctx, struct Binary_r);
-		bin_data->cb = request->MessageReadStates.length;
-		bin_data->lpb = request->MessageReadStates.data;
-		while (bin_data->cb) {
-			read_states = get_MessageReadState(mem_ctx, bin_data);
-			read_states_size = read_states->MessageIdSize + 3;
+		for (i = 0; i < request->MessageReadStates.cValues; i++) {
+			msg_read_state = request->MessageReadStates.lpMessageReadState + i;
 
-			bin_data->cb -= read_states_size;
-			bin_data->lpb += read_states_size;
-
-			guid_blob.data = read_states->MessageId;
+			guid_blob.data = msg_read_state->MessageId;
 			if (NT_STATUS_IS_ERR(GUID_from_data_blob(&guid_blob, &guid))) {
 				continue;
 			}
@@ -3451,14 +3402,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 
 			mid = 0;
 			base = 1;
-			for (i = 16; i < read_states->MessageIdSize; i++) {
-				mid |= (uint64_t) read_states->MessageId[i] * base;
+			for (j = 16; j < msg_read_state->MessageIdSize; j++) {
+				mid |= (uint64_t) msg_read_state->MessageId[j] * base;
 				base <<= 8;
 			}
 			mid <<= 16;
 			mid |= replid;
 
-			if (read_states->MarkAsRead) {
+			if (msg_read_state->MarkAsRead) {
 				flag = SUPPRESS_RECEIPT | CLEAR_RN_PENDING;
 			}
 			else {

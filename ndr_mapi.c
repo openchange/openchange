@@ -2907,3 +2907,123 @@ _PUBLIC_ void ndr_print_FILETIME(struct ndr_print *ndr, const char *name, const 
 
 	talloc_free(mem_ctx);
 }
+
+_PUBLIC_ void ndr_print_MessageReadState(struct ndr_print *ndr, const char *name, const struct MessageReadState *r)
+{
+	DATA_BLOB  guid_blob;
+	struct XID message_id;
+
+	ndr_print_struct(ndr, name, "MessageReadState");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_print_uint16(ndr, "MessageIdSize", r->MessageIdSize);
+		if (r->MessageIdSize > 16) {
+			/* Generate the XID from the given array of bytes */
+			guid_blob.data = r->MessageId;
+			guid_blob.length = 16;
+			GUID_from_data_blob(&guid_blob, &message_id.NameSpaceGuid);
+			message_id.LocalId.length = r->MessageIdSize - 16;
+			message_id.LocalId.data = r->MessageId + 16;
+			ndr_print_XID(ndr, "MessageId", &message_id);
+		} else {
+			/* This is an error to happen */
+			ndr_print_array_uint8(ndr, "MessageId", r->MessageId, r->MessageIdSize);
+		}
+		ndr_print_uint8(ndr, "MarkAsRead", r->MarkAsRead);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+_PUBLIC_ void ndr_print_SyncImportReadStateChanges_req(struct ndr_print *ndr, const char *name, const struct SyncImportReadStateChanges_req *r)
+{
+	char			msg_num[1024];
+	int			i = 0;
+
+	ndr_print_struct(ndr, name, "SyncImportReadStateChanges_req");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+
+		ndr_print_uint16(ndr, "MessageReadStateSize", r->MessageReadStateSize);
+
+		for (i = 0; i < r->MessageReadStates.cValues; i++) {
+			snprintf(msg_num, 1024, "Message[%d]", i);
+			ndr_print_MessageReadState(ndr, msg_num, &r->MessageReadStates.lpMessageReadState[i]);
+		}
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_MessageReadStateArray(struct ndr_push *ndr, int ndr_flags, const struct MessageReadStateArray *r)
+{
+	uint32_t cntr_lpMessageReadState_1;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			for (cntr_lpMessageReadState_1 = 0; cntr_lpMessageReadState_1 < r->cValues; cntr_lpMessageReadState_1++) {
+				NDR_CHECK(ndr_push_MessageReadState(ndr, NDR_SCALARS|NDR_BUFFERS,
+							       &r->lpMessageReadState[cntr_lpMessageReadState_1]));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_MessageReadStateArray(struct ndr_pull *ndr, int ndr_flags, struct MessageReadStateArray *r)
+{
+	uint32_t cntr_lpMessageReadState_0;
+	TALLOC_CTX *_mem_save_lpMessageReadState_0;
+	uint32_t current_size;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_PULL_ALLOC(ndr, r->lpMessageReadState);
+			if (r->lpMessageReadState) {
+				_mem_save_lpMessageReadState_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->lpMessageReadState, 0);
+				NDR_CHECK(ndr_token_store(ndr, &ndr->array_size_list,
+							  &r->lpMessageReadState, ndr->data_size));
+				NDR_PULL_ALLOC_N(ndr, r->lpMessageReadState, 1);
+				cntr_lpMessageReadState_0 = 0;
+				current_size = 0;
+				while (current_size < ndr->data_size) {
+					NDR_CHECK(ndr_pull_MessageReadState(ndr, NDR_SCALARS|NDR_BUFFERS, &r->lpMessageReadState[cntr_lpMessageReadState_0]));
+					current_size += r->lpMessageReadState[cntr_lpMessageReadState_0].MessageIdSize + sizeof(uint16_t) + sizeof(uint8_t);
+					cntr_lpMessageReadState_0++;
+					r->lpMessageReadState = talloc_realloc(ndr->current_mem_ctx,
+									  r->lpMessageReadState,
+									  struct MessageReadState,
+									  cntr_lpMessageReadState_0 + 1);
+					if (!r->lpMessageReadState) {
+						return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+								      "Alloc failed: %s\n",
+								      __location__);
+					}
+				}
+				if (current_size > 0 && cntr_lpMessageReadState_0 == 0) {
+					/* TODO: Use NDR_ERR_INCOMPLETE_BUFFER */
+					return NDR_ERR_BUFSIZE;
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_lpMessageReadState_0, 0);
+				r->cValues = cntr_lpMessageReadState_0;
+			}
+			if (r->lpMessageReadState) {
+				NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->lpMessageReadState, ndr->data_size));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}

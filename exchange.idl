@@ -3618,14 +3618,20 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x80 */
-	typedef [public,flag(NDR_NOALIGN)] struct {
+	typedef [public, noprint, flag(NDR_NOALIGN)] struct {
 		uint16		MessageIdSize;
 		uint8		MessageId[MessageIdSize];
 		boolean8	MarkAsRead;
 	} MessageReadState;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB MessageReadStates;
+	typedef [nopull, nopush, noprint, flag(NDR_NOALIGN)] struct {
+		[range(0,4000)] uint32	  cValues;
+		[size_is(cValues)] MessageReadState *lpMessageReadState;
+	} MessageReadStateArray;
+
+	typedef [public, noprint, flag(NDR_NOALIGN)] struct {
+		uint16									     MessageReadStateSize;
+		[subcontext(0), subcontext_size(MessageReadStateSize)] MessageReadStateArray MessageReadStates;
 	} SyncImportReadStateChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

@@ -3418,17 +3418,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 
 			ret = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, true, &message_object, &msg);
 			if (ret == MAPISTORE_SUCCESS) {
-				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
+				ret = mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 
-				/* Store the mid in the involved fmids
-				 * of the upload operations */
-				RAWIDSET_push_guid_glob(synccontext_object->object.synccontext->involved_fmids,
-							&replica_guid,
-							(message_object->object.message->messageID >> 16) & 0x0000ffffffffffff);
+				if (ret == MAPISTORE_SUCCESS) {
+					ret = mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID,
+								     message_object->backend_object, mem_ctx);
+					if (ret == MAPISTORE_SUCCESS) {
+						/* Store the mid in the involved fmids
+						 * of the upload operations */
+						RAWIDSET_push_guid_glob(synccontext_object->object.synccontext->involved_fmids,
+									&replica_guid,
+									(message_object->object.message->messageID >> 16) & 0x0000ffffffffffff);
 
+					} else {
+						OC_DEBUG(1, "[oxcfxics]: Failed to save 0x%"PRIx64" message: %s\n", mid, mapistore_errstr(ret));
+					}
+				} else {
+					OC_DEBUG(1, "[oxcfxics]: Failed to set read flag (%x) on 0x%"PRIx64": %s\n", flag, mid, mapistore_errstr(ret));
+				}
 				talloc_free(message_object);
 			} else {
-				OC_DEBUG(5, "[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret));
+				OC_DEBUG(1, "[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret));
 			}
 		}
 	}

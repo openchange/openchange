@@ -926,3 +926,233 @@ cleanup:
 	return ret;
 }
 
+/**
+   \details Test the RopSynchronizationImportDeletes (0x74)
+   operation for messages.
+   This function:
+   -# Log on private message store
+   -# Create a test folder
+   -# Create a message and save it
+   -# Get the PidTagSourceKey
+   -# Open a sync collector context for contents
+   -# Import the deletions of that message
+   -# Check OpenMessage failed with MAPI_E_NOT_FOUND
+   -# Clean up
+ */
+_PUBLIC_ bool mapitest_oxcfxics_SyncImportDeletesMsg(struct mapitest *mt)
+{
+	struct Binary_r		*source_key;
+	struct BinaryArray_r	source_keys;
+	bool			ret = true;
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_sync_collector;
+	mapi_object_t		collector_folder;
+	mapi_object_t		obj_message;
+	struct mt_common_tf_ctx	*context;
+	struct SPropValue	*lpProps;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		c_values;
+
+	/* Step 1. Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Step 2. Create destfolder */
+	mapi_object_init(&collector_folder);
+	mapi_object_init(&obj_sync_collector);
+	mapi_object_init(&obj_message);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "ImportDeletes", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &collector_folder);
+	mapitest_print_retval_clean(mt, "Create Folder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create the message and save it */
+	ret = mapitest_common_message_create(mt, &collector_folder, &obj_message,
+					     MT_MAIL_SUBJECT);
+	mapitest_print_assert(mt, "mapitest_common_message_create", ret);
+	if (!ret) {
+		goto cleanup;
+	}
+
+	retval = SaveChangesMessage(&collector_folder, &obj_message, KeepOpenReadOnly);
+	mapitest_print_retval_clean(mt, "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Get the PidTagSourceKey */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_SOURCE_KEY);
+	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &c_values);
+	mapitest_print_retval_clean(mt, "GetProps - Source Key", retval);
+	if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR) {
+		source_key = (struct Binary_r *)get_SPropValue_data(&lpProps[0]);
+	} else {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Open the collector */
+	retval = ICSSyncOpenCollector(&collector_folder, true, &obj_sync_collector);
+	mapitest_print_retval_clean(mt, "ICSSyncOpenCollector - Contents", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Import deletes */
+	source_keys.cValues = 1;
+	source_keys.lpbin = source_key;
+	retval = SyncImportDeletes(&obj_sync_collector, SyncImportDeletes_HardDelete,
+				   &source_keys);
+	mapitest_print_retval_clean(mt, "SyncImportDeletes", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. Try to open the message again */
+	retval = OpenMessage(&context->obj_store, mapi_object_get_id(&collector_folder),
+			     mapi_object_get_id(&obj_message), &obj_message, 0x0);
+	mapitest_print_retval_clean(mt, "OpenMessage", retval);
+	if (retval != MAPI_E_NOT_FOUND) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_sync_collector);
+	mapi_object_release(&collector_folder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}
+
+/**
+   \details Test the RopSynchronizationImportDeletes (0x74)
+   operation for folders.
+   This function:
+   -# Log on private message store
+   -# Create a test folder
+   -# Get the PidTagSourceKey from that folder
+   -# Open Top Information Store folder
+   -# Open a sync collector context for contents on test folder
+   -# Import the deletions of that folder
+   -# Check OpenFolder failed with MAPI_E_NOT_FOUND for the deleted folder
+   -# Clean up
+ */
+_PUBLIC_ bool mapitest_oxcfxics_SyncImportDeletesFolder(struct mapitest *mt)
+{
+	struct Binary_r		*source_key;
+	struct BinaryArray_r	source_keys;
+	bool			ret = true;
+	enum MAPISTATUS		retval;
+	mapi_id_t		id_folder;
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_sync_collector;
+	mapi_object_t		test_folder, tis_folder;
+	mapi_object_t		obj_message;
+	struct mt_common_tf_ctx	*context;
+	struct SPropValue	*lpProps;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		c_values;
+
+	/* Step 1. Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Step 2. Create a test folder */
+	mapi_object_init(&test_folder);
+	mapi_object_init(&tis_folder);
+	mapi_object_init(&obj_sync_collector);
+	mapi_object_init(&obj_message);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "ImportDeletes", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &test_folder);
+	mapitest_print_retval_clean(mt, "Create Folder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Get the PidTagSourceKey */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_SOURCE_KEY);
+	retval = GetProps(&test_folder, 0, SPropTagArray, &lpProps, &c_values);
+	mapitest_print_retval_clean(mt, "GetProps - Source Key", retval);
+	if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR) {
+		source_key = (struct Binary_r *)get_SPropValue_data(&lpProps[0]);
+	} else {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Open Top Information Store folder */
+	retval = GetDefaultFolder(&(context->obj_store), &id_folder,
+				  olFolderTopInformationStore);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = OpenFolder(&(context->obj_store), id_folder, &tis_folder);
+	mapitest_print_retval(mt, "OpenFolder - Top Information Store");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+
+	/* Step 5. Open the collector */
+	retval = ICSSyncOpenCollector(&tis_folder, true, &obj_sync_collector);
+	mapitest_print_retval_clean(mt, "ICSSyncOpenCollector - Contents", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Import deletes */
+	source_keys.cValues = 1;
+	source_keys.lpbin = source_key;
+	retval = SyncImportDeletes(&obj_sync_collector,
+				   SyncImportDeletes_Hierarchy|SyncImportDeletes_HardDelete,
+				   &source_keys);
+	mapitest_print_retval_clean(mt, "SyncImportDeletes", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. Try to open the folder again */
+	retval = OpenFolder(&(context->obj_store), mapi_object_get_id(&test_folder),
+			    &test_folder);
+	mapitest_print_retval_clean(mt, "OpenFolder", retval);
+	if (retval != MAPI_E_NOT_FOUND) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_sync_collector);
+	mapi_object_release(&test_folder);
+	mapi_object_release(&tis_folder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}

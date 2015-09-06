@@ -392,6 +392,8 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SYNC-IMPORT-READ-STATE-CHANGES",
 				"Test mark as read a message",
 				mapitest_oxcfxics_SyncImportReadStateChanges);
+	mapitest_suite_add_test(suite, "SYNC-IMPORT-MSG-DELETES", "Test import message deletions", mapitest_oxcfxics_SyncImportDeletesMsg);
+	mapitest_suite_add_test(suite, "SYNC-IMPORT-FOLDER-DELETES", "Test import folder deletions", mapitest_oxcfxics_SyncImportDeletesFolder);
 
 	mapitest_suite_register(mt, suite);
 

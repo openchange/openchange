@@ -2598,7 +2598,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+	/* Check PropertyValues is not NULL */
+	if (request->PropertyValues.cValues == 0) {
+		OC_DEBUG(1, "PropertyValues MUST be NOT null");
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	/* The object array is available at fixed 0 position */
+	object_array = (struct mapi_SBinaryArray *)get_mapi_SPropValue_data(&request->PropertyValues.lpProps[0]);
+	if (!object_array) {
+		OC_DEBUG(1, "The object array to delete must be in a MultipleBinary property");
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
 
 	local_mem_ctx = talloc_new(NULL);
 	if (!local_mem_ctx) {

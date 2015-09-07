@@ -280,8 +280,18 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             self.logger.debug("processing IN channel request")
 
             self.client_socket = environ["wsgi.input"]
-            self._receive_conn_b1()
-            connected = self._connect_to_OUT_channel()
+
+            try:
+                self._receive_conn_b1()
+                connected = True
+            except IOError as e:
+                self.logger.debug("handling socker.error")
+                self.logger.exception(e)
+                self.logger.error("client connection closed")
+                connected = False
+
+            if connected:
+                connected = self._connect_to_OUT_channel()
 
             if connected:
                 start_response("200 Success",
@@ -424,8 +434,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         fd_pool.register(self.server_socket.fileno(), POLLIN)
 
         # wait for 10 seconds
-        data = fd_pool.poll(1000.0)
-        if data is not None:
+        data = fd_pool.poll(1000)
+        if data:
             unix_socket = self.server_socket.accept()[0]
             self.logger.debug("connection established with IN channel")
 

@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Rpcproxy handles client disconnections better
 * Out of office message supports non-ascii characters
 * Support notifications when the username is a mail address (e.g. Zentyal Cloud)
 * Open a shared calendar from address list in Outlook 2013
@@ -16,6 +17,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Old mails are now synchronized after account cleanup
 * File name and correct size in small sized attachments, and submit time are now sent
   by OpenChange client against OpenChange server
+* Avoid race condition uploading changes which made new objects be missed
 
 ### Performances
 * Optimize the download of contents when you were in the middle of the first synchronization process in a business size mailbox.

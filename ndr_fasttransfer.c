@@ -306,6 +306,49 @@ static int ndr_parse_property(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	return -1;
 }
 
+/* Parse namedPropInfo element which includes:
+     PytpGuid ((%x00 PytpInteger32) | (%x01 PtypString))
+   to set the name and kind of the parsed named property
+*/
+static int ndr_parse_namedproperty(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
+				   struct ndr_pull *ndr_pull, uint32_t element,
+				   char **named_prop)
+{
+	const char  *name;
+	struct GUID PytpGuid;
+	uint8_t	    ul_kind;
+	uint32_t    dispid;
+
+	if (!named_prop) {
+		return -1;
+	}
+
+	NDR_CHECK(ndr_pull_GUID(ndr_pull, NDR_SCALARS, &PytpGuid));
+
+	NDR_CHECK(ndr_pull_uint8(ndr_pull, NDR_SCALARS, &ul_kind));
+	if (ul_kind == MNID_ID) {
+		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &dispid));
+		*named_prop = talloc_asprintf(mem_ctx, "(LID 0x%08x)", dispid);
+		if (!*named_prop) {
+			return -1;
+		}
+	} else if (ul_kind == MNID_STRING) {
+		uint32_t  _flags_save_string = ndr_pull->flags;
+		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_STR_NULLTERM);
+		NDR_CHECK(ndr_pull_string(ndr_pull, NDR_SCALARS, &name));
+		ndr_pull->flags = _flags_save_string;
+		*named_prop = talloc_asprintf(mem_ctx, "(Name \"%s\")", name);
+		if (!*named_prop) {
+			return -1;
+		}
+	} else {
+		/* Incorrect named property type */
+		return -1;
+	}
+
+	return 0;
+}
+
 static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
@@ -321,22 +364,30 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	struct Binary_r PtypServerId;
 	struct SBinary PtypBinary;
 	const char      *_propValue;
-	char            *propValue;
+	char            *propValue, *named_prop;
+	int	        ret;
 	DATA_BLOB				datablob;
 
 	_propValue = get_proptag_name(element);
 	if (_propValue == NULL) {
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(0x%X) COLOR_BOLD_OFF, element);
+		if (!propValue) {
+			return -1;
+		}
 	} else {
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, _propValue);
+		if (!propValue) {
+			return -1;
+		}
 	}
 
 	/* named property with propid > 0x8000 or known property */
 	if ((element >> 16) & 0x8000) {
-		//ret = ndr_parse_namedproperty(ndr_print, ndr_pull);
-		ndr_pull->offset += 1;
-		talloc_free(propValue);
-		return 0;
+		ret = ndr_parse_namedproperty(mem_ctx, ndr, ndr_pull, element, &named_prop);
+		if (ret != 0) {
+			return ret;
+		}
+		propValue = talloc_asprintf_append(propValue, " %s", named_prop);
 	}
 
 	switch (element & 0xFFFF) {

@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -71,9 +71,12 @@ struct mapiproxy_module_list {
 struct mpm_session {
 	struct server_id		server_id;
 	uint32_t			context_id;
-	uint32_t			ref_count;
 	bool				(*destructor)(void *);
 	void				*private_data;
+	char				*username;
+	struct GUID			uuid;
+	bool				released;
+	struct mpm_session		*next, *prev;
 };
 
 
@@ -186,14 +189,14 @@ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
 void *mapiproxy_server_openchangedb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
-struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
-struct mpm_session *mpm_session_init(TALLOC_CTX *, struct dcesrv_call_state *);
-bool mpm_session_increment_ref_count(struct mpm_session *);
+struct mpm_session *mpm_session_init(struct dcesrv_call_state *, struct GUID *);
 bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
-bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);
+bool mpm_session_set_private_data(struct mpm_session *, void *);
+bool mpm_session_unbind(struct server_id *, uint32_t);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
+struct mpm_session *mpm_session_find_by_uuid(struct GUID *);
 
 struct openchangedb_context;
 

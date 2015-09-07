@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2015
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,7 +35,10 @@
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 
-struct asyncemsmdb_private_data {
+
+struct exchange_asyncemsmdb_session {
+	char					*cn;
+	char					*bind_addr;
 	struct dcesrv_call_state		*dce_call;
 	struct EcDoAsyncWaitEx			*r;
 	struct mapistore_context		*mstore_ctx;
@@ -47,15 +51,6 @@ struct asyncemsmdb_private_data {
 	int					lock;
 };
 
-struct exchange_asyncemsmdb_session {
-	struct asyncemsmdb_private_data		*data;
-	struct GUID				uuid;
-	struct mapistore_context		*mstore_ctx;
-	char					*cn;
-	char					*bind_addr;
-	struct exchange_asyncemsmdb_session	*prev;
-	struct exchange_asyncemsmdb_session	*next;
-};
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

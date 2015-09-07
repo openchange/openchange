@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009-2010
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,14 +59,6 @@ struct emsmdbp_context {
 
 	TALLOC_CTX				*mem_ctx;
 	struct GUID				session_uuid;
-};
-
-struct exchange_emsmdb_session {
-	uint32_t			pullTimeStamp;
-	struct mpm_session		*session;
-        struct GUID                     uuid;
-	struct exchange_emsmdb_session	*prev;
-	struct exchange_emsmdb_session	*next;
 };
 
 struct emsmdbp_stream {

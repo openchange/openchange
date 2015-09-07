@@ -206,6 +206,11 @@ struct emsmdbp_object_synccontext {
 	struct emsmdbp_stream	stream;
 	uint32_t		*cutmarks;
 	uint32_t		next_cutmark_idx;
+
+	/* SyncOpenCollector specific attributes */
+	/* Involved fmids in upload operations */
+	struct rawidset		*involved_fmids;
+	uint64_t		next_cn;
 };
 
 struct emsmdbp_object_ftcontext {

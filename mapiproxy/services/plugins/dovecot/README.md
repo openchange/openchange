@@ -87,7 +87,6 @@ configuration file inside the plugin section:
 ```
 plugin {
        openchange_resolver = "--SERVER=127.0.0.1:11211"
-       openchange_cn = "username"
 }
 ```
 
@@ -99,11 +98,6 @@ plugin {
     http://docs.libmemcached.org/libmemcached_configuration.html. If
     no option is provided `--SERVER=127.0.0.1:11211` is used by
     default.
-
-  * __openchange_cn = STRING__ This option specifies the field used by
-    the dovecot service to query the resolver service. Acceptable
-    values are: __username__ or __email__. If no option is specified,
-    username is used by default.
 
   * __openchange_backend = STRING__ This option specifies the
     mapistore backend used by OpenChange server to deliver and fetch

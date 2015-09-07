@@ -309,6 +309,7 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context *, char *, struct mapi_SPropTagArray *, struct RecipientRow *);
 enum MAPISTATUS		emsmdbp_fetch_organizational_units(TALLOC_CTX *, struct emsmdbp_context *, char **, char **);
 enum MAPISTATUS		emsmdbp_get_org_dn(struct emsmdbp_context *, struct ldb_dn **);
+enum MAPISTATUS		emsmdbp_get_external_email(struct emsmdbp_context *, const char **);
 
 const struct GUID *const	MagicGUIDp;
 int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const char *username, const struct GUID *, uint16_t *);

@@ -519,7 +519,7 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
    \param ndr pointer to the ndr_print structure
    \param ndr_pull pointer to the ndr_pull structure representing the fxbuffer
 
-   \return value >= 0 on success, otherwise -1
+   \return 0 on success, otherwise -1 or > 0
 */
 static int ndr_parse_FastTransferElement(TALLOC_CTX *mem_ctx, struct ndr_print *ndr, struct ndr_pull *ndr_pull)
 {
@@ -554,7 +554,6 @@ static int ndr_parse_FastTransferStream(struct ndr_print *ndr, DATA_BLOB buf)
 	TALLOC_CTX      *mem_ctx;
 	struct ndr_pull *ndr_pull;
 	int             ret = 0;
-	int             offset;
 
 	mem_ctx = talloc_named(NULL, 0, "FastTransferStream");
 	if (!mem_ctx) return -1;
@@ -572,15 +571,14 @@ static int ndr_parse_FastTransferStream(struct ndr_print *ndr, DATA_BLOB buf)
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 
-	while (ndr_pull->offset < ndr_pull->data_size -1) {
-		offset = ndr_parse_FastTransferElement(mem_ctx, ndr, ndr_pull);
-		if (offset < 0) {
+	while (ndr_pull->offset < ndr_pull->data_size - 1) {
+		ret = ndr_parse_FastTransferElement(mem_ctx, ndr, ndr_pull);
+		if (ret != 0) {
 			ret = -1;
-			goto end;
+			break;
 		}
 	}
 
-end:
 	talloc_free(mem_ctx);
 	return ret;
 }

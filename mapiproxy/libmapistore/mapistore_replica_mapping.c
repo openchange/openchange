@@ -273,6 +273,9 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct ma
 	uint16_t	new_replid;
 	struct replica_mapping_context_list *list;
 
+	MAPISTORE_RETVAL_IF(!guidP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!replidP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	ret = mapistore_replica_mapping_add(mstore_ctx, username, &list);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!list, MAPISTORE_ERROR, NULL);
@@ -303,7 +306,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct ma
    \param replid the replica id
    \param guidP pointer to the returned replica guid
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+   \return MAPISTORE_SUCCESS on success, otherwise a MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_context *mstore_ctx, const char *username, uint16_t replid, struct GUID *guidP)
 {
@@ -312,9 +315,11 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct ma
 	int					ret;
 	struct replica_mapping_context_list	*list;
 
+	MAPISTORE_RETVAL_IF(!guidP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	ret = mapistore_replica_mapping_add(mstore_ctx, username, &list);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!list, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!list, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_zero(NULL, void);
 
@@ -324,7 +329,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct ma
 	ret = tdb_exists(list->tdb, replid_key);
 	if (!ret) {
 		talloc_free(mem_ctx);
-		return MAPISTORE_ERROR;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	guid_key = tdb_fetch(list->tdb, replid_key);

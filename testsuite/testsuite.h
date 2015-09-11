@@ -58,6 +58,7 @@ Suite *mapistore_namedprops_tdb_suite(void);
 Suite *mapistore_indexing_mysql_suite(void);
 Suite *mapistore_indexing_tdb_suite(void);
 Suite *mapistore_notification_suite(void);
+Suite *mapistore_replica_mapping_suite(void);
 /* mapiproxy */
 Suite *mapiproxy_util_mysql_suite(void);
 Suite *mapiproxy_util_schema_migration_suite(void);

@@ -1439,6 +1439,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
 				testsuite/libmapistore/mapistore_indexing.c		\
 				testsuite/libmapistore/mapistore_notification.c		\
+				testsuite/libmapistore/mapistore_replica_mapping.c	\
 				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c			\

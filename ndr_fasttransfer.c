@@ -63,6 +63,18 @@
 #define NDR_CYAN(s)    COLOR_CYAN    #s COLOR_END
 #define NDR_WHITE(s)   COLOR_WHITE   #s COLOR_END
 
+/* Make error checking from libndr calls compliant with FastTransfer
+ * buffer API calls which expects error to have a retval < 0. Set
+ * errno to libndr retval if needed afterwards */
+#define	NDR_CHECK_FT(call) do {					\
+	enum ndr_err_code _status;				\
+	_status = call;						\
+	if (unlikely(!NDR_ERR_CODE_IS_SUCCESS(_status))) {	\
+		errno = _status;				\
+		return -1;					\
+	}							\
+} while (0)
+
 /**
  */
 static int ndr_print_marker(struct ndr_print *ndr, uint32_t marker)
@@ -287,7 +299,7 @@ static int ndr_parse_ics_state(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	case MetaTagCnsetSeenFAI:
 	case MetaTagCnsetRead:
 	case MetaTagIdsetDeleted:
-		NDR_CHECK(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
+		NDR_CHECK_FT(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		buffer.length = PtypBinary.cb;
 		buffer.data = PtypBinary.lpb;
 		idbased = (element == MetaTagIdsetDeleted) ? true : false;
@@ -314,33 +326,33 @@ static int ndr_parse_property(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	case PidTagChangeKey:
 	case PidTagSourceKey:
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
-		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
-		NDR_CHECK((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
-		NDR_CHECK(ndr_pull_XID(_ndr_buffer, NDR_SCALARS, &xid));
+		NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
+		NDR_CHECK_FT((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
+		NDR_CHECK_FT(ndr_pull_XID(_ndr_buffer, NDR_SCALARS, &xid));
 		ndr_print_XID(ndr, propValue, &xid);
-		NDR_CHECK(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
+		NDR_CHECK_FT(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
 		return 0;
 	case PidTagPredecessorChangeList:
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
-		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
-		NDR_CHECK((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
+		NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &len));
+		NDR_CHECK_FT((ndr_pull_subcontext_start(ndr_pull, &_ndr_buffer, 0, len)));
 		ndr->print(ndr, "%s:", propValue);
 		ndr->depth++;
 		while (_ndr_buffer->offset < _ndr_buffer->data_size) {
-			NDR_CHECK(ndr_pull_SizedXid(_ndr_buffer, NDR_SCALARS, &SizedXid));
+			NDR_CHECK_FT(ndr_pull_SizedXid(_ndr_buffer, NDR_SCALARS, &SizedXid));
 			ndr_print_XID(ndr, NULL, &SizedXid.XID);
 		}
 		ndr->depth--;
-		NDR_CHECK(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
+		NDR_CHECK_FT(ndr_pull_subcontext_end(ndr_pull, _ndr_buffer, 4, -1));
 		return 0;
 	case PidTagAdditionalRenEntryIds:
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
-		NDR_CHECK(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
+		NDR_CHECK_FT(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
 		ndr_print_PidTagAdditionalRenEntryIds(ndr, &binarray_32, propValue);
 		return 0;
 	case PidTagFreeBusyEntryIds:
 		propValue = talloc_asprintf(mem_ctx, COLOR_BOLD NDR_MAGENTA(%s) COLOR_BOLD_OFF, get_proptag_name(element));
-		NDR_CHECK(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
+		NDR_CHECK_FT(ndr_pull_mapi_SBinaryArray_32(ndr_pull, NDR_SCALARS, &binarray_32));
 		ndr_print_PidTagFreeBusyEntryIds(ndr, &binarray_32, propValue);
 		return 0;
 	default:
@@ -366,11 +378,11 @@ static int ndr_parse_namedproperty(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		return -1;
 	}
 
-	NDR_CHECK(ndr_pull_GUID(ndr_pull, NDR_SCALARS, &PytpGuid));
+	NDR_CHECK_FT(ndr_pull_GUID(ndr_pull, NDR_SCALARS, &PytpGuid));
 
-	NDR_CHECK(ndr_pull_uint8(ndr_pull, NDR_SCALARS, &ul_kind));
+	NDR_CHECK_FT(ndr_pull_uint8(ndr_pull, NDR_SCALARS, &ul_kind));
 	if (ul_kind == MNID_ID) {
-		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &dispid));
+		NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &dispid));
 		*named_prop = talloc_asprintf(mem_ctx, "(LID 0x%08x)", dispid);
 		if (!*named_prop) {
 			return -1;
@@ -378,7 +390,7 @@ static int ndr_parse_namedproperty(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	} else if (ul_kind == MNID_STRING) {
 		uint32_t  _flags_save_string = ndr_pull->flags;
 		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_STR_NULLTERM);
-		NDR_CHECK(ndr_pull_string(ndr_pull, NDR_SCALARS, &name));
+		NDR_CHECK_FT(ndr_pull_string(ndr_pull, NDR_SCALARS, &name));
 		ndr_pull->flags = _flags_save_string;
 		*named_prop = talloc_asprintf(mem_ctx, "(Name \"%s\")", name);
 		if (!*named_prop) {
@@ -436,44 +448,44 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	switch (element & 0xFFFF) {
 		/* fixedSizeValue */
 	case PT_SHORT:
-		NDR_CHECK(ndr_pull_uint16(ndr_pull, NDR_SCALARS, &PtypInteger16));
+		NDR_CHECK_FT(ndr_pull_uint16(ndr_pull, NDR_SCALARS, &PtypInteger16));
 		ndr_print_uint16(ndr, propValue, PtypInteger16);
 		break;
 	case PT_LONG:
-		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypInteger32));
+		NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypInteger32));
 		ndr_print_uint32(ndr, propValue, PtypInteger32);
 		break;
 		/* no support for PtypFloating32 0x0004 PT_FLOAT */
 	case PT_DOUBLE:
-		NDR_CHECK(ndr_pull_double(ndr_pull, NDR_SCALARS, &PtypFloating64));
+		NDR_CHECK_FT(ndr_pull_double(ndr_pull, NDR_SCALARS, &PtypFloating64));
 		ndr_print_double(ndr, propValue, PtypFloating64);
 		break;
 		/* no support for PtypCurrency, 0x0006 PT_CURRENCY */
 		/* no support for PtypFloatingTime, 0x0007 PT_APPTIME */
 	case PT_BOOLEAN:
-		NDR_CHECK(ndr_pull_uint16(ndr_pull, NDR_SCALARS, &PtypBoolean));
+		NDR_CHECK_FT(ndr_pull_uint16(ndr_pull, NDR_SCALARS, &PtypBoolean));
 		ndr_print_string(ndr, propValue, (const char *)((PtypBoolean == true) ? "True" : "False"));
 		//ndr_print_uint16(ndr, propValue, PtypBoolean);
 		break;
 	case PT_I8:
-		NDR_CHECK(ndr_pull_dlong(ndr_pull, NDR_SCALARS, &PtypInteger64));
+		NDR_CHECK_FT(ndr_pull_dlong(ndr_pull, NDR_SCALARS, &PtypInteger64));
 		ndr_print_dlong(ndr, propValue, PtypInteger64);
 		break;
 	case PT_SYSTIME:
-		NDR_CHECK(ndr_pull_FILETIME(ndr_pull, NDR_SCALARS, &PtypTime));
+		NDR_CHECK_FT(ndr_pull_FILETIME(ndr_pull, NDR_SCALARS, &PtypTime));
 		ndr_print_FILETIME(ndr, propValue, &PtypTime);
 		break;
 	case PT_CLSID:
-		NDR_CHECK(ndr_pull_GUID(ndr_pull, NDR_SCALARS, &PtypGuid));
+		NDR_CHECK_FT(ndr_pull_GUID(ndr_pull, NDR_SCALARS, &PtypGuid));
 		ndr_print_GUID(ndr, propValue, &PtypGuid);
 		break;
 		/* varSizeValue */
 	case PT_UNICODE:
 	{
 		uint32_t  _flags_save_string = ndr_pull->flags;
-		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypInteger32));
+		NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypInteger32));
 		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_STR_NULLTERM);
-		NDR_CHECK(ndr_pull_string(ndr_pull, NDR_SCALARS, &PtypString));
+		NDR_CHECK_FT(ndr_pull_string(ndr_pull, NDR_SCALARS, &PtypString));
 		ndr_pull->flags = _flags_save_string;
 		ndr_print_string(ndr, propValue, PtypString);
 	}
@@ -483,17 +495,17 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 		/* FIXME: probably need to pull uint32_t first */
 		uint32_t _flags_save_string = ndr_pull->flags;
 		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_SIZE4);
-		NDR_CHECK(ndr_pull_string(ndr_pull, NDR_SCALARS, &PtypString8));
+		NDR_CHECK_FT(ndr_pull_string(ndr_pull, NDR_SCALARS, &PtypString8));
 		ndr_pull->flags = _flags_save_string;
 		ndr_print_string(ndr, propValue, PtypString8);
 	}
 	break;
 	case PT_SVREID:
-		NDR_CHECK(ndr_pull_Binary_r(ndr_pull, NDR_SCALARS, &PtypServerId));
+		NDR_CHECK_FT(ndr_pull_Binary_r(ndr_pull, NDR_SCALARS, &PtypServerId));
 		ndr_print_Binary_r(ndr, propValue, &PtypServerId);
 		break;
 	case PT_BINARY:
-		NDR_CHECK(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
+		NDR_CHECK_FT(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		ndr_print_SBinary(ndr, propValue, &PtypBinary);
 		break;
 	default:
@@ -502,7 +514,7 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 
 		ndr->print(ndr, COLOR_RED "Not supported: %s" COLOR_END, propValue);
 		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_REMAINING);
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
+		NDR_CHECK_FT(ndr_pull_DATA_BLOB(ndr_pull, NDR_SCALARS, &datablob));
 		ndr_pull->flags = _flags_save_default;
 		ndr_dump_data(ndr, datablob.data, datablob.length);
 	}
@@ -526,7 +538,7 @@ static int ndr_parse_FastTransferElement(TALLOC_CTX *mem_ctx, struct ndr_print *
 	uint32_t  element;
 	int       ret;
 
-	NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &element));
+	NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &element));
 
 	ret = ndr_print_marker(ndr, element);
 	if (ret == 0) return 0;

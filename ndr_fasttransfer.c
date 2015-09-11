@@ -574,7 +574,7 @@ static int ndr_parse_FastTransferStream(struct ndr_print *ndr, DATA_BLOB buf)
 
 	/* Map DATA_BLOB to ndr pull context */
 	ndr_pull = talloc_zero(mem_ctx, struct ndr_pull);
-	NDR_ERR_HAVE_NO_MEMORY(ndr_pull);
+	if (!ndr_pull) return -1;
 	ndr_pull->flags |= LIBNDR_FLAG_NOALIGN;
 	ndr_pull->current_mem_ctx = mem_ctx;
 	ndr_pull->data = buf.data;

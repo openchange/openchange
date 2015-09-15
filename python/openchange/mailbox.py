@@ -331,7 +331,7 @@ class MysqlBackendMixin(object):
 
         return (conn_url.hostname, conn_url.username, passwd, conn_url.path.strip('/'), port)
 
-    def migrate(self, version=None):
+    def migrate(self, version=None, **kwargs):
         """Migrate both mysql schema and data
 
         :param int version: indicating which version to migrate. None migrates
@@ -341,7 +341,7 @@ class MysqlBackendMixin(object):
         """
         self.db.select_db(self.db_name)
         migration_manager = MigrationManager(self.db, self.db_name)
-        return migration_manager.migrate(self.migration_app, version)
+        return migration_manager.migrate(self.migration_app, version, **kwargs)
 
     def list_migrations(self):
         """List migrations metadata
@@ -393,6 +393,17 @@ class OpenChangeDBWithMysqlBackend(MysqlBackendMixin):
         """Remove an existing OpenChangeDB."""
         self._execute("DROP DATABASE `%s`" %
                       self.db.escape_string(self.db_name))
+
+    def migrate(self, version=None, **kwargs):
+        """Migrate OpenChangeDB schema and data
+
+        :param int version: indicating which version to migrate. None migrates
+                            to the latest version.
+        :param named lp: samba Loadparm context
+        :rtype bool:
+        :returns: True if any migration has been performed
+        """
+        return super(OpenChangeDBWithMysqlBackend, self).migrate(version, **kwargs)
 
     def setup(self, names=None):
         self._create_database()

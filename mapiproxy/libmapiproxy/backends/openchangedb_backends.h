@@ -85,12 +85,16 @@ struct openchangedb_context {
 	bool (*set_locale)(struct openchangedb_context *, const char *, uint32_t);
 
 	const char **(*get_folders_names)(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
+
+	/* Replica mapping table */
+	enum MAPISTATUS (*replica_mapping_guid_to_replid)(struct openchangedb_context *, const char *, const struct GUID *, uint16_t *);
+	enum MAPISTATUS (*replica_mapping_replid_to_guid)(struct openchangedb_context *, const char *, uint16_t, struct GUID *);
+
 	const char *backend_type;
 	void *data;
 };
 
 const char *nil_string;
-
 
 #define TRANSPORT_FOLDER_SYSTEM_IDX 14
 

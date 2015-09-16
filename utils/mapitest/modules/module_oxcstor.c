@@ -448,11 +448,14 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
    operations
 
    This function:
-   -# Logs into the user private mailbox
+   -# Log into the user private mailbox
    -# Open the Receive Folder
-   -# Looks up the long term id for the receive folder FID
-   -# Looks up the short term id for the long term id
-   -# Checks the id matches the original FID
+   -# Look up the long term id for the receive folder FID
+   -# Look up the short term id for the long term id
+   -# Check the id matches the original FID
+   -# Create a new replid from long-term
+   -# Get the long-term from the given replid
+   -# Check both long-term identifiers are equal
 
    \param mt pointer on the top-level mapitest structure
 
@@ -460,11 +463,18 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 {
+	bool			ret = true;
+	struct LongTermId	long_term_id, long_term_id_check;
+	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 	mapi_id_t		id_inbox;
-	struct LongTermId	long_term_id;
 	mapi_id_t		id_check;
-	bool			ret = true;
+	static struct GUID	fixed_GUID = {
+		.time_low = 0xabcdef,
+		.time_mid = 0xcafe,
+		.time_hi_and_version = 0xbabe,
+		.clock_seq = { 0x12, 0x34 },
+		.node = { 0xde, 0xad, 0xfa, 0xce, 0xca, 0xfe } };
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
@@ -491,7 +501,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	/* Step 4. Call GetIdFromLongTermId on LongTermId from previous step*/
+	/* Step 4. Call GetIdFromLongTermId on LongTermId from previous step */
 	GetIdFromLongTermId(&obj_store, long_term_id, &id_check);
 	mapitest_print_retval(mt, "GetIdFromLongTermId");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -500,14 +510,37 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 	}
 
 	/* Step 5. Check whether ids are the same */
-	if ( id_check == id_inbox ) {
-		mapitest_print(mt, "* Check: IDs match - [SUCCESS]\n" );
-	} else {
-		mapitest_print(mt, "* Check: IDs do not match - [SUCCESS] (0x%x, expected 0x%x)\n",
-			       id_check, id_inbox);
-		ret=false;
+	ret = (id_check == id_inbox);
+	mapitest_print_assert(mt, "Check: IDs match", ret);
+	if (ret == false) {
 		goto cleanup;
 	}
+
+	/* Step 6. Create a new replid from the given long-term id */
+	ZERO_STRUCT(long_term_id);
+	long_term_id.DatabaseGuid = fixed_GUID;
+	long_term_id.GlobalCounter[5] = 0x1;
+	retval = GetIdFromLongTermId(&obj_store, long_term_id, &id_check);
+	mapitest_print_retval_clean(mt, "GetIdFromLongTermId - Create ReplId", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7: Get the long term id from the given replid */
+	retval = GetLongTermIdFromId(&obj_store, id_check, &long_term_id_check);
+	mapitest_print_retval_clean(mt, "GetLongTermIdFromId", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 8: Check both LongTermIds are equal */
+	ret = GUID_equal(&(long_term_id.DatabaseGuid), &(long_term_id_check.DatabaseGuid));
+	if (ret) {
+		ret = (memcmp(long_term_id.GlobalCounter, long_term_id_check.GlobalCounter, 6) == 0);
+	}
+	mapitest_print_assert(mt, "Check: Long Term IDs match", ret);
 
  cleanup:
 	/* Release */

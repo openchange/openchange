@@ -954,7 +954,6 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
-							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
 							mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.po	\
 							mapiproxy/libmapistore/mapistore_notification.po		\
@@ -1439,7 +1438,6 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
 				testsuite/libmapistore/mapistore_indexing.c		\
 				testsuite/libmapistore/mapistore_notification.c		\
-				testsuite/libmapistore/mapistore_replica_mapping.c	\
 				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c			\

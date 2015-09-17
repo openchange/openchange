@@ -1076,10 +1076,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 	uint32_t	cntr_rgwBestVersion_0;
 
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_DOS)));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_UNIX)));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_DOS)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.szUserDN, ndr_charset_length(r->in.szUserDN, CH_DOS), sizeof (uint8_t), CH_DOS));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_UNIX)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.szUserDN, ndr_charset_length(r->in.szUserDN, CH_UNIX), sizeof (uint8_t), CH_UNIX));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulFlags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulConMod));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.cbLimit));
@@ -1148,20 +1148,20 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDNPrefix));
 		if (r->out.szDNPrefix) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_UNIX)));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_DOS)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDNPrefix, ndr_charset_length(*r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_UNIX)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDNPrefix, ndr_charset_length(*r->out.szDNPrefix, CH_UNIX), sizeof(uint8_t), CH_UNIX));
 		}
 		if (r->out.szDisplayName == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: szDisplayName");
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDisplayName));
 		if (*r->out.szDisplayName) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_UNIX)));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_DOS)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDisplayName, ndr_charset_length(*r->out.szDisplayName, CH_DOS), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_UNIX)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDisplayName, ndr_charset_length(*r->out.szDisplayName, CH_UNIX), sizeof(uint8_t), CH_UNIX));
 		}
 		for (cntr_rgwServerVersion_0 = 0; cntr_rgwServerVersion_0 < 3; cntr_rgwServerVersion_0++) {
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwServerVersion[cntr_rgwServerVersion_0]));
@@ -1244,7 +1244,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.szUserDN), ndr_get_array_length(ndr, &r->in.szUserDN));
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.szUserDN), sizeof(uint8_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.szUserDN, ndr_get_array_length(ndr, &r->in.szUserDN), sizeof(uint8_t), CH_DOS));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.szUserDN, ndr_get_array_length(ndr, &r->in.szUserDN), sizeof(uint8_t), CH_UNIX));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulFlags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulConMod));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.cbLimit));
@@ -1368,7 +1368,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.szDNPrefix), ndr_get_array_length(ndr, r->out.szDNPrefix));
 			}
 			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.szDNPrefix), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDNPrefix, ndr_get_array_length(ndr, r->out.szDNPrefix), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDNPrefix, ndr_get_array_length(ndr, r->out.szDNPrefix), sizeof(uint8_t), CH_UNIX));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_0, LIBNDR_FLAG_REF_ALLOC);
@@ -1393,7 +1393,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.szDisplayName), ndr_get_array_length(ndr, r->out.szDisplayName));
 			}
 			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.szDisplayName), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDisplayName, ndr_get_array_length(ndr, r->out.szDisplayName), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDisplayName, ndr_get_array_length(ndr, r->out.szDisplayName), sizeof(uint8_t), CH_UNIX));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_0, LIBNDR_FLAG_REF_ALLOC);

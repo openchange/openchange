@@ -778,6 +778,8 @@ libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
 	rm -f mapiproxy/util/*.po mapiproxy/util/*.o
+	rm -f mapiproxy/util/ccan/hash/*.po mapiproxy/util/ccan/hash/*.o
+	rm -f mapiproxy/util/ccan/htable/*.po mapiproxy/util/ccan/htable/*.o
 	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
 	rm -f mapiproxy/libmapiproxy/backends/*.o mapiproxy/libmapiproxy/backends/*.po
 
@@ -1117,6 +1119,8 @@ mapiproxy-servers-clean::
 	rm -f mapiproxy/servers/default/emsmdb/*.gcno mapiproxy/servers/default/emsmdb/*.gcda
 	rm -f mapiproxy/servers/default/rfr/*.o mapiproxy/servers/default/rfr/*.po
 	rm -f mapiproxy/servers/default/rfr/*.gcno mapiproxy/servers/default/rfr/*.gcda
+	rm -f mapiproxy/servers/default/asyncemsmdb/*.o mapiproxy/servers/default/asyncemsmdb/*.po
+	rm -f mapiproxy/servers/default/asyncemsmdb/*.gcno mapiproxy/servers/default/asyncemsmdb/*.gcda
 	rm -f mapiproxy/servers/*.so
 
 clean:: mapiproxy-servers-clean

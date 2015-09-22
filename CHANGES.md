@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [Unreleased]
 
+### Added
+* Allow custom `AuthPackage` settings for autodiscover
+
 ### Fixes
 
 * Rpcproxy handles client disconnections better

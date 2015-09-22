@@ -280,9 +280,10 @@ class AutodiscoverHandler(object):
             else:
                 ssl_opts = {"SSL": "Off"}
 
+            auth_package = autodiscover_rpcproxy_conf['auth_package']
             response_tree = {"Type": "EXPR",
                              "Server": rpcproxy_server_name,
-                             "AuthPackage": "Ntlm",
+                             "AuthPackage": auth_package,
                              "ASUrl": "https://%s/ews/as"
                              % rpcproxy_server_name,  # availability
                              "OOFUrl": "https://%s/ews/oof"

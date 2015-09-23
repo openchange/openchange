@@ -157,6 +157,7 @@ class OCSConfig(object):
         self.__get_section('autodiscover:rpcproxy')
         # Have to set a default value to avoid missing option exception
         self.__get_option('autodiscover:rpcproxy', 'external_hostname', dflt="__none__")
+        self.__get_option('autodiscover:rpcproxy', 'auth_package', dflt='Ntlm')
         self.__get_bool_option('autodiscover:rpcproxy', 'ssl', dflt=False)
         self.__get_bool_option('autodiscover:rpcproxy', 'enabled', dflt=True)
 

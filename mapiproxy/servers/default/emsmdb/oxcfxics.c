@@ -2283,7 +2283,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 
 	folderID = synccontext_object->parent_object->object.folder->folderID;
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 	if (oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, &request->PropertyValues.lpProps[0].value.bin, &messageID)) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
@@ -2408,7 +2413,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	response = &mapi_repl->u.mapi_SyncImportHierarchyChange;
 
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 
 	/* deduce the parent folder id (fixed position 0). */
 	if (oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, &request->HierarchyValues.lpProps[0].value.bin, &parentFolderID)) {
@@ -2579,7 +2589,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	}
 
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 
 	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
 

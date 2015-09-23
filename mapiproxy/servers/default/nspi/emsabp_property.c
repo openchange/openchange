@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -57,6 +57,8 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagAddressBookObjectGuid,		"objectGUID",		false,	NULL			},
 	{ PidTagObjectType,			"msExchRecipientTypeDetails",		false,	NULL			},
 	{ PidTagDisplayType,			"msExchRecipientDisplayType",		false,	NULL			},
+	{ PidTagBusinessTelephoneNumber,	"telephoneNumber",	false,	NULL			},
+	{ PidTagOfficeLocation,			"physicalDeliveryOfficeName",	false,	NULL			},
 	{ 0,					NULL,			false,	NULL			}
 };
 
@@ -106,12 +108,12 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 	_map_proptag_to_unicode_ansi(ulPropTag, &ansiPropTag, &uniPropTag);
 
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if ((uniPropTag == emsabp_property[i].ulPropTag) || 
+		if ((uniPropTag == emsabp_property[i].ulPropTag) ||
 		    (ansiPropTag == emsabp_property[i].ulPropTag)) {
 			return emsabp_property[i].attribute;
 		}
 	}
-	
+
 	return NULL;
 }
 

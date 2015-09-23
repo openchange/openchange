@@ -11,6 +11,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Telephone and location fields are now shown in the Global Address List
 * Rpcproxy handles client disconnections better
 * Out of office message supports non-ascii characters
 * Support notifications when the username is a mail address (e.g. Zentyal Cloud)

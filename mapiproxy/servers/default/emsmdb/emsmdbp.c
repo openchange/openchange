@@ -667,3 +667,60 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 			     ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Get the email of current user.
+
+   \param emsmdbp_ctx pointer to the EMSMDBP context
+   \param email pointer to return the email
+
+   \note The email is obtained from proxyAddresses attribute, the one that
+   starts with "SMTP:" which is the one used to authenticate on external
+   smtp service.
+
+   \return MAPI_E_SUCCESS or an error if something happens
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_get_external_email(struct emsmdbp_context *emsmdbp_ctx, const char **email)
+{
+	const char * const		attrs[] = { "proxyAddresses", NULL };
+	const char			*prefix = "SMTP:";
+	size_t				prefix_len;
+	int				ret, i;
+	struct ldb_result		*res = NULL;
+	struct ldb_message_element	*el = NULL;
+	const struct ldb_val		*value = NULL;
+	bool				found = false;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!email, MAPI_E_INVALID_PARAMETER, NULL);
+
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs,
+			 "(&(objectClass=user)(sAMAccountName=%s))",
+			 ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->username));
+
+	if (ret != LDB_SUCCESS || res->count == 0) {
+		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->username);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], attrs[0]);
+	if (!el) return MAPI_E_NOT_FOUND;
+
+	prefix_len = strlen(prefix);
+	for (i = 0; !found && i < el->num_values; i++) {
+		value = (struct ldb_val *) &el->values[i];
+		if (!value || value->length <= prefix_len || value->data[value->length] != '\0')
+			continue;
+
+		/* Searching for SMTP:some@email.com entry */
+		if (strncmp((const char *)value->data, prefix, prefix_len) == 0) {
+			*email = (char *)(value->data + prefix_len);
+			found = true;
+		}
+	}
+
+	return found ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND;
+}

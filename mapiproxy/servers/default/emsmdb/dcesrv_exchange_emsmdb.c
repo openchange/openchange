@@ -1511,6 +1511,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	struct dcesrv_handle		*handle;
 	struct dcesrv_endpoint		*item;
 	bool				found;
+	const char			*email;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe)\n");
 
@@ -1561,8 +1562,17 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	}
 
 	/* Step 3. Register the global session */
+	retval = emsmdbp_get_external_email(emsmdbp_ctx, &email);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(1, "[EcDoAsyncConnectEx] Unable to find external email "
+			 "(for %s) to register session", emsmdbp_ctx->username);
+		r->out.async_handle->handle_type = 0;
+		r->out.async_handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
 	retval = mapistore_notification_session_add(emsmdbp_ctx->mstore_ctx, r->in.handle->uuid,
-						    handle->wire_handle.uuid, dcesrv_call_account_name(dce_call));
+						    handle->wire_handle.uuid, email);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "[EcDoAsyncConnectEx]: session registration failed with '%s'\n",
 			 mapistore_errstr(retval));

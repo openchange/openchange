@@ -3713,11 +3713,6 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 
 // ^ openchangedb message -----------------------------------------------------
 
-static const char *openchangedb_data_dir(void)
-{
-	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
-}
-
 static int openchangedb_mysql_destructor(struct openchangedb_context *self)
 {
 	OC_DEBUG(5, "Destroying openchangedb mysql context\n");

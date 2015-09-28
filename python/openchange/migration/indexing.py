@@ -80,3 +80,17 @@ class IndexesMigration(Migration):
         cur.execute("DROP INDEX `mapistore_indexing_username_url_idx` ON `mapistore_indexing`")
         cur.execute("DROP INDEX `mapistore_indexing_username_fmid_idx` ON `mapistore_indexing`")
         cur.execute("DROP INDEX `mapistore_indexes_username_idx` ON `mapistore_indexes`")
+
+
+@migration('indexing', 3)
+class SoftDeletedIndexMigration(Migration):
+
+    description = 'Index on soft_deleted'
+
+    @classmethod
+    def apply(cls, cur, **kwargs):
+        cur.execute("CREATE INDEX `mapistore_indexing_username_soft_deleted_idx` ON `mapistore_indexing` (`username`(255) ASC, `soft_deleted`(1) ASC)")
+
+    @classmethod
+    def unapply(cls, cur):
+        cur.execute("DROP INDEX `mapistore_indexing_username_soft_deleted_idx` ON `mapistore_indexing`")

@@ -244,7 +244,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	if (h) {
 		session = mpm_session_find_by_uuid(&r->in.handle->uuid);
 
-		uuid_str = GUID_string(mem_ctx, &session->uuid);
+		uuid_str = GUID_string(mem_ctx, &r->in.handle->uuid);
 		OPENCHANGE_RETVAL_IF(!uuid_str, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		if (session) {
 			mpm_session_release(session);

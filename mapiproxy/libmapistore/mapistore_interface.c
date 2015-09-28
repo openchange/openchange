@@ -64,7 +64,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	private_dir = lpcfg_private_dir(lp_ctx);
 	if (!private_dir) {
-		OC_DEBUG(5, "private directory was not returned from configuration");
+		OC_DEBUG(0, "private directory was not returned from configuration");
 		return NULL;
 	}
 

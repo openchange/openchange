@@ -6,13 +6,14 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Improvements
+* Decode Multiple Value Unicode strings in FastTransfer buffer when dumping
 
 ## [2.4-zentyal10] - 2015-10-09
 
 ### Fixes
 * Fix openchange_user_cleanup.py bug with user names with non-alphanumerics characters
 * Folder deletion using cached mode
-
 
 ## [2.4-zentyal9] - 2015-10-02
 

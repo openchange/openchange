@@ -2123,8 +2123,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	if (!include_props && synccontext->request.contents_mode && synccontext->request.normal) {
 		table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
 		if (!table_object) {
-			OC_DEBUG(5, "could not open message table\n");
-			abort();
+			OC_DEBUG(1, "could not open message table");
+			talloc_free(synccontext_object);
+			talloc_free(properties_exclusion);
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			goto end;
 		}
 		if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
 			for (j = 0; j < available_properties->cValues; j++) {

@@ -114,6 +114,9 @@ plugin {
 Compilation
 -----------
 
+It requires to have `dovecot-config` file which is available in Ubuntu
+within the *dovecot-dev* package.
+
     ./autogen.sh
     ./configure --prefix=/usr
     make && sudo make install

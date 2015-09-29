@@ -18,6 +18,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <errno.h>
+#include <string.h>
 
 #include <dovecot/config.h>
 #include <dovecot/lib.h>
@@ -300,7 +302,11 @@ static bool openchange_newmail(struct openchange_user *user,
 		}
 		bytes = nn_send(sock, (char *)blob, msglen, 0);
 		if (bytes != msglen) {
-			i_debug("Error sending msg: %d sent but %zu expected", bytes, msglen);
+			if (bytes == -1) {
+				oc_log(OC_LOG_ERROR, "Sending msg to %s: %s", hosts[i], strerror(errno));
+			} else {
+				i_debug("Error sending msg: %d sent but %zu expected", bytes, msglen);
+			}
 		}
 		nn_shutdown(sock, endpoint);
 	}

@@ -6,6 +6,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Fixes
+* Fix openchange_user_cleanup.py bug with user names with non-alphanumerics characters
 
 ## [2.4-zentyal9] - 2015-10-02
 

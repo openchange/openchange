@@ -136,8 +136,10 @@ class ImapCleaner(object):
 
             print " [IMAP] Logged in as %s" % email
 
-            patterns = ["*(1)*", "Spam", "Sync Issues*", "Problemas de sincroni*",
-                        "Problèmes de synchronisation*"]
+            patterns = ["*(1)*", "Spam", "Sync Issues*", 
+                        "Problemas de sincroni*",
+                        "Problèmes de synchronisation*",
+                        "Synchronisierungsprobleme*"]
             for pattern in patterns:
                 code, data = client.list("", pattern)
                 if code != "OK":

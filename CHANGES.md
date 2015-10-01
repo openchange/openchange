@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Fixes
+* Fix double free crash on asyncemsmdb sessions
+
 ## [2.4-zentyal8] - 2015-09-29
 
 ### Fixes

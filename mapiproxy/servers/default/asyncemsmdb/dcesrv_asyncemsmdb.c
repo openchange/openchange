@@ -108,15 +108,6 @@ static int asyncemsmdb_mapistore_destructor(void *data)
 }
 
 
-static bool asyncemsmdb_session_destructor(void *data)
-{
-	struct exchange_asyncemsmdb_session	*session = (struct exchange_asyncemsmdb_session *)data;
-	if (!session) return false;
-	talloc_free(session);
-	return true;
-}
-
-
 /**
    \details The SOGo backend does not hold the FolderID of the parent
    folder object within its property list and relies on the parent
@@ -1113,8 +1104,9 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			*r->out.pulFlagsOut = 0x1;
 			return NT_STATUS_OK;
 		}
+
+		// Do not set destructor, as private_data will be cleaned by tevent
 		mpm_session_set_private_data(mpm_session, (void *)session);
-		mpm_session_set_destructor(mpm_session, asyncemsmdb_session_destructor);
 		OC_DEBUG(5, "[asyncemsmdb]: New session added: %s", session->emsmdb_session_str);
 	}
 

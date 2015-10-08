@@ -136,8 +136,10 @@ class ImapCleaner(object):
 
             print " [IMAP] Logged in as %s" % email
 
-            patterns = ["*(1)*", "Spam", "Sync Issues*", "Problemas de sincroni*",
-                        "Problèmes de synchronisation*"]
+            patterns = ["*(1)*", "Spam", "Sync Issues*", 
+                        "Problemas de sincroni*",
+                        "Problèmes de synchronisation*",
+                        "Synchronisierungsprobleme*"]
             for pattern in patterns:
                 code, data = client.list("", pattern)
                 if code != "OK":
@@ -283,7 +285,7 @@ class SOGoCleaner(object):
         c = conn.cursor()
         tablename = "sogo_cache_folder_%s" % self._as_css_id(username)
         if not self.dry_run:
-            c.execute("DROP TABLE %s" % tablename)
+            c.execute("DROP TABLE `%s`" % tablename)
         print " [SOGo MySQL] Table %s deleted" % tablename
 
     def _get_connection_url(self):

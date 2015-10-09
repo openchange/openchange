@@ -495,6 +495,7 @@ enum MAPISTATUS		SetLocalReplicaMidsetDeleted(mapi_object_t *, const struct GUID
 enum MAPISTATUS		ICSSyncOpenCollector(mapi_object_t *, bool, mapi_object_t *);
 enum MAPISTATUS		ICSSyncGetTransferState(mapi_object_t *, mapi_object_t *);
 enum MAPISTATUS		SyncImportReadStateChanges(mapi_object_t *, struct Binary_r *, bool *, uint16_t);
+enum MAPISTATUS		SyncImportDeletes(mapi_object_t *, uint8_t, struct BinaryArray_r *);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

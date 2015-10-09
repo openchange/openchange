@@ -596,7 +596,7 @@ end:
 }
 
 /**
-   \details Return the folder object associated to specified folder identified
+   \details Return the folder object associated to specified folder identifier
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdbp context
@@ -652,6 +652,45 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 			*folder_object_p = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, NULL);
 			return MAPI_E_SUCCESS;
 		}
+	}
+
+	return retval;
+}
+
+/**
+   \details Return the folder object associated to the parent of the
+   specified folder identifier
+
+   \param mem_ctx pointer to the memory context where parent_folder_object_p will be allocated
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param context_object pointer to current context object
+   \param fid pointer to the Folder Identifier to lookup its parent
+   \param [out] parent_folder_object_p location to store emsmdbp object on success
+
+   \return MAPISTATUS error code
+ */
+
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_child_fid(TALLOC_CTX *mem_ctx,
+								 struct emsmdbp_context *emsmdbp_ctx,
+								 struct emsmdbp_object *context_object,
+								 uint64_t fid,
+								 struct emsmdbp_object **parent_folder_object_p)
+{
+	uint64_t		parent_fid;
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*mailbox_object;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!parent_folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mailbox_object = emsmdbp_get_mailbox(context_object);
+	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
+	if (retval == MAPI_E_SUCCESS) {
+		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, parent_fid,
+							   parent_folder_object_p);
 	}
 
 	return retval;

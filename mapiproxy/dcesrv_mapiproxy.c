@@ -222,16 +222,14 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
  */
 static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
-	struct dcesrv_mapiproxy_private		*private;
-	bool					server_mode;
-	bool					ndrdump;
-	char					*server_id_printable = NULL;
-	
-	server_id_printable = server_id_str(NULL, &(dce_call->conn->server_id));
+	struct dcesrv_mapiproxy_private	*private;
+	bool				server_mode;
+	bool				ndrdump;
+	struct server_id_buf		tmp;
+
 	OC_DEBUG(5, "[session = 0x%x] [session server id = %s]\n",
 		  dce_call->context->context_id,
-		  server_id_printable);
-	talloc_free(server_id_printable);
+		  server_id_str_buf(dce_call->conn->server_id, &tmp));
 
 	OC_DEBUG(5, "mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]", dce_call->context->context_id,
 		  dce_call->conn->server_id.pid, dce_call->conn->server_id.task_id, dce_call->conn->server_id.vnn);

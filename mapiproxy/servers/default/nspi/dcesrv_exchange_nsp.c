@@ -1618,12 +1618,10 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
-	char	*server_str;
-	server_str = server_id_str(NULL, &server_id);
-	if (!server_str) return NT_STATUS_OK;
+	struct server_id_buf tmp;
 
-	OC_DEBUG(5, "dcesrv_exchange_nsp_unbind: server_id=%s, context_id=%u", server_str, context_id);
-	talloc_free(server_str);
+	OC_DEBUG(5, "dcesrv_exchange_nsp_unbind: server_id=%s, context_id=%u",
+		 server_id_str_buf(server_id, &tmp), context_id);
 
 	mpm_session_unbind(&server_id, context_id);
 	return NT_STATUS_OK;

@@ -45,7 +45,6 @@ DSOOPT=-shared -fPIC
 CFLAGS=@CFLAGS@ @ENDIAN@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ @NDR_COLOR@  \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
-       -DOPENCHANGEDB_DATA_DIR=\"$(datadir)/setup/openchangedb\"				\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"						\

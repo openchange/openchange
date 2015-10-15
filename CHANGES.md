@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Improvements
+* Decode Multiple Value Unicode strings in FastTransfer buffer when dumping
+
 
 ## [2.4-zentyal10] - 2015-10-09
 

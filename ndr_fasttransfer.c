@@ -407,21 +407,22 @@ static int ndr_parse_namedproperty(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
                                struct ndr_pull *ndr_pull, uint32_t element)
 {
-	uint16_t        PtypInteger16;
-	uint32_t        PtypInteger32;
-	double          PtypFloating64;
-	uint16_t         PtypBoolean;
-	int64_t         PtypInteger64;
-	struct FILETIME PtypTime;
-	struct GUID     PtypGuid;
-	const char      *PtypString;
-	const char      *PtypString8;
-	struct Binary_r PtypServerId;
-	struct SBinary PtypBinary;
-	const char      *_propValue;
-	char            *propValue, *named_prop;
-	int	        ret;
-	DATA_BLOB				datablob;
+	uint16_t                 PtypInteger16;
+	uint32_t                 PtypInteger32;
+	double                   PtypFloating64;
+	uint16_t                 PtypBoolean;
+	int64_t                  PtypInteger64;
+	struct FILETIME          PtypTime;
+	struct GUID              PtypGuid;
+	const char               *PtypString;
+	const char               *PtypString8;
+	struct Binary_r          PtypServerId;
+	struct SBinary           PtypBinary;
+	struct mapi_SLPSTRArrayW PtypMvUnicode;
+	const char               *_propValue;
+	char                     *propValue, *named_prop;
+	int	                 i, ret;
+	DATA_BLOB		 datablob;
 
 	_propValue = get_proptag_name(element);
 	if (_propValue == NULL) {
@@ -507,6 +508,25 @@ static int ndr_parse_propValue(TALLOC_CTX *mem_ctx, struct ndr_print *ndr,
 	case PT_BINARY:
 		NDR_CHECK_FT(ndr_pull_SBinary(ndr_pull, NDR_SCALARS, &PtypBinary));
 		ndr_print_SBinary(ndr, propValue, &PtypBinary);
+		break;
+	case PT_MV_UNICODE:
+		NDR_CHECK(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypMvUnicode.cValues));
+		PtypMvUnicode.strings = talloc_zero_array(ndr_pull, struct mapi_LPWSTR, PtypMvUnicode.cValues);
+		if (!PtypMvUnicode.strings) {
+			return -1;
+		}
+		for (i = 0; i < PtypMvUnicode.cValues; i++) {
+			uint32_t  _flags_save_string = ndr_pull->flags;
+			NDR_CHECK_FT(ndr_pull_uint32(ndr_pull, NDR_SCALARS, &PtypInteger32));
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK_FT(ndr_pull_string(ndr_pull, NDR_SCALARS, &PtypString));
+			ndr_pull->flags = _flags_save_string;
+			PtypMvUnicode.strings[i].lppszW = talloc_strdup(ndr, PtypString);
+			if (!PtypMvUnicode.strings[i].lppszW) {
+				return -1;
+			}
+		}
+		ndr_print_mapi_SLPSTRArrayW(ndr, propValue, &PtypMvUnicode);
 		break;
 	default:
 	{

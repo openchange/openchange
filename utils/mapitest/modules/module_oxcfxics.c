@@ -933,26 +933,33 @@ cleanup:
    This function:
    -# Log on private message store
    -# Create a test folder
-   -# Create a message and save it
+   -# Create two messages and save them
    -# Get the PidTagSourceKey and PidTagChangeKey
    -# Open a sync collector context for contents
-   -# Import Read State Changes to set that message as read
-   -# Check the PidTagMessageFlags has changed and PidTagChangeKey could have increased for that message
+   -# Import Read State Changes to set those messages as read
+   -# Check the PidTagMessageFlags has changed and PidTagChangeKey could have increased for those messages
+   -# Get Transfer State
    -# Clean up
  */
 _PUBLIC_ bool mapitest_oxcfxics_SyncImportReadStateChanges(struct mapitest *mt)
 {
-	struct Binary_r		*source_key, *change_key, *new_change_key;
+	const int		msg_num = 2;
+	struct Binary_r		source_keys[msg_num], change_keys[msg_num], *new_change_key;
 	bool			ret = true;
-	bool			read_states[1];
+	bool			read_states[msg_num];
+	DATA_BLOB		transfer_data;
+	int			i;
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_sync_collector;
+	mapi_object_t		obj_transfer_state;
 	mapi_object_t		collector_folder;
-	mapi_object_t		obj_message;
+	mapi_object_t		obj_messages[msg_num];
 	struct mt_common_tf_ctx	*context;
 	struct SPropValue	*lpProps;
 	struct SPropTagArray	*SPropTagArray;
+	enum TransferStatus	transfer_status;
+	uint16_t		progress, total_steps;
 	uint32_t		c_values, msg_flags;
 
 	/* Step 1. Logon */
@@ -965,7 +972,9 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncImportReadStateChanges(struct mapitest *mt)
 	/* Step 2. Create destfolder */
 	mapi_object_init(&collector_folder);
 	mapi_object_init(&obj_sync_collector);
-	mapi_object_init(&obj_message);
+	mapi_object_init(&obj_transfer_state);
+	mapi_object_init(&obj_messages[0]);
+	mapi_object_init(&obj_messages[1]);
 	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
 			      "ImportReadStateChanges", NULL /*folder comment*/,
 			      OPEN_IF_EXISTS, &collector_folder);
@@ -975,34 +984,43 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncImportReadStateChanges(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	/* Step 3. Create the message and save it */
-	ret = mapitest_common_message_create(mt, &collector_folder, &obj_message,
-					     MT_MAIL_SUBJECT);
-	mapitest_print_assert(mt, "mapitest_common_message_create", ret);
-	if (!ret) {
-		goto cleanup;
-	}
+	/* Step 3. Create the messages and save them */
+	for (i = 0; i < msg_num; i++) {
+		ret = mapitest_common_message_create(mt, &collector_folder, &obj_messages[i],
+						     MT_MAIL_SUBJECT);
+		mapitest_print_assert(mt, "mapitest_common_message_create", ret);
+		if (!ret) {
+			goto cleanup;
+		}
 
-	retval = SaveChangesMessage(&collector_folder, &obj_message, KeepOpenReadWrite);
-	mapitest_print_retval_clean(mt, "SaveChangesMessage", retval);
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
-		goto cleanup;
+		retval = SaveChangesMessage(&collector_folder, &obj_messages[i],
+					    KeepOpenReadWrite);
+		mapitest_print_retval_fmt_clean(mt, "SaveChangesMessage", retval,
+						"(Msg %i)", i);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			goto cleanup;
+		}
 	}
 
 	/* Step 4. Get the PidTagSourceKey and PidTagChangeKey */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_SOURCE_KEY, PR_CHANGE_KEY);
-	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &c_values);
-	mapitest_print_retval_clean(mt, "GetProps - Source Key", retval);
-	if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR
-            && (lpProps[1].ulPropTag & 0xFFFF) != PT_ERROR) {
-		source_key = (struct Binary_r *)get_SPropValue_data(&lpProps[0]);
-		change_key = (struct Binary_r *)get_SPropValue_data(&lpProps[1]);
-	} else {
-		ret = false;
-		goto cleanup;
+	for (i = 0; i < msg_num; i++) {
+		SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_SOURCE_KEY, PR_CHANGE_KEY);
+		retval = GetProps(&obj_messages[i], 0, SPropTagArray, &lpProps, &c_values);
+		mapitest_print_retval_fmt_clean(mt, "GetProps - Source Key", retval,
+						"(Msg %i)", i);
+		if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR
+		    && (lpProps[1].ulPropTag & 0xFFFF) != PT_ERROR) {
+			source_keys[i] = *(struct Binary_r *)get_SPropValue_data(&lpProps[0]);
+			change_keys[i] = *(struct Binary_r *)get_SPropValue_data(&lpProps[1]);
+		} else {
+			ret = false;
+			goto cleanup;
+		}
 	}
+
 	read_states[0] = true;
+	read_states[1] = true;
 
 	/* Step 5. Open the collector */
 	retval = ICSSyncOpenCollector(&collector_folder, true, &obj_sync_collector);
@@ -1013,43 +1031,64 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncImportReadStateChanges(struct mapitest *mt)
 	}
 
 	/* Step 6. Import read state change */
-	retval = SyncImportReadStateChanges(&obj_sync_collector, source_key, read_states, 1);
+	retval = SyncImportReadStateChanges(&obj_sync_collector, source_keys, read_states,
+					    msg_num);
 	mapitest_print_retval_clean(mt, "SyncImportReadStateChanges", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 
-	retval = OpenMessage(&context->obj_store, mapi_object_get_id(&collector_folder),
-			     mapi_object_get_id(&obj_message), &obj_message, 0x0);
-	mapitest_print_retval_clean(mt, "OpenMessage", retval);
+	/* Step 7. Get again PidTagChangeKey and PidTagMessageFlags */
+	for (i = 0; i < msg_num; i++) {
+		retval = OpenMessage(&context->obj_store, mapi_object_get_id(&collector_folder),
+				     mapi_object_get_id(&obj_messages[i]), &obj_messages[i],
+				     0x0);
+		mapitest_print_retval_fmt_clean(mt, "OpenMessage", retval, "(Msg %i)", i);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			goto cleanup;
+		}
+
+		SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
+						  PR_CHANGE_KEY, PidTagMessageFlags);
+		retval = GetProps(&obj_messages[i], 0, SPropTagArray, &lpProps, &c_values);
+		mapitest_print_retval_clean(mt, "GetProps - MessageFlags", retval);
+		if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR
+		    && (lpProps[1].ulPropTag & 0xFFFF) != PT_ERROR) {
+			new_change_key = (struct Binary_r *)get_SPropValue_data(&lpProps[0]);
+			/* Perform the check to see if new change key is greater than old one */
+			ret = (memcmp(change_keys[i].lpb, new_change_key->lpb, change_keys[i].cb) < 0);
+			/* This is failing in Exchange 2010 */
+			mapitest_print_assert(mt, "New Change Key is greater than old one", ret);
+			msg_flags = *(uint32_t *)get_SPropValue_data(&lpProps[1]);
+			ret = msg_flags & MSGFLAG_READ;
+			mapitest_print_assert(mt, "Marked as read", ret);
+		} else {
+			ret = false;
+		}
+	}
+
+	retval = ICSSyncGetTransferState(&obj_sync_collector, &obj_transfer_state);
+	mapitest_print_retval_clean(mt, "ICSSyncGetTransferState", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 
-	/* Step 7. Get again PidTagChangeKey and PidTagMessageFlags */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
-					  PR_CHANGE_KEY, PidTagMessageFlags);
-	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &c_values);
-	mapitest_print_retval_clean(mt, "GetProps - MessageFlags", retval);
-	if (c_values && (lpProps[0].ulPropTag & 0xFFFF) != PT_ERROR
-            && (lpProps[1].ulPropTag & 0xFFFF) != PT_ERROR) {
-		new_change_key = (struct Binary_r *)get_SPropValue_data(&lpProps[0]);
-		/* Perform the check to see if new change key is greater than old one */
-		ret = (memcmp(change_key->lpb, new_change_key->lpb, change_key->cb) < 0);
-		/* This is failing in Exchange 2010 */
-		mapitest_print_assert(mt, "New Change Key is greater than old one", ret);
-		msg_flags = *(uint32_t *)get_SPropValue_data(&lpProps[1]);
-		ret = msg_flags & MSGFLAG_READ;
-		mapitest_print_assert(mt, "Marked as read", ret);
-	} else {
+	retval = FXGetBuffer(&obj_transfer_state, 0, &transfer_status, &progress,
+			     &total_steps, &transfer_data);
+	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto cleanup;
 	}
 
 cleanup:
 	/* Cleanup and release */
-	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_messages[0]);
+	mapi_object_release(&obj_messages[1]);
+	mapi_object_release(&obj_transfer_state);
 	mapi_object_release(&obj_sync_collector);
 	mapi_object_release(&collector_folder);
 	mapi_object_release(&obj_htable);

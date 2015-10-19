@@ -504,7 +504,7 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 	qsort(work_array, length, sizeof(uint64_t), IDSET_globcnt_compar);
 
 	if (length == 2) {
-		OC_DEBUG(5, "work_array[0]: %.16Lx, %.16Lx", (unsigned long long) work_array[0], (unsigned long long) work_array[1]);
+		OC_DEBUG(5, "work_array [0x%" PRIx64 ", 0x%" PRIx64 " ...]", work_array[0], work_array[1]);
 		if (work_array[0] != array[0]) {
 			OC_DEBUG(5, "elements were reordered");
 		}

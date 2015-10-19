@@ -6,6 +6,11 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Fixes
+
+* Return proper identifier states after performing upload operations
+that involves more than one message
+
 ### Improvements
 * Decode Multiple Value Unicode strings in FastTransfer buffer when dumping
 

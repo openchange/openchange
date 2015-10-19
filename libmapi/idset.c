@@ -772,7 +772,19 @@ static struct idset *IDSET_clone(TALLOC_CTX *mem_ctx, const struct idset *source
 }
 
 /**
-  \details merge two idsets structures into a third one
+  \details merge two idsets structures into a third one. That is,
+  putting the GLOBSET ranges from the same REPLID/REPLGUID in the same
+  subset to, afterwards, reorder and compact ranges.
+
+  \param mem_ctx pointer to the memory context where merged idset is allocated
+  \param left the left idset to merge
+  \param right the right idset to merge
+
+  \return pointer to the new merged idset
+
+  \note It only takes into account those idsets whose all GLOBSET
+  ranges are correct, ie, the high value is greater than the low
+  value.
 */
 _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *left, const struct idset *right)
 {
@@ -782,8 +794,14 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	bool added_ranges = false, same_id, idbased;
 	struct globset_range *range;
 
-	if (!left || left->range_count == 0) return IDSET_clone(mem_ctx, right);
-	if (!right || right->range_count == 0) return IDSET_clone(mem_ctx, left);
+	if (!left || left->range_count == 0
+	    || (IDSET_check_ranges(left) != MAPI_E_SUCCESS)) {
+		return IDSET_clone(mem_ctx, right);
+	}
+	if (!right || right->range_count == 0
+	    || (IDSET_check_ranges(right) != MAPI_E_SUCCESS)) {
+		return IDSET_clone(mem_ctx, left);
+	}
 
 	merged_idset = IDSET_clone(mem_ctx, left);
 	clone_right = IDSET_clone(mem_ctx, right);

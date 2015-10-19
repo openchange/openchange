@@ -7,6 +7,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased]
 
 ### Fixes
+* Do not return invalid GLOBSET range of identifiers if the first operation
+of a folder (no data in client) is an upload.
 * Returning only affected change numbers after uploading changes
 that involves several messages
 

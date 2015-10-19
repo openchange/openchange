@@ -262,32 +262,12 @@ START_TEST (test_RAWIDSET_convert_to_idset_one_id) {
 
 // v suite definition ---------------------------------------------------------
 
-static void tc_IDSET_parse_setup(void)
+static void tc_mapi_idset_setup(void)
 {
 	mem_ctx = talloc_new(talloc_autofree_context());
 }
 
-static void tc_IDSET_parse_teardown(void)
-{
-	talloc_free(mem_ctx);
-}
-
-static void tc_IDSET_includes_guid_glob_setup(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_remove_rawidset_setup(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_includes_guid_glob_teardown(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_remove_rawidset_teardown(void)
+static void tc_mapi_idset_teardown(void)
 {
 	talloc_free(mem_ctx);
 }
@@ -298,22 +278,22 @@ Suite *libmapi_idset_suite(void)
 	TCase *tc;
 
 	tc = tcase_create("IDSET_parse");
-	tcase_add_checked_fixture(tc, tc_IDSET_parse_setup, tc_IDSET_parse_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_parse);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("IDSET_includes_guid_glob");
-	tcase_add_checked_fixture(tc, tc_IDSET_includes_guid_glob_setup, tc_IDSET_includes_guid_glob_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_includes_guid_glob);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("IDSET_remove_rawidset");
-	tcase_add_checked_fixture(tc, tc_IDSET_remove_rawidset_setup, tc_IDSET_remove_rawidset_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_remove_rawidset);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("RAWIDSET_convert_to_idset");
-	tcase_add_checked_fixture(tc, tc_IDSET_parse_setup, tc_IDSET_parse_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_RAWIDSET_convert_to_idset);
 	tcase_add_test(tc, test_RAWIDSET_convert_to_idset_one_id);
 	suite_add_tcase(s, tc);

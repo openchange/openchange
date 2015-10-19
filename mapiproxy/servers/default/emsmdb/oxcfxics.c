@@ -3681,6 +3681,13 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 	sync_data->cnset_seen_fai = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
+	if (synccontext->request.is_collector) {
+		/* We ensure we are returning every Change Number separately
+		   to avoid missing elements in next contents download */
+		sync_data->cnset_seen->single = false;
+		sync_data->cnset_seen_fai->single = false;
+	}
+
 	OC_DEBUG(5, "Get transfer state for fid: 0x%.16"PRIx64,
 		 synccontext_object->parent_object->object.folder->folderID);
 
@@ -3711,9 +3718,6 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 		if (synccontext->cnset_seen) {
 			synccontext->cnset_seen->single = false;
 		}
-		if (new_idset) {
-			new_idset->single = false;
-		}
 	}
 	old_idset = synccontext->cnset_seen;
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
@@ -3730,9 +3734,6 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 		if (synccontext->request.is_collector) {
 			if (synccontext->cnset_seen_fai) {
 				synccontext->cnset_seen_fai->single = false;
-			}
-			if (new_idset) {
-				new_idset->single = false;
 			}
 		}
 		old_idset = synccontext->cnset_seen_fai;

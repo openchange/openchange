@@ -6,6 +6,10 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Fixes
+* Returning only affected change numbers after uploading changes
+that involves several messages
+
 ### Improvements
 * Decode Multiple Value Unicode strings in FastTransfer buffer when dumping
 

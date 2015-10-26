@@ -8,8 +8,12 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 
+* Do not return invalid GLOBSET range of identifiers if the first operation
+  of a folder (no data in client) is an upload.
+* Returning only affected change numbers after uploading changes
+  that involves several messages
 * Return proper identifier states after performing upload operations
-that involves more than one message
+  that involves more than one message
 
 ### Improvements
 * Reimplemented replica ID - GUID mapping in openchangedb

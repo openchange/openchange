@@ -6,8 +6,11 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
-### Fixes
 
+## [2.4-zentyal11] - 2015-10-26
+
+### Fixes
+* Openchange log level back to normal (no need to use log level +1 anymore)
 * Do not return invalid GLOBSET range of identifiers if the first operation
   of a folder (no data in client) is an upload.
 * Returning only affected change numbers after uploading changes
@@ -153,7 +156,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal10...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal11...HEAD
+[2.4-zentyal11]: https://github.com/Zentyal/openchange/compare/2.4-zentyal10...2.4-zentyal11
 [2.4-zentyal10]: https://github.com/Zentyal/openchange/compare/2.4-zentyal9...2.4-zentyal10
 [2.4-zentyal9]: https://github.com/Zentyal/openchange/compare/2.4-zentyal8...2.4-zentyal9
 [2.4-zentyal8]: https://github.com/Zentyal/openchange/compare/2.4-zentyal7...2.4-zentyal8

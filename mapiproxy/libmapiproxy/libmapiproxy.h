@@ -247,6 +247,10 @@ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *, con
 bool 		openchangedb_set_locale(struct openchangedb_context*, const char *, uint32_t);
 const char **	openchangedb_get_folders_names(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
 
+/* replica mapping management in openchangedb.c */
+enum MAPISTATUS openchangedb_replica_mapping_guid_to_replid(struct openchangedb_context *, const char *, const struct GUID *, uint16_t *);
+enum MAPISTATUS openchangedb_replica_mapping_replid_to_guid(struct openchangedb_context *, const char *, uint16_t, struct GUID *);
+
 /* definitions from openchangedb_table.c */
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(struct openchangedb_context *, void *, struct SSortOrderSet *);

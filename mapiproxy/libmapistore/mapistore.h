@@ -400,11 +400,6 @@ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct mapistor
 enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapistore_context *, TALLOC_CTX *, uint64_t, struct UI8Array_r **);
 enum mapistore_error mapistore_indexing_reserve_fmid_range(struct mapistore_context *, uint64_t, uint64_t *);
 
-/* definitions from mapistore_replica_mapping.c */
-enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *, const char *, struct replica_mapping_context_list **);
-enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const char *username, const struct GUID *, uint16_t *);
-enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, const char *username, uint16_t, struct GUID *);
-
 struct namedprops_context;
 
 /* definitions from mapistore_namedprops.c */

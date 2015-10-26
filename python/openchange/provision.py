@@ -1266,7 +1266,7 @@ def openchangedb_migrate(lp, uri=None, version=None):
         uri = openchangedb_url(lp)
     if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-        if openchangedb.migrate(version):
+        if openchangedb.migrate(version, kwargs={'lp': lp}):
             print "Migration openchange db done"
         else:
             print "Nothing to migrate"

@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Jesús García Sáez 2013-2014
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,7 @@
 
 #define OPENCHANGEDB_SAMPLE_SQL		RESOURCES_DIR "/openchangedb_sample.sql"
 #define OPENCHANGEDB_LDB		RESOURCES_DIR "/openchange.ldb"
+#define REPLICA_MAPPING_TDB		RESOURCES_DIR "/replica_mapping.tdb"
 #define OPENCHANGEDB_SAMPLE_LDIF	RESOURCES_DIR "/openchangedb_sample.ldif"
 #define LDB_DEFAULT_CONTEXT 		"CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"
 #define LDB_ROOT_CONTEXT 		"CN=ZENTYAL,DC=zentyal-domain,DC=lan"
@@ -1281,6 +1283,64 @@ START_TEST (test_get_indexing_url) {
 	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
 } END_TEST
 
+START_TEST (test_replica_mapping_sanity_checks) {
+	struct GUID		client_guid = GUID_random();
+	enum MAPISTATUS		ret;
+
+	ret = openchangedb_replica_mapping_guid_to_replid(g_oc_ctx, USER1, NULL, NULL);
+	ck_assert(ret == MAPI_E_INVALID_PARAMETER);
+
+	ret = openchangedb_replica_mapping_guid_to_replid(g_oc_ctx, USER1, &client_guid, NULL);
+	ck_assert(ret == MAPI_E_INVALID_PARAMETER);
+
+	ret = openchangedb_replica_mapping_replid_to_guid(g_oc_ctx, USER1, 0x23, NULL);
+	ck_assert(ret == MAPI_E_INVALID_PARAMETER);
+
+} END_TEST
+
+START_TEST (test_replica_mapping_guid_to_id) {
+	struct GUID		client_guid = GUID_random();
+	enum MAPISTATUS		ret;
+	uint16_t		repl_id;
+
+	ret = openchangedb_replica_mapping_guid_to_replid(g_oc_ctx, USER1, &client_guid, &repl_id);
+	ck_assert(ret == MAPI_E_SUCCESS);
+	ck_assert_int_eq(repl_id, 0x03);
+
+	ret = openchangedb_replica_mapping_guid_to_replid(g_oc_ctx, USER1, &client_guid, &repl_id);
+	ck_assert(ret == MAPI_E_SUCCESS);
+	ck_assert_int_eq(repl_id, 0x03);
+
+} END_TEST
+
+START_TEST (test_replica_mapping_id_to_guid) {
+	struct GUID		*ret_guid, client_guid = GUID_random();
+	enum MAPISTATUS		ret;
+	TALLOC_CTX		*mem_ctx;
+	uint16_t		repl_id;
+
+	mem_ctx = talloc_new(NULL);
+	ck_assert(mem_ctx != NULL);
+
+	ret_guid = talloc_zero(mem_ctx, struct GUID);
+	ck_assert(ret_guid != NULL);
+
+	ret = openchangedb_replica_mapping_replid_to_guid(g_oc_ctx, USER1, 0x23, ret_guid);
+	ck_assert(ret == MAPI_E_NOT_FOUND);
+
+	ret = openchangedb_replica_mapping_guid_to_replid(g_oc_ctx, USER1, &client_guid, &repl_id);
+	ck_assert(ret == MAPI_E_SUCCESS);
+
+	ret = openchangedb_replica_mapping_replid_to_guid(g_oc_ctx, USER1, repl_id, ret_guid);
+	ck_assert(ret == MAPI_E_SUCCESS);
+
+	ck_assert(GUID_equal(&client_guid, ret_guid));
+	ck_assert(repl_id > 0x01);
+
+	talloc_free(mem_ctx);
+
+} END_TEST
+
 // ^ Unit test ----------------------------------------------------------------
 
 // v Suite definition ---------------------------------------------------------
@@ -1347,6 +1407,7 @@ static void ldb_teardown(void)
 {
 	talloc_free(g_mem_ctx);
 	unlink(OPENCHANGEDB_LDB);
+	unlink(REPLICA_MAPPING_TDB);
 }
 
 static void mysql_setup(void)
@@ -1433,6 +1494,11 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 		tcase_add_test(tc, test_get_folders_names);
 		tcase_add_test(tc, test_get_indexing_url);
 	}
+
+	/* Replica mapping tests */
+	tcase_add_test(tc, test_replica_mapping_sanity_checks);
+	tcase_add_test(tc, test_replica_mapping_guid_to_id);
+	tcase_add_test(tc, test_replica_mapping_id_to_guid);
 
 	tcase_add_test(tc, test_set_receive_folder_to_mailbox);
 

@@ -20,8 +20,13 @@
 """
 Schema migration for OpenChangeDB "app" with SQL based backend
 """
+from __future__ import print_function
 from MySQLdb import ProgrammingError
 from openchange.migration import migration, Migration
+import os
+from samba.param import LoadParm
+import sys
+import tdb
 
 
 @migration('openchangedb', 1)
@@ -239,3 +244,89 @@ class InitialOCDBMigration(Migration):
                       "DROP TABLE public_folders",
                       "DROP TABLE organizational_units"):
             cur.execute(query)
+
+
+@migration('openchangedb', 2)
+class ReplicaMappingSchemaMigration(Migration):
+
+    description = 'Replica Id - GUID mapping schema'
+
+    @classmethod
+    def apply(cls, cur, **kwargs):
+        cur.execute("""CREATE TABLE IF NOT EXISTS `replica_mapping` (
+                       `mailbox_id` BIGINT UNSIGNED NOT NULL,
+                       `replica_id` INT UNSIGNED NOT NULL,
+                       `replica_guid` VARCHAR(36) NOT NULL,
+                       CONSTRAINT `fk_replica_mapping_mailbox_id`
+                       FOREIGN KEY (`mailbox_id`)
+                         REFERENCES `mailboxes` (`id`)
+                         ON DELETE CASCADE
+                         ON UPDATE CASCADE)
+                       ENGINE = InnoDB""")
+
+        cur.execute("""CREATE UNIQUE INDEX `fk_replica_mapping_mailbox_repl_id`
+                       ON `replica_mapping` (`mailbox_id` ASC, `replica_id` ASC)""")
+        cur.execute("""CREATE UNIQUE INDEX `fk_replica_mapping_mailbox_repl_guid`
+                       ON `replica_mapping` (`mailbox_id` ASC, `replica_guid` ASC)""")
+
+    @classmethod
+    def unapply(cls, cur, **kwargs):
+        cur.execute("DROP TABLE `replica_mapping`")
+
+
+@migration('openchangedb', 3)
+class ReplicaMappingDataMigration(Migration):
+
+    description = 'Replica Id - GUID mapping data from TDB files'
+
+    @classmethod
+    def apply(cls, cur, **kwargs):
+        # Mimetise what mapistore_interface.c (mapistore_init) does
+        # to get the mapping path
+        if 'lp' in kwargs:
+            mapping_path = kwargs['lp'].private_path("mapistore")
+        else:
+            lp = LoadParm()
+            lp.load_default()
+            mapping_path = lp.private_path("mapistore")
+
+        if mapping_path is None:
+            return
+
+        cur.execute("START TRANSACTION")
+        try:
+            # Get all mailboxes
+            cur.execute("SELECT name FROM mailboxes")
+            for row in cur.fetchall():
+                username = row[0]
+                path = "{0}/{1}/replica_mapping.tdb".format(mapping_path, username)
+                try:
+                    tdb_file = tdb.Tdb(path, 0, tdb.DEFAULT, os.O_RDONLY)
+                    for k in tdb_file.iterkeys():
+                        # Check if the key is an integer
+                        try:
+                            repl_id = int(k, base=16)
+                            cls._insert_map(cur, username, repl_id, tdb_file[k])
+                        except ValueError:
+                            # Cannot convert to int, so no repl_id
+                            continue
+                except IOError:
+                    # Cannot read any replica mapping
+                    continue
+
+            cur.execute("COMMIT")
+        except Exception as e:
+            print("Error migrating TDB files into the database {}, rollback".format(e), file=sys.stderr)
+            cur.execute("ROLLBACK")
+            raise
+
+    @classmethod
+    def _insert_map(cls, cur, username, repl_id, repl_guid):
+        cur.execute("""INSERT INTO replica_mapping (mailbox_id, replica_id, replica_guid)
+                       SELECT m.id, %s, %s
+                       FROM mailboxes m
+                       WHERE m.name = %s""", (repl_id, repl_guid, username))
+
+    @classmethod
+    def unapply(cls, cur, **kwargs):
+        cur.execute("DELETE FROM `replica_mapping`")

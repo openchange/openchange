@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased]
 
 ### Improvements
+* Reimplemented replica ID - GUID mapping in openchangedb
 * Decode Multiple Value Unicode strings in FastTransfer buffer when dumping
 
 

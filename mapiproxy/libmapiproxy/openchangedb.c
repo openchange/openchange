@@ -1097,3 +1097,45 @@ _PUBLIC_ const char **openchangedb_get_folders_names(TALLOC_CTX *mem_ctx,
 	}
 	return oc_ctx->get_folders_names(mem_ctx, oc_ctx, locale, type);
 }
+
+/**
+   \details Search a replica GUID in the database, create it if it
+   does not exist
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username the username
+   \param guid the replica GUID
+   \param replid_p pointer to the returned replica id
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPISTATUS error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_replica_mapping_guid_to_replid(struct openchangedb_context *oc_ctx, const char *username, const struct GUID *guid, uint16_t *replid_p)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!replid_p, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->replica_mapping_guid_to_replid(oc_ctx, username, guid, replid_p);
+}
+
+/**
+   \details Search a replica id in the database
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username the username
+   \param replid the replica id
+   \param guid pointer to the returned replica guid
+
+   \return MAPI_E_SUCCESS on success, otherwise a MAPISTATUS error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_replica_mapping_replid_to_guid(struct openchangedb_context *oc_ctx, const char *username, uint16_t replid, struct GUID *guid)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->replica_mapping_replid_to_guid(oc_ctx, username, replid, guid);
+}

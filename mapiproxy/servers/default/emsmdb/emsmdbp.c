@@ -514,7 +514,7 @@ _PUBLIC_ int emsmdbp_guid_to_replid(struct emsmdbp_context *emsmdbp_ctx, const c
 		return MAPI_E_SUCCESS;
 	}
 
-	if (mapistore_replica_mapping_guid_to_replid(emsmdbp_ctx->mstore_ctx, username, guidP, &replid) == MAPISTORE_SUCCESS) {
+	if (openchangedb_replica_mapping_guid_to_replid(emsmdbp_ctx->oc_ctx, username, guidP, &replid) == MAPI_E_SUCCESS) {
 		*replidP = replid;
 		return MAPI_E_SUCCESS;
 	}
@@ -538,7 +538,7 @@ _PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const c
 		return MAPI_E_SUCCESS;
 	}
 
-	if (mapistore_replica_mapping_replid_to_guid(emsmdbp_ctx->mstore_ctx, username, replid, &guid) == MAPISTORE_SUCCESS) {
+	if (openchangedb_replica_mapping_replid_to_guid(emsmdbp_ctx->oc_ctx, username, replid, &guid) == MAPI_E_SUCCESS) {
 		*guidP = guid;
 		return MAPI_E_SUCCESS;
 	}

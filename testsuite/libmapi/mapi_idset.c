@@ -175,36 +175,99 @@ START_TEST (test_IDSET_remove_rawidset) {
 
 } END_TEST
 
+START_TEST (test_RAWIDSET_convert_to_idset) {
+	const uint64_t	       ids[] = {0xbc1c02000000,
+					0x130800000000};
+	const uint64_t	       consq_ids[] = {0xbd1c02000000,
+					      0xbe1c02000000};
+	struct GUID	       server_guid = GUID_random();
+	struct idset	       *new_idset;
+	int		       i;
+	struct rawidset	       *eid_set;
+	size_t		       ids_size = sizeof(ids)/sizeof(uint64_t);
+	size_t		       consq_ids_size = sizeof(consq_ids)/sizeof(uint64_t);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, ids[i]);
+	}
+
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset->idbased == false);
+	ck_assert(new_idset->single == false);
+	ck_assert(new_idset->next == NULL);
+	ck_assert_int_eq(new_idset->range_count, ids_size);
+
+	talloc_free(new_idset);
+
+	/* Unify ranges to return a single one */
+	eid_set->single = true;
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset->idbased == false);
+	ck_assert(new_idset->single == true);
+	ck_assert(new_idset->next == NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	talloc_free(new_idset);
+
+	/* Testing last consequent */
+	eid_set->single = false;
+	for (i = 0; i < consq_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, consq_ids[i]);
+	}
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset->idbased == false);
+	ck_assert(new_idset->single == false);
+	ck_assert(new_idset->next == NULL);
+	ck_assert_int_eq(new_idset->range_count, 2);
+	ck_assert_int_ne(new_idset->ranges->next->low, new_idset->ranges->next->high);
+	ck_assert_int_eq(new_idset->ranges->next->high, consq_ids[consq_ids_size - 1]);
+
+} END_TEST
+
+START_TEST (test_RAWIDSET_convert_to_idset_one_id) {
+	const struct GUID server_guid = GUID_random();
+	struct idset	  *new_idset;
+	struct rawidset	  *eid_set;
+	const uint64_t	  id = 0x121201000000;
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	RAWIDSET_push_guid_glob(eid_set, &server_guid, id);
+
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset->idbased == false);
+	ck_assert(new_idset->single == false);
+	ck_assert(new_idset->next == NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+	ck_assert_int_eq(new_idset->ranges->low, id);
+	ck_assert_int_eq(new_idset->ranges->high, id);
+
+	talloc_free(new_idset);
+
+	/* Now with as a single rawidset */
+	eid_set->single = true;
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset->idbased == false);
+	ck_assert(new_idset->single == true);
+	ck_assert(new_idset->next == NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+	ck_assert_int_eq(new_idset->ranges->low, id);
+	ck_assert_int_eq(new_idset->ranges->high, id);
+
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
 
-static void tc_IDSET_parse_setup(void)
+static void tc_mapi_idset_setup(void)
 {
 	mem_ctx = talloc_new(talloc_autofree_context());
 }
 
-static void tc_IDSET_parse_teardown(void)
-{
-	talloc_free(mem_ctx);
-}
-
-static void tc_IDSET_includes_guid_glob_setup(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_remove_rawidset_setup(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_includes_guid_glob_teardown(void)
-{
-	mem_ctx = talloc_new(talloc_autofree_context());
-}
-
-static void tc_IDSET_remove_rawidset_teardown(void)
+static void tc_mapi_idset_teardown(void)
 {
 	talloc_free(mem_ctx);
 }
@@ -215,18 +278,24 @@ Suite *libmapi_idset_suite(void)
 	TCase *tc;
 
 	tc = tcase_create("IDSET_parse");
-	tcase_add_checked_fixture(tc, tc_IDSET_parse_setup, tc_IDSET_parse_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_parse);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("IDSET_includes_guid_glob");
-	tcase_add_checked_fixture(tc, tc_IDSET_includes_guid_glob_setup, tc_IDSET_includes_guid_glob_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_includes_guid_glob);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("IDSET_remove_rawidset");
-	tcase_add_checked_fixture(tc, tc_IDSET_remove_rawidset_setup, tc_IDSET_remove_rawidset_teardown);
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_remove_rawidset);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("RAWIDSET_convert_to_idset");
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
+	tcase_add_test(tc, test_RAWIDSET_convert_to_idset);
+	tcase_add_test(tc, test_RAWIDSET_convert_to_idset_one_id);
 	suite_add_tcase(s, tc);
 
 	return s;

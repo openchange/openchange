@@ -512,10 +512,9 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 
 	current_globset->low = work_array[0];
 
-	if (single || length < 3) {
+	if (single) {
 		current_globset->high = work_array[length-1];
-	}
-	else {
+	} else {
 		last_consequent = exchange_globcnt(current_globset->low);
 		for (i = 1; i < length; i++) {
 			if ((exchange_globcnt(work_array[i]) != last_consequent) && (exchange_globcnt(work_array[i]) != (last_consequent + 1))) {

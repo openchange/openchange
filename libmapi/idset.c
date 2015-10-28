@@ -422,9 +422,12 @@ static void check_idset(const struct idset *idset)
 
 /**
   \details deserialize an IDSET following the format described in [OXCFXICS - 2.2.2.4]
+
+  \return the parsed IDSET or NULL if the parsing does not succeeded
 */
 _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool idbased)
 {
+	bool			parsing_error = false;
 	struct idset		*idset = NULL, *prev_idset = NULL;
 	DATA_BLOB		guid_blob, globset;
 	uint32_t		total_bytes, byte_count, id_length;
@@ -434,7 +437,7 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
 	if (buffer.length < id_length) return NULL;
 
 	total_bytes = 0;
-	while (total_bytes < buffer.length) {
+	while (total_bytes < buffer.length && !parsing_error) {
 		idset = talloc_zero(mem_ctx, struct idset);
 		if (prev_idset) {
 			prev_idset->next = idset;
@@ -453,12 +456,19 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
 		globset.length = buffer.length - id_length;
 		globset.data = (uint8_t *) buffer.data + id_length;
 		idset->ranges = GLOBSET_parse(idset, globset, &idset->range_count, &byte_count);
-		
-		total_bytes += byte_count;
+		if (idset->ranges != NULL) {
+			total_bytes += byte_count;
+			check_idset(idset);
+			prev_idset = idset;
+		} else {
+			parsing_error = true;
+		}
+	}
 
-		check_idset(idset);
-
-		prev_idset = idset;
+	if (parsing_error) {
+		IDSET_dump(idset, "incomplete parsing");
+		talloc_free(idset);
+		return NULL;
 	}
 
 	IDSET_dump(idset, "freshly parsed");
@@ -1146,12 +1156,14 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
   \param idset pointer to the idset structure to check
 
   \return MAPI_E_SUCCESS on success, ecRpcFormat if any range is incorrect (low > high)
-          or any range is NULL.
+          ,or any range is NULL, or the idset is NULL.
 */
 _PUBLIC_ enum MAPISTATUS IDSET_check_ranges(const struct idset *idset)
 {
 	struct globset_range *range;
 	uint32_t	     i;
+
+	OPENCHANGE_RETVAL_IF(!idset, ecRpcFormat, NULL);
 
 	while (idset) {
 		range = idset->ranges;

@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Wolfgang Sourdeau 2011
+                 Enrique J. Hernandez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,17 +57,20 @@ _PUBLIC_ uint64_t exchange_globcnt(uint64_t globcnt)
 		| (globcnt & 0x0000ff0000000000LL)	>> 40);
 }
 
-static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);
-static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser);
+static inline bool GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);
+static inline bool GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser);
 static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser);
-static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser);
+static bool GLOBSET_parser_do_range(struct GLOBSET_parser *parser);
 
-static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count)
+/* Returns true on an error on parsing */
+static inline bool GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count)
 {
+	bool	   parsing_error = false;
 	DATA_BLOB *push_buffer;
 
 	if (count == 0 || count > 6 || parser->next_stack_item > 5 || parser->total_stack_size > 6) {
-		abort();
+		OC_DEBUG(3, "Bad idset parsing on PUSH. Count: %d Next stack item: %d Total stack size: %d", count, parser->next_stack_item, parser->total_stack_size);
+		return true;
 	}
 
 	push_buffer = parser->stack + parser->next_stack_item;
@@ -76,9 +80,12 @@ static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t
 	parser->buffer_position += count;
 	parser->total_stack_size += count;
 	if (parser->total_stack_size == 6) {
-		GLOBSET_parser_do_range(parser);
-		GLOBSET_parser_do_pop(parser);
+		parsing_error = GLOBSET_parser_do_range(parser);
+		if (!parsing_error) {
+			GLOBSET_parser_do_pop(parser);
+		}
 	}
+	return parsing_error;
 }
 
 static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser)
@@ -91,6 +98,7 @@ static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser)
 	parser->total_stack_size -= push_buffer->length;
 }
 
+/* Return NULL on error */
 static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBSET_parser *parser, DATA_BLOB *additional)
 {
 	DATA_BLOB *combined, *current;
@@ -98,6 +106,10 @@ static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBS
 	uint8_t *current_ptr;
 
 	combined = talloc_zero(mem_ctx, DATA_BLOB);
+	if (!combined) {
+		OC_DEBUG(3, "Impossible to allocate DATA_BLOB");
+		return NULL;
+	}
 	if (additional != NULL) {
 		combined->length = additional->length;
 	}
@@ -107,6 +119,10 @@ static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBS
 		combined->length += current->length;
 	}
 	combined->data = talloc_array(combined, uint8_t, combined->length);
+	if (!combined->data) {
+		OC_DEBUG(3, "Impossible to allocate combined content");
+		return NULL;
+	}
 
 	current_ptr = combined->data;
 	for (i = 0; i < parser->next_stack_item; i++) {
@@ -135,22 +151,41 @@ static uint64_t GLOBSET_parser_range_value(DATA_BLOB *combined)
 	return value;
 }
 
-static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
+static bool GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 {
 	uint8_t count;
 	struct globset_range *range;
 	DATA_BLOB *combined, *additional;
 	void *mem_ctx;
 
-	mem_ctx = talloc_zero(NULL, void);
-
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		OC_DEBUG(3, "Impossible to allocate memory context");
+		return true;
+	}
 	range = talloc_zero(parser, struct globset_range);
+	if (!range) {
+		OC_DEBUG(3, "Impossible to allocate a range");
+		talloc_free(mem_ctx);
+		return true;
+	}
+
 	count = 6 - parser->total_stack_size;
 
 	if (count > 0) {
 		additional = talloc_zero(mem_ctx, DATA_BLOB);
+		if (!additional) {
+			OC_DEBUG(3, "Impossible to allocate additional DATA_BLOB");
+			talloc_free(mem_ctx);
+			return true;
+		}
 		additional->length = count;
 		additional->data = talloc_array(additional, uint8_t, count);
+		if (!additional->data) {
+			OC_DEBUG(3, "Impossible to allocate additional DATA_BLOB data");
+			talloc_free(mem_ctx);
+			return true;
+		}
 		memcpy(additional->data, parser->buffer.data + parser->buffer_position, count);
 	}
 	else {
@@ -158,6 +193,10 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	}
 	parser->buffer_position += count;
 	combined = GLOBSET_parser_stack_combine(mem_ctx, parser, additional);
+	if (combined == NULL) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 	range->low = GLOBSET_parser_range_value(combined);
 
 	if (count == 0) {
@@ -167,6 +206,10 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 		memcpy(additional->data, parser->buffer.data + parser->buffer_position, count);
 		parser->buffer_position += count;
 		combined = GLOBSET_parser_stack_combine(mem_ctx, parser, additional);
+		if (combined == NULL) {
+			talloc_free(mem_ctx);
+			return true;
+		}
 		range->high = GLOBSET_parser_range_value(combined);
 	}
 
@@ -174,14 +217,13 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	/* OC_DEBUG(5, "  added range: [%.16"PRIx64":%.16"PRIx64"] %p  %p %p", range->low, range->high, range, range->prev, range->next); */
 	parser->range_count++;
 
-	if (!parser->ranges) {
-		abort();
-	}
-
 	talloc_free(mem_ctx);
+
+	return false;
 }
 
-static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
+/* Return true if there was a parsing error */
+static inline bool GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 {
 	uint8_t mask, bit, i;
 	DATA_BLOB *combined, additional;
@@ -196,6 +238,9 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 	additional.data = parser->buffer.data + parser->buffer_position;
 
 	combined = GLOBSET_parser_stack_combine(NULL, parser, &additional);
+	if (combined == NULL) {
+		return true;
+	}
 	baseValue = GLOBSET_parser_range_value(combined);
 	talloc_free(combined);
 
@@ -214,6 +259,10 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 		else {
 			if ((mask & bit) == 0) {
 				range = talloc_zero(parser, struct globset_range);
+				if (!range) {
+					OC_DEBUG(3, "Impossible to allocate range");
+					return true;
+				}
 				range->low = lowValue;
 				range->high = highValue;
 				DLIST_ADD_END(parser->ranges, range, void);
@@ -228,11 +277,17 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 
 	if (!blank) {
 		range = talloc_zero(parser, struct globset_range);
+		if (!range) {
+			OC_DEBUG(3, "Impossible to allocate range");
+			return true;
+		}
 		range->low = lowValue;
 		range->high = highValue;
 		DLIST_ADD_END(parser->ranges, range, void);
 		parser->range_count++;
 	}
+
+	return false;
 }
 
 /**
@@ -255,6 +310,10 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 
 
 	parser = talloc_zero(NULL, struct GLOBSET_parser);
+	if (!parser) {
+		OC_DEBUG(3, "Impossible to allocate a GLOBSET parser");
+		return NULL;
+	}
 	parser->buffer = buffer;
 
 	while (!end && !parser->error) {
@@ -276,21 +335,20 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 			case 0x04: /* push 4 */
 			case 0x05: /* push 5 */
 			case 0x06: /* push 6 */
-				GLOBSET_parser_do_push(parser, command);
+				parser->error = GLOBSET_parser_do_push(parser, command);
 				break;
 			case 0x42: /* bitmask */
-				GLOBSET_parser_do_bitmask(parser);
+				parser->error = GLOBSET_parser_do_bitmask(parser);
 				break;
 			case 0x50: /* pop */
 				GLOBSET_parser_do_pop(parser);
 				break;
 			case 0x52: /* range */
-				GLOBSET_parser_do_range(parser);
+				parser->error = GLOBSET_parser_do_range(parser);
 				break;
 			default:
 				parser->error = true;
 				OC_DEBUG(4, "invalid command in blockset: %.2x", command);
-				abort();
 			}
 		}
 	}
@@ -298,8 +356,7 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 	if (parser->error) {
 		ranges = NULL;
 		/* abort(); */
-	}
-	else {
+	} else {
 		ranges = parser->ranges;
 		if (countP) {
 			*countP = parser->range_count;

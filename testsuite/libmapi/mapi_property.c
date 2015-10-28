@@ -58,9 +58,9 @@ static int SPropValue_cmp(const struct SPropValue *left, const struct SPropValue
 	case PT_I8:
 		return left->value.d - right->value.d;
 	case PT_STRING8:
-		return strcmp(left->value.lpszA, right->value.lpszA);
+		return strcmp((const char *) left->value.lpszA, (const char *) right->value.lpszA);
 	case PT_UNICODE:
-		return strcmp(left->value.lpszW, right->value.lpszW);
+		return strcmp((const char *) left->value.lpszW, (const char *) right->value.lpszW);
 	case PT_SVREID:
 	case PT_BINARY:
 	{
@@ -88,7 +88,7 @@ static int SPropValue_cmp(const struct SPropValue *left, const struct SPropValue
 			return res;
 		}
 		for (i = 0; i < left->value.MVszA.cValues; i++) {
-			res = strcmp(left->value.MVszA.lppszA[i], right->value.MVszA.lppszA[i]);
+			res = strcmp((const char *) left->value.MVszA.lppszA[i], (const char *) right->value.MVszA.lppszA[i]);
 			if (res != 0) {
 				return res;
 			}
@@ -331,9 +331,9 @@ static void _make_test_srow(TALLOC_CTX *mem_ctx)
 	/* PT_MV_STRING8 */
 	prop_val.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES;
 	prop_val.value.MVszA.cValues = 2;
-	prop_val.value.MVszA.lppszA = talloc_array(test_srow, const char *, prop_val.value.MVszA.cValues);
-	prop_val.value.MVszA.lppszA[0] = "string 1";
-	prop_val.value.MVszA.lppszA[1] = "string 2";
+	prop_val.value.MVszA.lppszA = talloc_array(test_srow, uint8_t *, prop_val.value.MVszA.cValues);
+	prop_val.value.MVszA.lppszA[0] = (uint8_t *) "string 1";
+	prop_val.value.MVszA.lppszA[1] = (uint8_t *) "string 2";
 	SRow_addprop(test_srow, prop_val);
 	/* PT_MV_UNICODE - same layout as PT_MV_STRING8 */
 	prop_val.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES_UNICODE;

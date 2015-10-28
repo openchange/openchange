@@ -576,7 +576,7 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 	/* (Type) - 0x0 to 0x7: PR_ADDRTYPE */
 	lpProp = get_SPropValue_SRow(aRow, PR_ADDRTYPE);
 	if (lpProp && lpProp->value.lpszA) {
-		addrtype = lpProp->value.lpszA;
+		addrtype = (const char *) lpProp->value.lpszA;
 	} else {
 		lpProp = get_SPropValue_SRow(aRow, PR_ADDRTYPE_UNICODE);
 		if (lpProp && lpProp->value.lpszW) {
@@ -599,7 +599,7 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 	if (strcmp(addrtype, "EX")) {
 		lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_SMTP_ADDRESS_UNICODE: PR_SMTP_ADDRESS);
 		if (lpProp) {
-			tmp = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+			tmp = (unicode == true) ? lpProp->value.lpszW : (const char *) lpProp->value.lpszA;
 			if (tmp) {
 				bitmask |= 0x8;
 			}
@@ -609,7 +609,7 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 	/* (D) - 0x10: PR_DISPLAY_NAME */
 	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_DISPLAY_NAME_UNICODE : PR_DISPLAY_NAME);
 	if (lpProp) {
-		display_name = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		display_name = (unicode == true) ? lpProp->value.lpszW : (const char *) lpProp->value.lpszA;
 		if (display_name) {
 			bitmask |= 0x10;
 		}
@@ -618,7 +618,7 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 	/* (T) - 0x20: PR_TRANSMITTABLE_DISPLAY_NAME */
 	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE : PR_TRANSMITTABLE_DISPLAY_NAME);
 	if (lpProp) {
-		transmit_display_name = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		transmit_display_name =(unicode == true) ? lpProp->value.lpszW : (const char *) lpProp->value.lpszA;
 		if (transmit_display_name) {
 			if (!display_name) {
 				bitmask |= 0x20;
@@ -654,7 +654,7 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 	/* (I) - 0x400: PR_7BIT_DISPLAY_NAME */
 	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_7BIT_DISPLAY_NAME_UNICODE : PR_7BIT_DISPLAY_NAME);
 	if (lpProp) {
-		tmp = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		tmp = (unicode == true) ? lpProp->value.lpszW : (const char *) lpProp->value.lpszA;
 		if (tmp) {
 			bitmask |= 0x400;
 		}

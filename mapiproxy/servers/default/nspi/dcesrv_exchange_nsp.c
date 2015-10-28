@@ -910,7 +910,7 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */
-		retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
+		retval = emsabp_search_legacyExchangeDN(emsabp_ctx, (const char *) r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
 		if (retval != MAPI_E_SUCCESS) {
 			r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) 0;
 		} else {
@@ -1456,7 +1456,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	reqw.in.pPropTags = r->in.pPropTags;
 	reqw.in.paWStr = &reqw_strings_array;
 	reqw.in.paWStr->Count = r->in.paStr->Count;
-	reqw.in.paWStr->Strings = r->in.paStr->Strings;
+	reqw.in.paWStr->Strings = (const char **) r->in.paStr->Strings;
 
 	reqw.out.ppMIds = r->out.ppMIds;
 	reqw.out.ppRows = r->out.ppRows ;

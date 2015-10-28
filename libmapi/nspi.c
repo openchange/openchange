@@ -867,7 +867,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = dwFlags;
 	r.in.ulType = ulType;
-	r.in.pDN = pDN;
+	r.in.pDN = (uint8_t *) pDN;
 	r.in.dwCodePage = nspi_ctx->pStat->CodePage;
 	r.in.dwLocaleID = nspi_ctx->pStat->TemplateLocale;
 	
@@ -1129,7 +1129,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	
 	paStr = talloc(mem_ctx, struct StringsArray_r);
 	paStr->Count = count;
-	paStr->Strings = usernames;
+	paStr->Strings = (uint8_t **) usernames;
 	r.in.paStr = paStr;
 
 	r.out.ppMIds = *pppMIds;

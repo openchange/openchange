@@ -600,27 +600,27 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 
 	/* PR_GIVEN_NAME */
 	SPropValue.ulPropTag = PR_GIVEN_NAME_UNICODE;
-	SPropValue.value.lpszA = username;
+	SPropValue.value.lpszA = (uint8_t *) username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_DISPLAY_NAME */
 	SPropValue.ulPropTag = PR_DISPLAY_NAME_UNICODE;
-	SPropValue.value.lpszA = username;
+	SPropValue.value.lpszA = (uint8_t *) username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_7BIT_DISPLAY_NAME */
 	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME_UNICODE;
-	SPropValue.value.lpszA = username;
+	SPropValue.value.lpszA = (uint8_t *) username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_SMTP_ADDRESS */
 	SPropValue.ulPropTag = PR_SMTP_ADDRESS_UNICODE;
-	SPropValue.value.lpszA = username;
+	SPropValue.value.lpszA = (uint8_t *) username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_ADDRTYPE */
 	SPropValue.ulPropTag = PR_ADDRTYPE_UNICODE;
-	SPropValue.value.lpszA = "SMTP";
+	SPropValue.value.lpszA = (uint8_t *) "SMTP";
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
@@ -932,7 +932,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			printf("Sending %s:\n", oclient->attach[i].filename);
 			props_attach[2].value.lpszW = get_filename(oclient->attach[i].filename);
 			props_attach[3].ulPropTag = PR_ATTACH_CONTENT_ID;
-			props_attach[3].value.lpszA = get_filename(oclient->attach[i].filename);
+			props_attach[3].value.lpszA = (uint8_t *) get_filename(oclient->attach[i].filename);
 			count_props_attach = 4;
 
 			/* SetProps */
@@ -1026,7 +1026,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 		len = strlen(oclient->subject);
 
 		for (i = 0; i < count_rows; i++) {
-			if (!strncmp(SRowSet.aRow[i].lpProps[4].value.lpszA, oclient->subject, len)) {
+			if (!strncmp((const char *) SRowSet.aRow[i].lpProps[4].value.lpszA, oclient->subject, len)) {
 				id_messages[count_messages] = SRowSet.aRow[i].lpProps[1].value.d;
 				count_messages++;
 			}
@@ -1587,7 +1587,7 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 		errno = 0;
 		return IPF_NOTE;
 	}
-	return lpProps[0].value.lpszA;
+	return (const char *) lpProps[0].value.lpszA;
 }
 
 static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)

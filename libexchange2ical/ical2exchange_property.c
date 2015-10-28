@@ -186,7 +186,7 @@ void ical2exchange_property_CATEGORIES(struct ical2exchange *ical2exchange)
 		categoriesProp = icalcomponent_get_next_property(ical2exchange->categoriesEvent, ICAL_CATEGORIES_PROPERTY);
 
 	}
-	sArray->lppszA= (const char **) stringArray;
+	sArray->lppszA= (uint8_t **) stringArray;
 	
  	/* SetProps */
  	ical2exchange->lpProps = add_SPropValue(ical2exchange->mem_ctx, ical2exchange->lpProps, &ical2exchange->cValues, PidNameKeywords, 
@@ -277,7 +277,7 @@ void ical2exchange_property_CONTACT(struct ical2exchange *ical2exchange)
 	}
 		
 	/*set up struct*/
-	sArray->lppszA=(const char **) stringArray;
+	sArray->lppszA=(uint8_t **) stringArray;
 
 	/* SetProps */
 	ical2exchange->lpProps = add_SPropValue(ical2exchange->mem_ctx, ical2exchange->lpProps, &ical2exchange->cValues, PidLidContacts, 

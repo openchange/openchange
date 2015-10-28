@@ -619,9 +619,9 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 
 		mvszA = talloc(mem_ctx, struct StringArray_r);
 		mvszA->cValues = ldb_element[0].num_values & 0xFFFFFFFF;
-		mvszA->lppszA = talloc_array(mem_ctx, const char *, mvszA->cValues);
+		mvszA->lppszA = talloc_array(mem_ctx, uint8_t *, mvszA->cValues);
 		for (i = 0; i < mvszA->cValues; i++) {
-			mvszA->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
+			mvszA->lppszA[i] = (uint8_t *) talloc_strdup(mem_ctx, (const char *)ldb_element->values[i].data);
 		}
 		data = (void *) mvszA;
 		break;
@@ -911,7 +911,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				lpProps.value.l = containerID;
 				break;
 			case PidTagDisplayName_string8:
-				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
+				lpProps.value.lpszA = (uint8_t *)talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszA) {
 					proptag = (int) lpProps.ulPropTag;
 					proptag &= 0xFFFF0000;

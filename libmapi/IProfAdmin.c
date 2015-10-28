@@ -1205,7 +1205,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(struct mapi_context *mapi_ctx,
 	/* Step 1. Check if old profile exists */
 	for (found = false, i = 0; i < proftable.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
-		if (lpProp && !strcmp(lpProp->value.lpszA, old_profile)) {
+		if (lpProp && !strcmp((const char *) lpProp->value.lpszA, old_profile)) {
 			found = true;
 		}
 	}
@@ -1214,7 +1214,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(struct mapi_context *mapi_ctx,
 	/* Step 2. Check if new profile already exists */
 	for (found = false, i = 0; i < proftable.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
-		if (lpProp && !strcmp(lpProp->value.lpszA, profile)) {
+		if (lpProp && !strcmp((const char *) lpProp->value.lpszA, profile)) {
 			found = true;
 		}
 	}
@@ -1331,7 +1331,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(struct mapi_context *mapi_ctx,
 		if (lpProp && (lpProp->value.l == 1)) {
 			lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
 			if (lpProp) {
-			  *profname = talloc_strdup(mapi_ctx->mem_ctx, lpProp->value.lpszA);
+				*profname = talloc_strdup(mapi_ctx->mem_ctx, (const char *) lpProp->value.lpszA);
 				talloc_free(proftable.aRow);
 				return MAPI_E_SUCCESS;
 			}
@@ -1397,7 +1397,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct mapi_context *mapi_ctx,
 		proftable->aRow[count].cValues = 2;
 
 		proftable->aRow[count].lpProps[0].ulPropTag = PR_DISPLAY_NAME;
-		proftable->aRow[count].lpProps[0].value.lpszA = talloc_strdup((TALLOC_CTX *)proftable->aRow, 
+		proftable->aRow[count].lpProps[0].value.lpszA = (uint8_t *) talloc_strdup((TALLOC_CTX *)proftable->aRow, 
 									      ldb_msg_find_attr_as_string(msg, "cn", NULL));
 									      
 		proftable->aRow[count].lpProps[1].ulPropTag = PR_DEFAULT_PROFILE;
@@ -1563,7 +1563,7 @@ static bool set_profile_attribute(struct mapi_context *mapi_ctx,
 		return true;
 	}
 
-	ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.lpszA);
+	ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, (const char *) lpProp->value.lpszA);
 
 	if (ret != MAPI_E_SUCCESS) {
 		OC_DEBUG(3, "Problem adding attribute %s in profile %s", attr, profname);
@@ -1591,7 +1591,7 @@ static bool set_profile_mvstr_attribute(struct mapi_context *mapi_ctx,
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
-		ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.MVszA.lppszA[i]);
+		ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, (const char *) lpProp->value.MVszA.lppszA[i]);
 		if (ret != MAPI_E_SUCCESS) {
 			OC_DEBUG(3, "Problem adding attribute %s in profile %s", attr, profname);
 			return false;
@@ -1768,8 +1768,8 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	lpProp = get_PropertyValue_PropertyRowSet(PropertyRowSet, PR_EMS_AB_HOME_MDB);
 	OPENCHANGE_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, mem_ctx);
 
-	nspi->org = x500_get_dn_element(mem_ctx, lpProp->value.lpszA, ORG);
-	nspi->org_unit = x500_get_dn_element(mem_ctx, lpProp->value.lpszA, ORG_UNIT);
+	nspi->org = x500_get_dn_element(mem_ctx, (const char *) lpProp->value.lpszA, ORG);
+	nspi->org_unit = x500_get_dn_element(mem_ctx, (const char *) lpProp->value.lpszA, ORG_UNIT);
 	
 	OPENCHANGE_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, mem_ctx);
@@ -1777,14 +1777,14 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	retval = mapi_profile_add_string_attr(mapi_ctx, profname, "Organization", nspi->org);
 	retval = mapi_profile_add_string_attr(mapi_ctx, profname, "OrganizationUnit", nspi->org_unit);
 
-	nspi->servername = x500_get_servername(lpProp->value.lpszA);
+	nspi->servername = x500_get_servername((const char *) lpProp->value.lpszA);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "ServerName", nspi->servername);
 	set_profile_attribute(mapi_ctx, profname, *PropertyRowSet, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
 	set_profile_mvstr_attribute(mapi_ctx, profname, *PropertyRowSet, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-	pNames.Strings[0] = (const char *) talloc_asprintf(mem_ctx, SERVER_DN, 
+	pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+	pNames.Strings[0] = (uint8_t *) talloc_asprintf(mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);
 	MId_server = talloc_zero(mem_ctx, struct PropertyTagArray_r);

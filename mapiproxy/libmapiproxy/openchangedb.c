@@ -525,7 +525,7 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 		data = talloc_asprintf(mem_ctx, "%"PRIu64, value->value.d);
 		break;
 	case PT_STRING8:
-		data = talloc_strdup(mem_ctx, value->value.lpszA);
+		data = talloc_strdup(mem_ctx, (const char *) value->value.lpszA);
 		break;
 	case PT_UNICODE:
 		data = talloc_strdup(mem_ctx, value->value.lpszW);

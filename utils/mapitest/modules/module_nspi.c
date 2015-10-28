@@ -97,7 +97,7 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = (uint8_t *) mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -160,7 +160,7 @@ _PUBLIC_ bool mapitest_nspi_SeekEntries(struct mapitest *mt)
 	
 	pTarget.ulPropTag = PR_DISPLAY_NAME;
 	pTarget.dwAlignPad = 0x0;
-	pTarget.value.lpszA = emsmdb->info.szDisplayName;
+	pTarget.value.lpszA = (uint8_t *) emsmdb->info.szDisplayName;
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
 	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &RowSet);
@@ -176,7 +176,7 @@ _PUBLIC_ bool mapitest_nspi_SeekEntries(struct mapitest *mt)
 
 	pTarget.ulPropTag = PR_DISPLAY_NAME_UNICODE;
 	pTarget.dwAlignPad = 0x0;
-	pTarget.value.lpszA = emsmdb->info.szDisplayName;
+	pTarget.value.lpszA = (uint8_t *) emsmdb->info.szDisplayName;
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
 	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &RowSet);
@@ -224,7 +224,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = (uint8_t *) mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -344,8 +344,8 @@ _PUBLIC_ bool mapitest_nspi_DNToMId(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
+	pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+	pNames.Strings[0] = (uint8_t *) mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 
@@ -454,8 +454,8 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
+	pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+	pNames.Strings[0] = (uint8_t *) mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 
@@ -593,7 +593,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = (uint8_t *) mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -636,7 +636,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	/* Build the SRow and SPropTagArray for NspiModProps */
 	pRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	modProp.ulPropTag = PR_OFFICE_LOCATION;
-	modProp.value.lpszA = "MT office location";
+	modProp.value.lpszA = (uint8_t *) "MT office location";
 	PropertyRow_addprop(pRow, modProp);
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_OFFICE_LOCATION);
@@ -678,7 +678,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	/* try to reset the office location back to the original value */
 	pRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	modProp.ulPropTag = PR_OFFICE_LOCATION;
-	modProp.value.lpszA = original_office_location;
+	modProp.value.lpszA = (uint8_t *) original_office_location;
 	PropertyRow_addprop(pRow, modProp);
 
 	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);

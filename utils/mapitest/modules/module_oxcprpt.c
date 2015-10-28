@@ -205,7 +205,7 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 
 	if (cValues && lpProps[0].value.lpszA) {
-		mailbox = lpProps[0].value.lpszA;
+		mailbox = (const char *) lpProps[0].value.lpszA;
 		mapitest_print(mt, "* Step 2. Mailbox name = %s\n", mailbox);
 	} else {
 		mapitest_print(mt, MT_ERROR, "* Step 2 - GetProps: No mailbox name\n");
@@ -225,7 +225,7 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 	retval = GetProps(&obj_store, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(new_mailbox, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(new_mailbox, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 2.2 - Check: NEW mailbox name - [SUCCESS] (%s)\n", lpProps[0].value.lpszA);
 		} else {
 			mapitest_print(mt, "* Step 2.2 - Check: NEW mailbox name [FAILURE]\n");
@@ -244,7 +244,7 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 	retval = GetProps(&obj_store, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(mailbox, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(mailbox, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 3.2 - Check: OLD mailbox name [SUCCESS]\n");
 		} else {
 			mapitest_print(mt, "* Step 3.2 - Check: OLD mailbox name, [FAILURE]\n");
@@ -341,7 +341,7 @@ _PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.1. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -350,7 +350,7 @@ _PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.2. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -488,7 +488,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.1. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -497,7 +497,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.2. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -533,7 +533,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = GetProps(&obj_target_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(targ_name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 6A - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -542,7 +542,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 6B - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -569,7 +569,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 8A - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -578,7 +578,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 8B - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -591,7 +591,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one shouldn't be overwritten */
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(targ_name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 8C - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -601,7 +601,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	}
 	/* this one should be copied */
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 8D - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -611,7 +611,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	}
 	/* this one should be unchanged */
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 8E - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -636,7 +636,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 10A - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -645,7 +645,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 10B - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -658,7 +658,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one should now be overwritten */
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 10C - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -668,7 +668,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	}
 	/* this one should be copied */
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 10D - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -678,7 +678,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	}
 	/* this one should be unchanged */
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 10E - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -718,7 +718,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = GetProps(&obj_target_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 12B - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -727,7 +727,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 12C - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -736,7 +736,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 12D - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -875,7 +875,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = MT_MAIL_ATTACH;
+	attach[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH;
 
 	retval = SetProps(&obj_attach, 0, attach, 3);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1166,7 +1166,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = MT_MAIL_ATTACH;
+	attach[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH;
 
 	retval = SetProps(&obj_attach, 0, attach, 3);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1232,7 +1232,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = MT_MAIL_ATTACH2;
+	attach[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH2;
 
 	retval = SetProps(&obj_attach2, 0, attach, 3);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1442,7 +1442,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		goto cleanup;
 	}
 	lpProp[0].ulPropTag = PR_CONTAINER_CLASS;
-	lpProp[0].value.lpszA = "IPF.Note";
+	lpProp[0].value.lpszA = (uint8_t *) "IPF.Note";
 	retval = SetProps(&obj_ref_folder, 0, lpProp, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1483,7 +1483,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 4A - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1494,7 +1494,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 4B - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1505,7 +1505,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(dept,  (const char *) lpProps[2].value.lpszA, strlen( (const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 4C - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -1552,7 +1552,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = GetProps(&obj_target_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(targ_name,  (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 6A - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1564,7 +1564,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 6B - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1594,7 +1594,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 8A - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1605,7 +1605,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 8B - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1620,7 +1620,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one shouldn't be overwritten */
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(targ_name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 8C - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1632,7 +1632,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	/* this one should be copied */
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 8D - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1644,7 +1644,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	/* this one should be unchanged */
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 8E - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -1671,7 +1671,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = GetProps(&obj_ref_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 10A - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1682,7 +1682,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 10B - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1697,7 +1697,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one should now be overwritten */
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 10C - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1709,7 +1709,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	/* this one should be copied */
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 10D - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1721,7 +1721,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	/* this one should be unchanged */
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(targ_dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 10E - Check: Reference props copy - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -1759,7 +1759,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = GetProps(&obj_target_message, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 12B - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1770,7 +1770,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(subject, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 12C - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1781,7 +1781,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(dept, (const char *) lpProps[2].value.lpszA, strlen((const char *) lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 12D - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -1804,7 +1804,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	lpProp[1].ulPropTag = PR_RENDERING_POSITION;
 	lpProp[1].value.l = 0;
 	lpProp[2].ulPropTag = PR_ATTACH_FILENAME;
-	lpProp[2].value.lpszA = MT_MAIL_ATTACH;
+	lpProp[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH;
 	retval = SetProps(&obj_ref_attach, 0, lpProp, 3);
 	mapitest_print_retval(mt, "SetProps");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1826,7 +1826,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	lpProp[1].ulPropTag = PR_RENDERING_POSITION;
 	lpProp[1].value.l = 0;
 	lpProp[2].ulPropTag = PR_ATTACH_FILENAME;
-	lpProp[2].value.lpszA = MT_MAIL_ATTACH2;
+	lpProp[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH2;
 	retval = SetProps(&obj_targ_attach, 0, lpProp, 3);
 	mapitest_print_retval(mt, "SetProps");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1859,7 +1859,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(MT_MAIL_ATTACH, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(MT_MAIL_ATTACH, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 16B - Check: Reference attachment props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1878,7 +1878,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(MT_MAIL_ATTACH, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(MT_MAIL_ATTACH, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 16D - Check: Target attachment props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1898,7 +1898,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		goto cleanup;
 	}
 	lpProp[0].ulPropTag = PR_CONTAINER_CLASS;
-	lpProp[0].value.lpszA = "IPF.Journal";
+	lpProp[0].value.lpszA = (uint8_t *) "IPF.Journal";
 	retval = SetProps(&obj_targ_folder, 0, lpProp, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1927,7 +1927,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(MT_DIRNAME_TOP, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(MT_DIRNAME_TOP, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 19B - Check: Reference folder props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1938,7 +1938,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}	
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp("IPF.Note", lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp("IPF.Note", (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 19C - Check: Reference folder props - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -1957,7 +1957,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp("MT Target Folder", lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp("MT Target Folder", (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 19E - Check: Target folder props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -1968,7 +1968,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}	
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp("IPF.Note", lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp("IPF.Note", (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 19F - Check: Target folder props - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -2479,7 +2479,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NoReplicate(struct mapitest *mt)
 	retval = GetProps(&obj_ref_folder, 0, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp(name, (const char *) lpProps[0].value.lpszA, strlen((const char *) lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.1. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
@@ -2490,7 +2490,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NoReplicate(struct mapitest *mt)
 		}
 	}
 	if (lpProps[1].value.lpszA) {
-		if (!strncmp(comment, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+		if (!strncmp(comment, (const char *) lpProps[1].value.lpszA, strlen((const char *) lpProps[1].value.lpszA))) {
 			mapitest_print(mt, "* Step 4.2. - Check: Reference props set - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
@@ -2620,7 +2620,7 @@ _PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = MT_MAIL_ATTACH;
+	attach[2].value.lpszA = (uint8_t *) MT_MAIL_ATTACH;
 
 	retval = SetProps(&obj_attach, 0, attach, 3);
 	if (retval != MAPI_E_SUCCESS) {

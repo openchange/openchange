@@ -124,17 +124,17 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 3. Check if input user DN belongs to the Exchange organization */
-	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, r->in.szUserDN, &msg) == false) {
+	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, (const char *) r->in.szUserDN, &msg) == false) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;
 	}
 
-	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
+	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, (const char *) r->in.szUserDN);
 	emsmdbp_ctx->userLanguage = r->in.ulLcidString;
 
 	/* Step 4. Retrieve the display name of the user */
-	*r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
-	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
+	*r->out.szDisplayName = (uint8_t *) ldb_msg_find_attr_as_string(msg, "displayName", NULL);
+	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, (const char *) *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the dinstinguished name of the server */
 	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
@@ -146,7 +146,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	}
 
 	*dnprefix = '\0';
-	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
+	*r->out.szDNPrefix = (uint8_t *) strupper_talloc(mem_ctx, userDN);
 
 	/* Step 6. Fill EcDoConnect reply */
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_EMSMDB);
@@ -1188,11 +1188,11 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		*r->out.pcmsRetryDelay = 0;
 		*r->out.picxr = 0;
 
-		r->out.szDNPrefix = (const char **)talloc_array(mem_ctx, char *, 2);
-		r->out.szDNPrefix[0] = talloc_strdup(mem_ctx, tmp);
+		r->out.szDNPrefix = (uint8_t **)talloc_array(mem_ctx, uint8_t *, 2);
+		r->out.szDNPrefix[0] = (uint8_t *) talloc_strdup(mem_ctx, tmp);
 
-		r->out.szDisplayName = (const char **)talloc_array(mem_ctx, char *, 2);
-		r->out.szDisplayName[0] = talloc_strdup(mem_ctx, tmp);
+		r->out.szDisplayName = (uint8_t **)talloc_array(mem_ctx, uint8_t *, 2);
+		r->out.szDisplayName[0] = (uint8_t *) talloc_strdup(mem_ctx, tmp);
 
 		r->out.rgwServerVersion[0] = 0;
 		r->out.rgwServerVersion[1] = 0;
@@ -1212,7 +1212,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		goto failure;
 	}
 
-	if (!r->in.szUserDN || strlen(r->in.szUserDN) == 0) {
+	if (!r->in.szUserDN || strlen((const char *) r->in.szUserDN) == 0) {
 	  OC_DEBUG(5, "r->in.szUserDN is NULL or empty\n");
 		r->out.result = MAPI_E_NO_ACCESS;
 		goto failure;
@@ -1236,18 +1236,18 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 3. Check if input user DN belongs to the Exchange organization */
-	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, r->in.szUserDN, &msg) == false) {
+	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, (const char *) r->in.szUserDN, &msg) == false) {
 		talloc_free(emsmdbp_ctx);
 		r->out.result = ecUnknownUser;
 		goto failure;
 	}
 
-	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
+	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, (const char *) r->in.szUserDN);
 	emsmdbp_ctx->userLanguage = r->in.ulLcidString;
 
 	/* Step 4. Retrieve the display name of the user */
-	*r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
-	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
+	*r->out.szDisplayName = (uint8_t *) ldb_msg_find_attr_as_string(msg, "displayName", NULL);
+	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, (const char *) *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the distinguished name of the server */
 	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
@@ -1262,7 +1262,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	*dnprefix = '\0';
 	emsmdbp_ctx->szDNPrefix = talloc_strdup(emsmdbp_ctx, userDN);
 	OPENCHANGE_RETVAL_IF(emsmdbp_ctx->szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
-	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
+	*r->out.szDNPrefix = (uint8_t *) strupper_talloc(mem_ctx, userDN);
 	OPENCHANGE_RETVAL_IF(*r->out.szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 	/* Step 6. Fill EcDoConnectEx reply */

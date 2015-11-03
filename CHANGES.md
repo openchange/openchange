@@ -6,6 +6,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+### Improvements
+* Optimise idset data usage on downloading changes with consecutive ranges
 
 ## [2.4-zentyal11] - 2015-10-26
 

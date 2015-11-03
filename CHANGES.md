@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased]
 
+
+## [2.4-zentyal12] - 2015-11-03
+
 ### Fixes
 * Do not assume that string8 variables have ascii encoding (display names can have any character now)
 * Do not abort on IDSET parsing but returning a format error
@@ -160,7 +163,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal11...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal12...HEAD
+[2.4-zentyal12]: https://github.com/Zentyal/openchange/compare/2.4-zentyal11...2.4-zentyal12
 [2.4-zentyal11]: https://github.com/Zentyal/openchange/compare/2.4-zentyal10...2.4-zentyal11
 [2.4-zentyal10]: https://github.com/Zentyal/openchange/compare/2.4-zentyal9...2.4-zentyal10
 [2.4-zentyal9]: https://github.com/Zentyal/openchange/compare/2.4-zentyal8...2.4-zentyal9

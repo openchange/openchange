@@ -258,6 +258,198 @@ START_TEST (test_RAWIDSET_convert_to_idset_one_id) {
 
 } END_TEST
 
+START_TEST (test_IDSET_merge_idsets_consecutive) {
+	const struct GUID server_guid = GUID_random();
+	struct idset	  *new_idset, *old_idset, *merged_idset;
+	int		  i;
+	struct rawidset	  *eid_set;
+	const uint64_t	  new_id = 0x632304000000;
+	const uint64_t	  ids[] = {0x592304000000,
+				   0x5a2304000000,
+				   0x5b2304000000,
+				   0x602304000000,
+				   0x612304000000,
+				   0x622304000000};
+	size_t		  ids_size = sizeof(ids)/sizeof(uint64_t);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	RAWIDSET_push_guid_glob(eid_set, &server_guid, new_id);
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset != NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, ids[i]);
+	}
+	old_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(old_idset != NULL);
+	ck_assert_int_eq(old_idset->range_count, 2);
+
+	/* Merge it by putting the GLOBCNT from new into last range from old idset */
+	merged_idset = IDSET_merge_idsets(mem_ctx, old_idset, new_idset);
+	ck_assert(merged_idset != NULL);
+	ck_assert_int_eq(merged_idset->range_count, 2);
+	ck_assert_int_eq(merged_idset->ranges->low, ids[0]);
+	ck_assert_int_eq(merged_idset->ranges->high, 0x5b2304000000);
+	ck_assert_int_eq(merged_idset->ranges->next->low, 0x602304000000);
+	ck_assert_int_eq(merged_idset->ranges->next->high, new_id);
+
+} END_TEST
+
+START_TEST (test_IDSET_merge_idsets_new_within_old) {
+	const struct GUID server_guid = GUID_random();
+	struct idset	  *new_idset, *old_idset, *merged_idset;
+	int		  i;
+	struct rawidset	  *eid_set;
+	const uint64_t	  new_ids[] = {0x5a2304000000,
+				       0x5b2304000000};
+	size_t		  new_ids_size = sizeof(new_ids)/sizeof(uint64_t);
+	const uint64_t	  old_ids[] = {0x582304000000,
+				       0x592304000000,
+				       0x5a2304000000,
+				       0x5b2304000000,
+				       0x602304000000,
+				       0x612304000000,
+				       0x622304000000};
+	size_t		  old_ids_size = sizeof(old_ids)/sizeof(uint64_t);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < new_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, new_ids[i]);
+	}
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset != NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < old_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, old_ids[i]);
+	}
+	old_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(old_idset != NULL);
+	ck_assert_int_eq(old_idset->range_count, 2);
+
+	/* Merge it by removing the range from new as it is already in old idset */
+	merged_idset = IDSET_merge_idsets(mem_ctx, old_idset, new_idset);
+	ck_assert(merged_idset != NULL);
+	ck_assert_int_eq(merged_idset->range_count, 2);
+	ck_assert_int_eq(merged_idset->ranges->low, old_ids[0]);
+	ck_assert_int_eq(merged_idset->ranges->high, 0x5b2304000000);
+
+} END_TEST
+
+START_TEST (test_IDSET_merge_idsets_new_intersects_old) {
+	const struct GUID server_guid = GUID_random();
+	struct idset	  *new_idset, *old_idset, *merged_idset;
+	int		  i;
+	struct rawidset	  *eid_set;
+	const uint64_t	  new_ids[] = {0x5a2304000000,
+				       0x5b2304000000,
+				       0x5c2304000000,
+				       0x5d2304000000};
+	size_t		  new_ids_size = sizeof(new_ids)/sizeof(uint64_t);
+	const uint64_t	  old_ids[] = {0x582304000000,
+				       0x592304000000,
+				       0x5a2304000000,
+				       0x5b2304000000,
+				       0x602304000000,
+				       0x612304000000,
+				       0x622304000000};
+	size_t		  old_ids_size = sizeof(old_ids)/sizeof(uint64_t);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < new_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, new_ids[i]);
+	}
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset != NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < old_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, old_ids[i]);
+	}
+	old_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(old_idset != NULL);
+	ck_assert_int_eq(old_idset->range_count, 2);
+
+	/* Merge it by setting as first range up level from new and
+	 * keep old level from old idset */
+	merged_idset = IDSET_merge_idsets(mem_ctx, old_idset, new_idset);
+	ck_assert(merged_idset != NULL);
+	ck_assert_int_eq(merged_idset->range_count, 2);
+	ck_assert_int_eq(merged_idset->ranges->low, old_ids[0]);
+	ck_assert_int_eq(merged_idset->ranges->high, new_ids[new_ids_size-1]);
+
+} END_TEST
+
+START_TEST (test_IDSET_merge_idsets_single) {
+	const struct GUID server_guid = GUID_random();
+	struct idset	  *new_idset, *old_idset, *merged_idset;
+	int		  i;
+	struct rawidset	  *eid_set;
+	const uint64_t	  new_upper_ids[] = {0x702304000000,
+					     0x722304000000};
+	const uint64_t	  new_lower_ids[] = {0x502304000000,
+					     0x532304000000};
+	size_t		  new_ids_size = sizeof(new_upper_ids)/sizeof(uint64_t);
+	const uint64_t	  old_ids[] = {0x582304000000,
+				       0x592304000000,
+				       0x612304000000,
+				       0x622304000000};
+	size_t		  old_ids_size = sizeof(old_ids)/sizeof(uint64_t);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, true);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < new_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, new_upper_ids[i]);
+	}
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset != NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	eid_set = RAWIDSET_make(mem_ctx, false, true);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < old_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, old_ids[i]);
+	}
+	old_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(old_idset != NULL);
+	ck_assert_int_eq(old_idset->range_count, 1);
+
+	/* Merge it to have a single range increasing upper bound */
+	merged_idset = IDSET_merge_idsets(mem_ctx, old_idset, new_idset);
+	ck_assert(merged_idset != NULL);
+	ck_assert_int_eq(merged_idset->range_count, 1);
+	ck_assert_int_eq(merged_idset->ranges->low, old_ids[0]);
+	ck_assert_int_eq(merged_idset->ranges->high, new_upper_ids[new_ids_size-1]);
+
+	/* Second case */
+	eid_set = RAWIDSET_make(mem_ctx, false, true);
+	ck_assert(eid_set != NULL);
+	for (i = 0; i < new_ids_size; i++) {
+		RAWIDSET_push_guid_glob(eid_set, &server_guid, new_lower_ids[i]);
+	}
+	new_idset = RAWIDSET_convert_to_idset(mem_ctx, eid_set);
+	ck_assert(new_idset != NULL);
+	ck_assert_int_eq(new_idset->range_count, 1);
+
+	old_idset = merged_idset;
+	merged_idset = IDSET_merge_idsets(mem_ctx, old_idset, new_idset);
+	ck_assert(merged_idset != NULL);
+	ck_assert_int_eq(merged_idset->range_count, 1);
+	ck_assert_int_eq(merged_idset->ranges->low, new_lower_ids[0]);
+	ck_assert_int_eq(merged_idset->ranges->high, new_upper_ids[new_ids_size-1]);
+
+} END_TEST
+
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
@@ -296,6 +488,14 @@ Suite *libmapi_idset_suite(void)
 	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_RAWIDSET_convert_to_idset);
 	tcase_add_test(tc, test_RAWIDSET_convert_to_idset_one_id);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("IDSET_merge_idsets");
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
+	tcase_add_test(tc, test_IDSET_merge_idsets_consecutive);
+	tcase_add_test(tc, test_IDSET_merge_idsets_new_within_old);
+	tcase_add_test(tc, test_IDSET_merge_idsets_new_intersects_old);
+	tcase_add_test(tc, test_IDSET_merge_idsets_single);
 	suite_add_tcase(s, tc);
 
 	return s;

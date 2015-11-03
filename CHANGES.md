@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ### Fixes
 * Do not abort on IDSET parsing but returning a format error
+* Do not abort on syncing in some errors from backend
 
 ## [2.4-zentyal11] - 2015-10-26
 

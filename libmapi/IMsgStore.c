@@ -555,11 +555,11 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 		if (reply->entries[i].lpszMessageClass && strlen(reply->entries[i].lpszMessageClass)) {
 			SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
 			SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
-			SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup((TALLOC_CTX *)SRowSet->aRow[i].lpProps, reply->entries[i].lpszMessageClass);
+			SRowSet->aRow[i].lpProps[1].value.lpszA = (uint8_t *) talloc_strdup((TALLOC_CTX *)SRowSet->aRow[i].lpProps, reply->entries[i].lpszMessageClass);
 		} else {
 			SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
 			SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
-			SRowSet->aRow[i].lpProps[1].value.lpszA = "";
+			SRowSet->aRow[i].lpProps[1].value.lpszA =  (uint8_t *) "";
 		}
 
 		SRowSet->aRow[i].lpProps[2].ulPropTag = PR_LAST_MODIFICATION_TIME;

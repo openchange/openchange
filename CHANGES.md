@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased]
 
 ### Fixes
+* Do not assume that string8 variables have ascii encoding (display names can have any character now)
 * Do not abort on IDSET parsing but returning a format error
 * Do not abort on syncing in some errors from backend
 

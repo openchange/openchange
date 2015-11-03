@@ -267,7 +267,7 @@ content		:
 
 propvalue	: STRING	
 		{ 
-			ctx->lpProp.lpszA = talloc_strdup(ctx, $1); 
+			ctx->lpProp.lpszA = (uint8_t *) talloc_strdup(ctx, (char *) $1); 
 			ctx->ltype = PT_STRING8; 
 		}
 		| UNICODE
@@ -306,14 +306,14 @@ propvalue	: STRING
 
 			if (!ctx->lpProp.MVszA.cValues) {
 				ctx->lpProp.MVszA.cValues = 0;
-				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, const char *, 2);
+				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, uint8_t *, 2);
 			} else {
 				ctx->lpProp.MVszA.lppszA = talloc_realloc(NULL, ctx->lpProp.MVszA.lppszA, 
-									  const char *,
+									  uint8_t *,
 									  ctx->lpProp.MVszA.cValues + 2);
 			}
 			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszA.lppszA;
-			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $3);
+			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = (uint8_t *) talloc_strdup(mem_ctx, (const char *) $3);
 			ctx->lpProp.MVszA.cValues += 1;
 
 			ctx->ltype = PT_MV_STRING8;
@@ -404,14 +404,14 @@ mvstring_content  : STRING COMMA
 
 			if (!ctx->lpProp.MVszA.cValues) {
 				ctx->lpProp.MVszA.cValues = 0;
-				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, const char *, 2);
+				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, uint8_t *, 2);
 			} else {
 				ctx->lpProp.MVszA.lppszA = talloc_realloc(NULL, ctx->lpProp.MVszA.lppszA, 
-									  const char *,
+									  uint8_t *,
 									  ctx->lpProp.MVszA.cValues + 2);
 			}
 			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszA.lppszA;
-			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $1);
+			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = (uint8_t *) talloc_strdup(mem_ctx, (const char *) $1);
 			ctx->lpProp.MVszA.cValues += 1;
 		  }
 		  ;

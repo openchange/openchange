@@ -623,7 +623,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.b = *((const uint8_t *)data);
 		break;
 	case PT_STRING8:
-		lpProps->value.lpszA = (const char *) data;
+		lpProps->value.lpszA = (uint8_t *) data;
 		break;
 	case PT_BINARY:
 	case PT_SVREID:
@@ -724,7 +724,7 @@ _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *sour
 		prop_type = (source_value->ulPropTag & 0xFFFF);
 		switch(prop_type) {
 		case PT_STRING8:
-			dest_value->value.lpszA = talloc_strdup(mem_ctx, source_value->value.lpszA);
+			dest_value->value.lpszA = (uint8_t *) talloc_strdup(mem_ctx, (const char *) source_value->value.lpszA);
 			break;
 		case PT_UNICODE:
 			dest_value->value.lpszW = talloc_strdup(mem_ctx, source_value->value.lpszW);
@@ -747,9 +747,9 @@ _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *sour
 		case PT_MV_STRING8:
 			dest_value->value.MVszA.cValues = source_value->value.MVszA.cValues;
 
-			dest_value->value.MVszA.lppszA = talloc_array(mem_ctx, const char *, source_value->value.MVszA.cValues);
+			dest_value->value.MVszA.lppszA = talloc_array(mem_ctx, uint8_t *, source_value->value.MVszA.cValues);
 			for (k = 0; k < source_value->value.MVszA.cValues; k++) {
-				dest_value->value.MVszA.lppszA[k] = talloc_strdup(dest_value->value.MVszA.lppszA, source_value->value.MVszA.lppszA[k]);
+				dest_value->value.MVszA.lppszA[k] = (uint8_t *) talloc_strdup(dest_value->value.MVszA.lppszA, (const char *) source_value->value.MVszA.lppszA[k]);
 			}
 			break;
 		case PT_MV_UNICODE:
@@ -818,9 +818,9 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 		mapi_sprop->value.d = sprop->value.d;
 		return sizeof(uint64_t);
 	case PT_STRING8:
-		mapi_sprop->value.lpszA = sprop->value.lpszA;
+		mapi_sprop->value.lpszA = (const char *) sprop->value.lpszA;
 		if (!mapi_sprop->value.lpszA) return 0;
-		return (strlen(sprop->value.lpszA) + 1);
+		return (strlen((const char *) sprop->value.lpszA) + 1);
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
 		if (!mapi_sprop->value.lpszW) return 0;
@@ -860,7 +860,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 		mapi_sprop->value.MVszA.strings = talloc_array(mem_ctx, struct mapi_LPSTR, 
 							       mapi_sprop->value.MVszA.cValues);
 		for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
-			mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.lppszA[i];
+			mapi_sprop->value.MVszA.strings[i].lppszA = (const char *) sprop->value.MVszA.lppszA[i];
 			size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
 		}
 		return size;
@@ -967,9 +967,9 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		sprop->value.d = mapi_sprop->value.d;
 		return sizeof(uint64_t);
 	case PT_STRING8:
-		sprop->value.lpszA = mapi_sprop->value.lpszA;
+		sprop->value.lpszA = (uint8_t *) mapi_sprop->value.lpszA;
 		if (!mapi_sprop->value.lpszA) return 0;
-		return (strlen(sprop->value.lpszA) + 1);
+		return (strlen((const char *) sprop->value.lpszA) + 1);
 	case PT_UNICODE:
 		sprop->value.lpszW = mapi_sprop->value.lpszW;
 		if (!sprop->value.lpszW) return 0;
@@ -1021,10 +1021,10 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		sprop->value.MVszA.cValues = mapi_sprop->value.MVszA.cValues;
 		size += 4;
 
-		sprop->value.MVszA.lppszA = talloc_array(mem_ctx, const char *, sprop->value.MVszA.cValues);
+		sprop->value.MVszA.lppszA = talloc_array(mem_ctx, uint8_t *, sprop->value.MVszA.cValues);
 		for (i = 0; i < sprop->value.MVszA.cValues; i++) {
-			sprop->value.MVszA.lppszA[i] = mapi_sprop->value.MVszA.strings[i].lppszA;
-			size += strlen(sprop->value.MVszA.lppszA[i]) + 1;
+			sprop->value.MVszA.lppszA[i] = (uint8_t *) mapi_sprop->value.MVszA.strings[i].lppszA;
+			size += strlen((const char *) sprop->value.MVszA.lppszA[i]) + 1;
 		}
 		return size;
 	}
@@ -2236,7 +2236,7 @@ _PUBLIC_ bool set_PropertyValue(struct PropertyValue_r *lpProp, const void *data
 		lpProp->value.l = *((const uint32_t *)data);
 		break;
 	case PT_STRING8:
-		lpProp->value.lpszA = (const char *) data;
+		lpProp->value.lpszA = (uint8_t *) data;
 		break;
 	case PT_BINARY:
 	case PT_SVREID:

@@ -73,7 +73,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 
 	propvalue.ulPropTag = PR_SENDER_NAME; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;
-	propvalue.value.lpszA = "Mr. The Sender"; /* union SPropValue_CTR */
+	propvalue.value.lpszA = (uint8_t *) "Mr. The Sender"; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
 	propvalue.ulPropTag = PR_REPORT_TAG; /* enum MAPITAGS */
@@ -101,10 +101,10 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.ulPropTag = PidTagScheduleInfoDelegateNames;
 	propvalue.dwAlignPad = 0;
 	mvstr.cValues = 3;
-	mvstr.lppszA = talloc_array(mt->mem_ctx, const char *, mvstr.cValues);
-	mvstr.lppszA[0] = talloc_strdup(mt->mem_ctx, "Foo");
-	mvstr.lppszA[1] = talloc_strdup(mt->mem_ctx, "A longer string");
-	mvstr.lppszA[2] = talloc_strdup(mt->mem_ctx, "All strung out on bugs");
+	mvstr.lppszA = talloc_array(mt->mem_ctx, uint8_t *, mvstr.cValues);
+	mvstr.lppszA[0] = (uint8_t *) talloc_strdup(mt->mem_ctx, "Foo");
+	mvstr.lppszA[1] = (uint8_t *) talloc_strdup(mt->mem_ctx, "A longer string");
+	mvstr.lppszA[2] = (uint8_t *) talloc_strdup(mt->mem_ctx, "All strung out on bugs");
 
 	propvalue.value.MVszA = mvstr;
 	mapidump_SPropValue(propvalue, "[sep]");
@@ -192,17 +192,17 @@ _PUBLIC_ bool mapitest_mapidump_srowset(struct mapitest *mt)
 	SRow_addprop(&(srowset.aRow[0]), SPropValue);
 
 	SPropValue.ulPropTag = PR_GIVEN_NAME;
-	SPropValue.value.lpszA = "gname";
+	SPropValue.value.lpszA = (uint8_t *) "gname";
 	SRow_addprop(&(srowset.aRow[0]), SPropValue);
 
 	srowset.aRow[1].cValues = 0;
 	srowset.aRow[1].lpProps = talloc_zero(mt->mem_ctx, struct SPropValue);
 	SPropValue.ulPropTag = PR_GIVEN_NAME;
-	SPropValue.value.lpszA = "kname";
+	SPropValue.value.lpszA = (uint8_t *) "kname";
 	SRow_addprop(&(srowset.aRow[1]), SPropValue);
 
 	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
-	SPropValue.value.lpszA = "lname";
+	SPropValue.value.lpszA = (uint8_t *) "lname";
 	SRow_addprop(&(srowset.aRow[1]), SPropValue);
 
 	mapidump_SRowSet(&srowset, "[sep]");
@@ -231,19 +231,19 @@ _PUBLIC_ bool mapitest_mapidump_pabentry(struct mapitest *mt)
 	pabentry.lpProps = talloc_zero(mt->mem_ctx, struct PropertyValue_r);
 
 	value.ulPropTag = PR_ADDRTYPE_UNICODE;
-	value.value.lpszA = "dummy addrtype";
+	value.value.lpszA = (uint8_t *) "dummy addrtype";
 	PropertyRow_addprop(&(pabentry), value);
 
 	value.ulPropTag = PR_DISPLAY_NAME_UNICODE;
-	value.value.lpszA = "dummy display name";
+	value.value.lpszA = (uint8_t *) "dummy display name";
 	PropertyRow_addprop(&(pabentry), value);
 
 	value.ulPropTag = PR_EMAIL_ADDRESS_UNICODE;
-	value.value.lpszA = "dummy@example.com";
+	value.value.lpszA = (uint8_t *) "dummy@example.com";
 	PropertyRow_addprop(&(pabentry), value);
 
 	value.ulPropTag = PR_ACCOUNT_UNICODE;
-	value.value.lpszA = "dummy account";
+	value.value.lpszA = (uint8_t *) "dummy account";
 	PropertyRow_addprop(&(pabentry), value);
 
 	mapidump_PAB_entry(&pabentry);
@@ -272,10 +272,10 @@ _PUBLIC_ bool mapitest_mapidump_note(struct mapitest *mt)
 	props.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, props.cValues);
 
 	props.lpProps[0].ulPropTag = PR_CONVERSATION_TOPIC;
-	props.lpProps[0].value.lpszA = "Topic of the Note";
+	props.lpProps[0].value.lpszA = (char *) "Topic of the Note";
 
 	props.lpProps[1].ulPropTag = PR_BODY;
-	props.lpProps[1].value.lpszA = "This is the body of the note. It has two sentences.";
+	props.lpProps[1].value.lpszA = (char *) "This is the body of the note. It has two sentences.";
 
 	props.lpProps[2].ulPropTag = PR_CLIENT_SUBMIT_TIME;
 	props.lpProps[2].value.ft.dwLowDateTime = 0x12345678;
@@ -284,7 +284,7 @@ _PUBLIC_ bool mapitest_mapidump_note(struct mapitest *mt)
 	mapidump_note(&props, "[dummy ID]");
 
 	props.lpProps[1].ulPropTag = PR_BODY_HTML;
-	props.lpProps[1].value.lpszA = "<h1>Heading for the Note</h1>\n<p>This is the body of the note. It has two sentences.</p>";
+	props.lpProps[1].value.lpszA = (char *) "<h1>Heading for the Note</h1>\n<p>This is the body of the note. It has two sentences.</p>";
 
 	mapidump_note(&props, "[dummy ID]");
 
@@ -315,10 +315,10 @@ _PUBLIC_ bool mapitest_mapidump_task(struct mapitest *mt)
 	props.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, props.cValues);
 
 	props.lpProps[0].ulPropTag = PR_CONVERSATION_TOPIC;
-	props.lpProps[0].value.lpszA = "Topic of the Task";
+	props.lpProps[0].value.lpszA = (char *) "Topic of the Task";
 
 	props.lpProps[1].ulPropTag = PR_BODY;
-	props.lpProps[1].value.lpszA = "This is the body of the task. It has two sentences.";
+	props.lpProps[1].value.lpszA = (char *) "This is the body of the task. It has two sentences.";
 
 	props.lpProps[2].ulPropTag = PidLidTaskDueDate;
 	props.lpProps[2].value.ft.dwLowDateTime = 0x12345678;
@@ -421,41 +421,41 @@ _PUBLIC_ bool mapitest_mapidump_contact(struct mapitest *mt)
 	props.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, props.cValues);
 
 	props.lpProps[0].ulPropTag = PR_POSTAL_ADDRESS;
-	props.lpProps[0].value.lpszA = "P.O. Box 543, KTown";
+	props.lpProps[0].value.lpszA = (char *) "P.O. Box 543, KTown";
 
 	props.lpProps[1].ulPropTag = PR_STREET_ADDRESS;
-	props.lpProps[1].value.lpszA = "1 My Street, KTown";
+	props.lpProps[1].value.lpszA = (char *) "1 My Street, KTown";
 
 	props.lpProps[2].ulPropTag = PR_COMPANY_NAME;
-	props.lpProps[2].value.lpszA = "Dummy Company Pty Ltd";
+	props.lpProps[2].value.lpszA = (char *) "Dummy Company Pty Ltd";
 
 	props.lpProps[3].ulPropTag = PR_TITLE;
-	props.lpProps[3].value.lpszA = "Ms.";
+	props.lpProps[3].value.lpszA = (char *) "Ms.";
 
 	props.lpProps[4].ulPropTag = PR_COUNTRY;
-	props.lpProps[4].value.lpszA = "Australia";
+	props.lpProps[4].value.lpszA = (char *) "Australia";
 
 	props.lpProps[5].ulPropTag = PR_GIVEN_NAME;
-	props.lpProps[5].value.lpszA = "Konq.";
+	props.lpProps[5].value.lpszA = (char *) "Konq.";
 
 	props.lpProps[6].ulPropTag = PR_SURNAME;
-	props.lpProps[6].value.lpszA = "Dragoon";
+	props.lpProps[6].value.lpszA = (char *) "Dragoon";
 
 	props.lpProps[7].ulPropTag = PR_DEPARTMENT_NAME;
-	props.lpProps[7].value.lpszA = "Research and Marketing";
+	props.lpProps[7].value.lpszA = (char *) "Research and Marketing";
 
 	mapidump_contact(&props, "[dummy ID]");
 
 	props.lpProps[1].ulPropTag = PR_CONVERSATION_TOPIC;
-	props.lpProps[1].value.lpszA = "Contact Topic";
+	props.lpProps[1].value.lpszA = (char *) "Contact Topic";
 
 	mapidump_contact(&props, "[dummy ID]");
 
 	props.lpProps[0].ulPropTag = PidLidFileUnder;
-	props.lpProps[0].value.lpszA = "Card Label";
+	props.lpProps[0].value.lpszA = (char *) "Card Label";
 
 	props.lpProps[4].ulPropTag = PR_DISPLAY_NAME;
-	props.lpProps[4].value.lpszA = "Konqi Dragon";
+	props.lpProps[4].value.lpszA = (char *) "Konqi Dragon";
 
 	mapidump_contact(&props, "[dummy ID]");
 
@@ -488,13 +488,13 @@ _PUBLIC_ bool mapitest_mapidump_appointment(struct mapitest *mt)
 	props.lpProps[0].value.MVszA.strings[1].lppszA = "Contact Two Jr.";
 
 	props.lpProps[1].ulPropTag = PR_CONVERSATION_TOPIC;
-	props.lpProps[1].value.lpszA = "Dummy Appointment topic";
+	props.lpProps[1].value.lpszA = (char *) "Dummy Appointment topic";
 
 	props.lpProps[2].ulPropTag = PidLidTimeZoneDescription;
-	props.lpProps[2].value.lpszA = "AEDT";
+	props.lpProps[2].value.lpszA = (char *) "AEDT";
 
 	props.lpProps[3].ulPropTag = PidLidLocation;
-	props.lpProps[3].value.lpszA = "OpenChange Conference Room #3";
+	props.lpProps[3].value.lpszA = (char *) "OpenChange Conference Room #3";
 
 	props.lpProps[4].ulPropTag = PidLidBusyStatus;
 	props.lpProps[4].value.l = olTaskNotStarted;
@@ -536,25 +536,25 @@ _PUBLIC_ bool mapitest_mapidump_message(struct mapitest *mt)
 	props.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, props.cValues);
 
 	props.lpProps[0].ulPropTag = PR_INTERNET_MESSAGE_ID;
-	props.lpProps[0].value.lpszA = "dummy-3535395fds@example.com";
+	props.lpProps[0].value.lpszA = (char *) "dummy-3535395fds@example.com";
 	
 	props.lpProps[1].ulPropTag = PR_CONVERSATION_TOPIC;
-	props.lpProps[1].value.lpszA = "Dummy Email Subject";
+	props.lpProps[1].value.lpszA = (char *) "Dummy Email Subject";
 
 	props.lpProps[2].ulPropTag = PR_BODY;
-	props.lpProps[2].value.lpszA = "This is the body of the email. It has two sentences.\n";
+	props.lpProps[2].value.lpszA = (char *) "This is the body of the email. It has two sentences.\n";
 
 	props.lpProps[3].ulPropTag = PR_SENT_REPRESENTING_NAME;
-	props.lpProps[3].value.lpszA = "The Sender <sender@example.com>";
+	props.lpProps[3].value.lpszA = (char *) "The Sender <sender@example.com>";
 
 	props.lpProps[4].ulPropTag = PR_DISPLAY_TO;
-	props.lpProps[4].value.lpszA = "The Recipient <to@example.com>";
+	props.lpProps[4].value.lpszA = (char *) "The Recipient <to@example.com>";
 
 	props.lpProps[5].ulPropTag = PR_DISPLAY_CC;
-	props.lpProps[5].value.lpszA = "Other Recipient <cc@example.com>";
+	props.lpProps[5].value.lpszA = (char *) "Other Recipient <cc@example.com>";
 
 	props.lpProps[6].ulPropTag = PR_DISPLAY_BCC;
-	props.lpProps[6].value.lpszA = "Ms. Anonymous <bcc@example.com>";
+	props.lpProps[6].value.lpszA = (char *) "Ms. Anonymous <bcc@example.com>";
 
 	props.lpProps[7].ulPropTag = PidTagPriority;
 	props.lpProps[7].value.l = 0;
@@ -627,7 +627,7 @@ _PUBLIC_ bool mapitest_mapidump_newmail(struct mapitest *mt)
 	notif.MID = 0xBADCAFEBEEF87625LL;
 	notif.MessageFlags = 0x20|0x2;
 	notif.UnicodeFlag = false;
-	notif.MessageClass.lpszA = "Dummy class";
+	notif.MessageClass.lpszA = (char *) "Dummy class";
 
 	mapidump_newmail(&notif, "[sep]");
 
@@ -776,7 +776,7 @@ _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 	SRow_addprop(&(resolved.aRow[0]), SPropValue);
 
 	SPropValue.ulPropTag = PR_GIVEN_NAME;
-	SPropValue.value.lpszA = "gname";
+	SPropValue.value.lpszA = (uint8_t *) "gname";
 	SRow_addprop(&(resolved.aRow[0]), SPropValue);
 
 	flaglist.cValues = 3;

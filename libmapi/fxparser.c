@@ -338,7 +338,7 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		char *str = NULL;
 		if (!pull_string8(parser, &str))
 			return false;
-		prop->value.lpszA = str;
+		prop->value.lpszA = (uint8_t *) str;
 		break;
 	}
 	case PT_UNICODE:
@@ -430,12 +430,12 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		if (!pull_uint32_t(parser, &(prop->value.MVszA.cValues)) ||
 		    parser->idx + prop->value.MVszA.cValues * 4 > parser->data.length)
 			return false;
-		prop->value.MVszA.lppszA = (const char **) talloc_array(parser->mem_ctx, char *, prop->value.MVszA.cValues);
+		prop->value.MVszA.lppszA = (uint8_t **) talloc_array(parser->mem_ctx, uint8_t*, prop->value.MVszA.cValues);
 		for (i = 0; i < prop->value.MVszA.cValues; i++) {
 			str = NULL;
 			if (!pull_string8(parser, &str))
 				return false;
-			prop->value.MVszA.lppszA[i] = str;
+			prop->value.MVszA.lppszA[i] = (uint8_t *) str;
 		}
 		break;
 	}

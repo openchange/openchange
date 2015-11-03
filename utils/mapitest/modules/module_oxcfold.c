@@ -915,7 +915,7 @@ _PUBLIC_ bool mapitest_oxcfold_SetSearchCriteria(struct mapitest *mt)
 
 	/* Step 5. Set properties on this search folder */
 	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
-	lpProps[0].value.lpszA = IPF_NOTE;
+	lpProps[0].value.lpszA = (uint8_t *) IPF_NOTE;
 	SetProps(&obj_searchdir, 0, lpProps, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -1026,7 +1026,7 @@ _PUBLIC_ bool mapitest_oxcfold_GetSearchCriteria(struct mapitest *mt)
 
 	/* Step 5. Set properties on this search folder */
 	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
-	lpProps[0].value.lpszA = IPF_NOTE;
+	lpProps[0].value.lpszA = (uint8_t *) IPF_NOTE;
 	SetProps(&obj_searchdir, 0, lpProps, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (GetLastError() != MAPI_E_SUCCESS) {

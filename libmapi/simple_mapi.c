@@ -784,7 +784,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 	for (i = 0; i < rowset.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
 		if (lpProp && lpProp->value.lpszA) {
-			if (!strcmp(lpProp->value.lpszA, user)) {
+			if (!strcmp((const char *) lpProp->value.lpszA, user)) {
 				rowList.ModifyCount = 1;
 				rowList.PermissionsData = talloc_array(mem_ctx, struct PermissionData, 1);
 				rowList.PermissionsData[0].PermissionDataFlags = ROW_MODIFY;
@@ -894,7 +894,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	for (i = 0; i < rowset.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
 		if (lpProp && lpProp->value.lpszA) {
-			if (!strcmp(lpProp->value.lpszA, user)) {
+			if (!strcmp((const char *) lpProp->value.lpszA, user)) {
 				rowList.ModifyCount = 1;
 				rowList.PermissionsData = talloc_array(mem_ctx, struct PermissionData, 1);
 				rowList.PermissionsData[0].PermissionDataFlags = ROW_REMOVE;

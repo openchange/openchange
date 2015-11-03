@@ -1483,7 +1483,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = "Attachment 0";
+	attach[2].value.lpszA = (uint8_t *) "Attachment 0";
 	retval = SetProps(&obj_attach0, 0, attach, 3);
 	mapitest_print_retval_clean(mt, "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1512,7 +1512,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
-	attach[2].value.lpszA = "Attachment 1";
+	attach[2].value.lpszA = (uint8_t *) "Attachment 1";
 	retval = SetProps(&obj_attach1, 0, attach, 3);
 	mapitest_print_retval_clean(mt, "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {

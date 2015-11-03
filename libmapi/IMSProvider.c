@@ -169,9 +169,9 @@ _PUBLIC_ enum MAPISTATUS RfrGetNewDSA(struct mapi_context *mapi_ctx,
 
 
 	r.in.ulFlags = 0x0;
-	r.in.pUserDN = userDN ? userDN : "";
+	r.in.pUserDN = (uint8_t *) (userDN ? userDN : "");
 	r.in.ppszUnused = NULL;
-	r.in.ppszServer = (const char **) &ppszServer;
+	r.in.ppszServer = (uint8_t **) &ppszServer;
 
 	status = dcerpc_RfrGetNewDSA_r(pipe->binding_handle, mem_ctx, &r);
 	if ((!NT_STATUS_IS_OK(status) || !r.out.ppszServer || !*r.out.ppszServer) && server) {
@@ -230,8 +230,8 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_context *mapi_ctx, s
 
 	r.in.ulFlags = 0x0;
 	r.in.cbMailboxServerDN = strlen(profile->homemdb) + 1;
-	r.in.szMailboxServerDN = profile->homemdb;
-	r.out.ppszServerFQDN = &ppszServerFQDN;
+	r.in.szMailboxServerDN = (uint8_t *) profile->homemdb;
+	r.out.ppszServerFQDN = (uint8_t **) &ppszServerFQDN;
 
 	status = dcerpc_RfrGetFQDNFromLegacyDN_r(pipe->binding_handle, mem_ctx, &r);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);

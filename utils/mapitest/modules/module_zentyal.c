@@ -106,7 +106,7 @@ _PUBLIC_ bool mapitest_zentyal_1863(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = talloc_strdup(lpProp, mt->profile->username);
+	lpProp->value.lpszA = (uint8_t *) talloc_strdup(lpProp, mt->profile->username);
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -283,9 +283,9 @@ _PUBLIC_ bool mapitest_zentyal_1804(struct mapitest *mt)
 	/* PT_MV_STRING8 */
 	value.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES;
 	value.value.MVszA.cValues = 2;
-	value.value.MVszA.lppszA = talloc_array(mt->mem_ctx, const char *, value.value.MVszA.cValues);
-	value.value.MVszA.lppszA[0] = "smtp:user@test.com";
-	value.value.MVszA.lppszA[1] = "X400:c=US;a= ;p=First Organizati;o=Exchange;s=test";
+	value.value.MVszA.lppszA = talloc_array(mt->mem_ctx, uint8_t *, value.value.MVszA.cValues);
+	value.value.MVszA.lppszA[0] = (uint8_t *) "smtp:user@test.com";
+	value.value.MVszA.lppszA[1] = (uint8_t *) "X400:c=US;a= ;p=First Organizati;o=Exchange;s=test";
 	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
 	/* PT_MV_UNICODE - same layout as PT_MV_STRING8 */
 	value.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES_UNICODE;

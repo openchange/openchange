@@ -277,7 +277,7 @@ void ical_property_CATEGORIES(struct exchange2ical *exchange2ical)
 	if (!exchange2ical->Keywords->cValues) return;
 
 	for (i = 0; i < exchange2ical->Keywords->cValues; i++) {
-		prop = icalproperty_new_categories(exchange2ical->Keywords->lppszA[i]); 
+		prop = icalproperty_new_categories((const char *) exchange2ical->Keywords->lppszA[i]); 
 		icalcomponent_add_property(exchange2ical->vevent, prop);
 	}
 
@@ -306,7 +306,7 @@ void ical_property_CONTACT(struct exchange2ical *exchange2ical)
 	if (!exchange2ical->Contacts->cValues) return;
 
 	for (i = 0; i < exchange2ical->Contacts->cValues; i++) {
-		prop = icalproperty_new_contact(exchange2ical->Contacts->lppszA[i]);
+		prop = icalproperty_new_contact((const char *) exchange2ical->Contacts->lppszA[i]);
 		icalcomponent_add_property(exchange2ical->vevent, prop);
 	}
 }

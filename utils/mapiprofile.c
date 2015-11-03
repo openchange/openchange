@@ -387,7 +387,7 @@ static void mapiprofile_list(struct mapi_context *mapi_ctx, const char *profdb)
 		const char	*name = NULL;
 		uint32_t	dflt = 0;
 
-		name = proftable.aRow[count].lpProps[0].value.lpszA;
+		name = (const char *) proftable.aRow[count].lpProps[0].value.lpszA;
 		dflt = proftable.aRow[count].lpProps[1].value.l;
 
 		if (dflt) {

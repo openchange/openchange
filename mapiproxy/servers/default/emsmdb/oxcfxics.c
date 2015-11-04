@@ -1350,9 +1350,10 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagIdsetGiven);
 		ndr_push_idset(sync_data->ndr, synccontext->idset_given);
 		if (synccontext->request.read_state) {
-			IDSET_dump (synccontext->cnset_read, "cnset_read");
+			/* Hack CNSetRead = CNSetSeen until [MS-OXCFXICS] Section 3.2.5.6 be
+			 * implemented */
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetRead);
-			ndr_push_idset(sync_data->ndr, synccontext->cnset_read);
+			ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
 		}
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateEnd);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);

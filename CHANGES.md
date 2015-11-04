@@ -8,6 +8,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased]
 
 ### Fixes
+* Uniform the hack CNSetRead = CNSetSeen until MS-OXCFXICS Section 3.2.5.6 is implemented
 * Perform proper decoding of idsets which contain GLOBSETs encoded using bitmask command.
   That avoids sync issues when returning the new state after badly parsing incoming one.
 

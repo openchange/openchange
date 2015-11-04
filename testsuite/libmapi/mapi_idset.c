@@ -91,7 +91,51 @@ START_TEST (test_IDSET_parse_invalid) {
 		res = IDSET_parse(mem_ctx, bin, true);
 		ck_assert(res == NULL);
 	}
+} END_TEST
 
+START_TEST (test_IDSET_parse_bitmask_cmd) {
+	/* Test GLOBSET encoded using Bitmask command */
+	DATA_BLOB		bin;
+	struct idset		*res;
+	const uint8_t		case_0[] =
+		{0x5b, 0x74, 0xc8, 0x0f, 0x23, 0xe2, 0x1f, 0x4f, 0x82, 0x34, 0x40, 0xf0, 0xbe, 0xc4, 0x6e, 0x93,
+		 0x4, 0x0, 0x0, 0x0, 0x6, 0x52, 0x4d, 0x5e, 0x89, 0xe6,
+		 0x1, 0x89, 0x42, 0xe8, 0x2, 0x50, 0x50, 0x0};
+	/* Example from [MS-OXCFXICS] Section 3.1.5.4.3.1.3 */
+	const uint8_t		case_1[] =
+		{0x1, 0x0,
+		 0x5, 0x0, 0x0, 0x0, 0x6, 0x89,
+		 0x42, 0x1, 0xeb, 0x50, 0x0};
+	const size_t		cases_size[] = { sizeof(case_0)/sizeof(uint8_t),
+						 sizeof(case_1)/sizeof(uint8_t) };
+
+	bin.length = cases_size[0];
+	bin.data = (uint8_t *)case_0;
+	res = IDSET_parse(mem_ctx, bin, false);
+	ck_assert(res != NULL);
+	ck_assert_int_eq(res->idbased, false);
+	ck_assert_int_eq(res->single, false);
+	ck_assert_int_eq(res->range_count, 3);
+	ck_assert_int_eq(res->ranges->low, 0x5e4d06000000);
+	ck_assert_int_eq(res->ranges->high, 0xe68906000000);
+	ck_assert_int_eq(res->ranges->next->low, 0xe88906000000);
+	ck_assert_int_eq(res->ranges->next->high, res->ranges->next->low);
+	ck_assert_int_eq(res->ranges->next->next->low, 0xea8906000000);
+	ck_assert_int_eq(res->ranges->next->next->high, res->ranges->next->next->low);
+
+	bin.length = cases_size[1];
+	bin.data = (uint8_t *)case_1;
+	res = IDSET_parse(mem_ctx, bin, true);
+	ck_assert(res != NULL);
+	ck_assert_int_eq(res->idbased, true);
+	ck_assert_int_eq(res->single, false);
+	ck_assert_int_eq(res->range_count, 3);
+	ck_assert_int_eq(res->ranges->low, 0x018906000000);
+	ck_assert_int_eq(res->ranges->high, 0x038906000000);
+	ck_assert_int_eq(res->ranges->next->low, 0x058906000000);
+	ck_assert_int_eq(res->ranges->next->high, res->ranges->next->low);
+	ck_assert_int_eq(res->ranges->next->next->low, 0x078906000000);
+	ck_assert_int_eq(res->ranges->next->next->high, 0x098906000000);
 } END_TEST
 
 START_TEST (test_IDSET_includes_guid_glob) {
@@ -311,6 +355,7 @@ Suite *libmapi_idset_suite(void)
 	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
 	tcase_add_test(tc, test_IDSET_parse);
 	tcase_add_test(tc, test_IDSET_parse_invalid);
+	tcase_add_test(tc, test_IDSET_parse_bitmask_cmd);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("IDSET_includes_guid_glob");

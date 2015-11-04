@@ -11,6 +11,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Perform proper decoding of idsets which contain GLOBSETs encoded using bitmask command.
   That avoids sync issues when returning the new state after badly parsing incoming one.
 
+### Improvements
+* Optimise idset data usage on downloading changes with consecutive ranges
+
 
 ## [2.4-zentyal12] - 2015-11-03
 

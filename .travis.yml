@@ -1,13 +1,23 @@
 language: c
-script: ./autogen.sh && ./configure && make && make test
+sudo: required
+dist: trusty
 compiler:
   - clang
   - gcc
-install:
-  - sudo apt-add-repository -y ppa:openchange/travis-deps
-  - sudo apt-get update
-  - sudo apt-get install -qq autoconf automake bison doxygen flex libboost-system-dev libboost-thread-dev libical-dev libldb-dev libmagic-dev libpopt-dev libsqlite3-dev libsubunit-dev libtalloc-dev libtevent-dev pkg-config python-all-dev python-samba samba-dev zlib1g-dev python-twisted-core python-subunit check python-mysqldb libpcap-dev libmemcached-dev libnanomsg0
 services:
   - mysql
   - memcached
-
+before_install:
+  - python -c 'import sys; print sys.path'
+  - sudo apt-get update -qq
+  - sudo apt-get -y install  mysql-server
+  - mysqladmin -u root status
+  - mysql -e "create database IF NOT EXISTS openchange_test;" -uroot
+install:
+  - sudo apt-add-repository "deb http://archive.zentyal.org/zentyal 4.2 main extra"
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8E9229F7E23F4777
+  - sudo apt-get update -qq
+  - sudo apt-get -o Dpkg::Options::="--force-overwrite" -y install autoconf automake bison doxygen flex libboost-system-dev libboost-thread-dev libical-dev libldb-dev libmagic-dev libpopt-dev libsqlite3-dev libsubunit-dev libtalloc-dev libtevent-dev pkg-config python-all-dev python-samba samba-dev zlib1g-dev python-twisted-core python-subunit check python-mysqldb libpcap-dev libmemcached-dev libnanomsg0  autoconf automake bison exuberant-ctags debhelper dh-autoreconf doxygen flex libboost-system-dev libboost-thread-dev libical-dev libldb-dev libmagic-dev libpopt-dev libsqlite3-dev libsubunit-dev libtalloc-dev libtevent-dev libmysqlclient-dev pkg-config python-all-dev samba-dev zlib1g-dev git dpkg-dev vim gdb locate fakeroot build-essential gobjc libgnustep-base-dev libsope-dev libmemcached-dev libxml2-dev libsbjson-dev libgnutls-dev libldap2-dev libcurl4-gnutls-dev liblasso3-dev libwbxml2-dev libbsd-dev librabbitmq-dev libjson-c-dev libconfig-dev libpcap-dev libpython-dev libnanomsg-dev check
+  - sudo ln -s /usr/lib/python2.7/dist-packages/* /opt/python/2.7.10/lib/python2.7/site-packages/ || true
+  - python -c 'import samba; print samba'
+script: ./autogen.sh && ./configure && make && make test

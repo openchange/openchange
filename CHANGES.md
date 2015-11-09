@@ -5,7 +5,7 @@ The descriptions should be useful and understandable for end users of OpenChange
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
 
-## [unreleased]
+## [2.4-zentyal13] - 2015-11-09
 
 ### Fixes
 * Uniform the hack CNSetRead = CNSetSeen until MS-OXCFXICS Section 3.2.5.6 is implemented
@@ -172,7 +172,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal12...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal13...HEAD
+[2.4-zentyal13]: https://github.com/Zentyal/openchange/compare/2.4-zentyal12...2.4-zentyal13
 [2.4-zentyal12]: https://github.com/Zentyal/openchange/compare/2.4-zentyal11...2.4-zentyal12
 [2.4-zentyal11]: https://github.com/Zentyal/openchange/compare/2.4-zentyal10...2.4-zentyal11
 [2.4-zentyal10]: https://github.com/Zentyal/openchange/compare/2.4-zentyal9...2.4-zentyal10

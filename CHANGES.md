@@ -5,6 +5,12 @@ The descriptions should be useful and understandable for end users of OpenChange
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
 
+## [2.4-zentyal14] - 2015-11-10
+
+### Improvements
+* Upgrade to samba 4.3.1 (no compatible with 4.1.x series)
+
+
 ## [2.4-zentyal13] - 2015-11-09
 
 ### Fixes
@@ -22,6 +28,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Do not assume that string8 variables have ascii encoding (display names can have any character now)
 * Do not abort on IDSET parsing but returning a format error
 * Do not abort on syncing in some errors from backend
+
 
 ## [2.4-zentyal11] - 2015-10-26
 
@@ -172,7 +179,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal13...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal14...HEAD
+[2.4-zentyal14]: https://github.com/Zentyal/openchange/compare/2.4-zentyal13...2.4-zentyal14
 [2.4-zentyal13]: https://github.com/Zentyal/openchange/compare/2.4-zentyal12...2.4-zentyal13
 [2.4-zentyal12]: https://github.com/Zentyal/openchange/compare/2.4-zentyal11...2.4-zentyal12
 [2.4-zentyal11]: https://github.com/Zentyal/openchange/compare/2.4-zentyal10...2.4-zentyal11

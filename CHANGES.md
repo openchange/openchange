@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
+## [Unreleased]
+
+### Improvements
+* Give support to Autodiscover requests done by MS Remote Connectivity Analyzer
+
 
 ## [2.4-zentyal14] - 2015-11-10
 

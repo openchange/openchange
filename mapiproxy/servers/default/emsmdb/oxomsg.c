@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +26,7 @@
  */
 
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "mapiproxy/util/samdb.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
@@ -318,8 +319,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESSING");
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESS-TEMPLATES");
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
-                         LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
+	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
+			      LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
 	talloc_free(basedn);
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {

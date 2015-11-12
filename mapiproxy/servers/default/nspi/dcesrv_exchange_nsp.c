@@ -27,6 +27,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
 
@@ -1391,9 +1392,9 @@ static void dcesrv_do_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
-				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
+		ret = safe_ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
+				      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				      LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
 
 		/* Determine name resolution status and fetch object upon success */
 		if (ret != LDB_SUCCESS || ldb_res->count == 0) {

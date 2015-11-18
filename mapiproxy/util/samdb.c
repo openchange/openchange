@@ -138,7 +138,7 @@ struct ldb_context *samdb_init(TALLOC_CTX *mem_ctx)
 		samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
 					      LDB_FLG_RECONNECT, samdb_url);
 
-		samdb_ctx->modules->private_data->ldap->timeout = 10;
+		if (samdb_ctx) samdb_ctx->modules->private_data->ldap->timeout = 10;
 	}
 
 	return samdb_ctx;
@@ -171,9 +171,11 @@ int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	while (tries < 3) {
-		ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
-
-		if (ret == LDB_SUCCESS) break;
+		if (ldb)
+		{
+			ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
+			if (ret == LDB_SUCCESS) break;
+		}
 
 		OC_DEBUG(3, "sam db connection lost, reconnecting...");
 		ldb = samdb_reconnect(ldb);

@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [Unreleased]
 
+### Fixes
+* Do not fail receiving an empty idset on SyncUploadStateStreamEnd
+
 ### Improvements
 * Give support to Autodiscover requests done by MS Remote Connectivity Analyzer
 

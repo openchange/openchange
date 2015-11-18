@@ -2957,10 +2957,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	synccontext = synccontext_object->object.synccontext;
 	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
-	retval = IDSET_check_ranges(parsed_idset);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_repl->error_code = retval;
-		goto reset;
+	if (parsed_idset) {
+		retval = IDSET_check_ranges(parsed_idset);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = retval;
+			goto reset;
+		}
 	}
 
 	switch (synccontext->state_property) {

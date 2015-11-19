@@ -41,7 +41,7 @@ struct loadparm_context;
 /*
   Private struct declarations to assign timeout when samdb_context is a
   ldap connection (these struct are either private or not published on samba
-  package, libcli/ldap/ldpa_client.h).
+  package, source4/libcli/ldap/ldap_client.h).
 */
 struct ldb_context {
 	struct ldb_module *modules;
@@ -147,9 +147,14 @@ struct ldb_context *samdb_init(TALLOC_CTX *mem_ctx)
 
 struct ldb_context *samdb_reconnect(struct ldb_context *samdb_ctx)
 {
+	struct ldb_context *res;
 	TALLOC_CTX *mem_ctx = talloc_parent(samdb_ctx);
-	talloc_free(samdb_ctx);
-	return samdb_init(mem_ctx);
+	res = samdb_init(mem_ctx);
+
+	/* only free previous ldb context after a successful reconnect */
+	if (res) talloc_free(samdb_ctx);
+
+	return res;
 }
 
 int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
@@ -161,6 +166,7 @@ int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	int tries = 0;
 	int ret;
 	char *formatted = NULL;
+	struct ldb_context *new_ldb = NULL;
 
 	if (exp_fmt) {
 		va_start(ap, exp_fmt);
@@ -170,17 +176,26 @@ int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		if (!formatted) return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	while (tries < 3) {
-		if (ldb)
+
+	ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
+	if (ret != LDB_ERR_OPERATIONS_ERROR) {
+		return ret;
+	}
+
+	/* Something failed, try reconnecting */
+	do
+	{
+		OC_DEBUG(3, "sam db connection lost, reconnecting...");
+		new_ldb = samdb_reconnect(ldb);
+
+		if (new_ldb)
 		{
+			ldb = new_ldb;
 			ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
-			if (ret == LDB_SUCCESS) break;
 		}
 
-		OC_DEBUG(3, "sam db connection lost, reconnecting...");
-		ldb = samdb_reconnect(ldb);
 		tries++;
-	}
+	} while (tries < 3);
 
 	return ret;
 }

@@ -718,6 +718,10 @@ int main(int argc, const char *argv[])
 					 getenv("HOME"));
 	}
 
+	if (create && (profname == false)) {
+		show_help(pc, "profile");
+	}
+
 	if ((list == false) && (getfqdn == false) && (newdb == false) && (listlangs == false)
 	    && (getdflt == false) && (dump == false) && (rename == NULL) && 
 	    (!attribute) && (!profname || !profdb)) {

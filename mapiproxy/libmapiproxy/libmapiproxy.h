@@ -198,6 +198,14 @@ bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 struct mpm_session *mpm_session_find_by_uuid(struct GUID *);
 
+
+/* definition from util/samdb.c */
+int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+		    struct ldb_result **result, struct ldb_dn *base,
+		    enum ldb_scope scope, const char * const *attrs,
+		    const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
+
+
 struct openchangedb_context;
 
 /* definitions from openchangedb.c */

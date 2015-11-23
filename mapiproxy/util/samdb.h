@@ -29,19 +29,16 @@
 
 #include <tevent.h>
 #include <talloc.h>
-#include "libmapi/libmapi.h"
 #include <param.h>
 #include <ldb.h>
+
+#include "libmapi/libmapi.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 
 struct ldb_context *samdb_init(TALLOC_CTX *mem_ctx);
 struct ldb_context *samdb_reconnect(struct ldb_context *samdb_ctx);
 
 #undef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
-
-int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-		    struct ldb_result **result, struct ldb_dn *base,
-		    enum ldb_scope scope, const char * const *attrs,
-		    const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
 
 #endif /* __OC_SAMDB_H__ */

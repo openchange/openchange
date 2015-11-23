@@ -626,19 +626,29 @@ Debug::NoLocking "true";
         DBG_PKGS = {'libldb1': 'ldb',
                     'libsope1': 'sope',
                     'libc6': 'eglibc',
+                    'libwbclient0': 'samba',
                     'libwbxml2-0': 'wbxml2',
                     'openchangeserver': 'openchange',
                     'openchangeproxy': 'openchange',
-		    'libmapi0': 'openchange',
+                    'libmapi0': 'openchange',
                     'libmapistore0': 'openchange',
                     'libmapiproxy0': 'openchange',
+                    'libnss-winbind': 'samba',
+                    'libpam-winbind': 'samba',
                     'python-ldb': 'ldb',
+                    'python-talloc': 'talloc',
                     'samba': 'samba',
+                    'samba-common-bin': 'samba',
+                    'samba-dsdb-modules': 'samba',
+                    'samba-libs': 'samba',
+                    'samba-testsuite': 'samba',
+                    'samba-vfs-modules': 'samba',
                     'sogo': 'sogo',
                     'sogo-openchange': 'sogo',
                     'libtalloc2': 'talloc',
                     'libtevent0': 'tevent',
-                    'libntdb1': 'ntdb'}
+                    'libntdb1': 'ntdb',
+                    'winbind': 'samba'}
 
         # urls to overwrite dbg packages with proper version
         dbg_pkg_urls = {}

@@ -10,6 +10,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Do not fail receiving an empty idset on SyncUploadStateStreamEnd
 
 ### Improvements
+* Notify missing --profile when using --create in mapiprofile tool
 * Give support to Autodiscover requests done by MS Remote Connectivity Analyzer
 
 

@@ -1374,7 +1374,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->mailboxstore = mailboxstore;
 
 	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s",
 			      ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
@@ -2495,7 +2495,7 @@ static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALL
 	retval = emsmdbp_fetch_organizational_units(mem_ctx, emsmdbp_ctx, NULL, &group_name);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			      basedn, LDB_SCOPE_SUBTREE, attrs,
 			      "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
 			      ldb_binary_encode_string(mem_ctx, group_name));

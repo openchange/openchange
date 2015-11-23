@@ -200,7 +200,7 @@ struct mpm_session *mpm_session_find_by_uuid(struct GUID *);
 
 
 /* definition from util/samdb.c */
-int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+int safe_ldb_search(struct ldb_context **ldb, TALLOC_CTX *mem_ctx,
 		    struct ldb_result **result, struct ldb_dn *base,
 		    enum ldb_scope scope, const char * const *attrs,
 		    const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);

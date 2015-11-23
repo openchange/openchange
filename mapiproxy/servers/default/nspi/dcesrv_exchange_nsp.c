@@ -1392,7 +1392,7 @@ static void dcesrv_do_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		ret = safe_ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
+		ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
 				      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				      LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
 

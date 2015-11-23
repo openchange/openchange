@@ -157,7 +157,7 @@ struct ldb_context *samdb_reconnect(struct ldb_context *samdb_ctx)
 	return res;
 }
 
-int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+int safe_ldb_search(struct ldb_context **ldb_ptr, TALLOC_CTX *mem_ctx,
 		    struct ldb_result **result, struct ldb_dn *base,
 		    enum ldb_scope scope, const char * const *attrs,
 		    const char *exp_fmt, ...)
@@ -168,6 +168,11 @@ int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	char *formatted = NULL;
 	struct ldb_context *new_ldb = NULL;
 
+	if (ldb_ptr == NULL) {
+		OC_DEBUG(0, "safe_ldb_search got wrong ldb_context");
+		return -1;
+	}
+
 	if (exp_fmt) {
 		va_start(ap, exp_fmt);
 		formatted = talloc_vasprintf(mem_ctx, exp_fmt, ap);
@@ -177,21 +182,28 @@ int safe_ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 
-	ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
+	ret = ldb_search(*ldb_ptr, mem_ctx, result, base, scope, attrs, formatted);
 	if (ret != LDB_ERR_OPERATIONS_ERROR) {
 		return ret;
 	}
 
 	/* Something failed, try reconnecting */
-	do
-	{
+	do {
 		OC_DEBUG(3, "sam db connection lost, reconnecting...");
-		new_ldb = samdb_reconnect(ldb);
+		new_ldb = samdb_init(talloc_parent(*ldb_ptr));
 
-		if (new_ldb)
-		{
-			ldb = new_ldb;
-			ret = ldb_search(ldb, mem_ctx, result, base, scope, attrs, formatted);
+		if (new_ldb) {
+			ret = ldb_search(new_ldb, mem_ctx, result, base, scope, attrs, formatted);
+			if (ret != LDB_ERR_OPERATIONS_ERROR) {
+				/* reconnect worked, replace ldb_context with the new one */
+				talloc_free(*ldb_ptr);
+				*ldb_ptr = new_ldb;
+				break;
+			}
+			else {
+				/* reconnect didn't help, forget and retry */
+				TALLOC_FREE(new_ldb);
+			}
 		}
 
 		tries++;

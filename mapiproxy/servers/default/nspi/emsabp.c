@@ -132,7 +132,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
 	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL };
 
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, mem_ctx, &res,
 			      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
 			      ldb_binary_encode_string(mem_ctx, username));
@@ -714,7 +714,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	ldb_dn = ldb_dn_new(mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
 			      recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
@@ -949,7 +949,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	aRow_idx++;
 
 	/* Step 2. Retrieve the object pointed by addressBookRoots attribute: 'All Address Lists' */
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
 			      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 			      scope, recipient_attrs, "(addressBookRoots=*)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, aRow);
@@ -962,7 +962,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, aRow);
 
 	scope = LDB_SCOPE_BASE;
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
 			      scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
@@ -1230,7 +1230,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
 	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
 			      LDB_SCOPE_BASE, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
@@ -1267,14 +1267,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	OPENCHANGE_RETVAL_IF(!pbUseConfPartition, MAPI_E_INVALID_PARAMETER, NULL);
 
 	*pbUseConfPartition = true;
-	ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
 			      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			      ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
 
 	if (ret != LDB_SUCCESS || res->count == 0) {
 		*pbUseConfPartition = false;
-		ret = safe_ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+		ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
 				      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 				      ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
@@ -1312,7 +1312,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_fetch_filter(TALLOC_CTX *mem_ctx,
 
 	if (!ContainerID) {
 		/* if GAL is requested */
-		ret = safe_ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
+		ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, mem_ctx, &res,
 				      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 				      LDB_SCOPE_SUBTREE, recipient_attrs, "(globalAddressList=*)");
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, NULL);

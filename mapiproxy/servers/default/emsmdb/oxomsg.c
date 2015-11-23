@@ -319,7 +319,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESSING");
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESS-TEMPLATES");
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
 			      LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
 	talloc_free(basedn);
 	/* If the search failed */

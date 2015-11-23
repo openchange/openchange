@@ -225,7 +225,7 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 
 	username = dcesrv_call_account_name(dce_call);
 
-	ret = safe_ldb_search (emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search (&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			       ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			       LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
 			       ldb_binary_encode_string(emsmdbp_ctx, username));
@@ -281,7 +281,7 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	/* Sanity Checks */
 	if (!legacyExchangeDN) return false;
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			      ldb_binary_encode_string(emsmdbp_ctx, legacyExchangeDN));
@@ -348,7 +348,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, recipient_attrs,
 			      "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
@@ -609,7 +609,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 	retval = emsmdbp_fetch_organizational_units(emsmdbp_ctx, emsmdbp_ctx, &org_name, NULL);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			      ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, NULL,
 			      "(&(objectClass=msExchOrganizationContainer)(cn=%s))",
@@ -654,7 +654,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_external_email(struct emsmdbp_context *emsm
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!email, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, attrs,
 			      "(&(objectClass=user)(sAMAccountName=%s))",

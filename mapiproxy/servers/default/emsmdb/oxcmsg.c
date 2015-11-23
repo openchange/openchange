@@ -45,7 +45,7 @@ static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context
 		goto smtp_recipient;
 	}
 
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			     ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			     LDB_SCOPE_SUBTREE, recipient_attrs,
 			     "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
@@ -730,7 +730,7 @@ static enum MAPISTATUS oxcmsg_resolve_partial_x500name(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 1. Try to find out an account with x500dn we have */
-	ret = safe_ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE,
 			      attrs, "legacyExchangeDN=%s", x500dn);
 	if (ret != LDB_SUCCESS || res->count != 1) {

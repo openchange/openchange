@@ -73,22 +73,29 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
+	uint32_t		usernames_count;
 
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (usernames_count = 0; usernames[usernames_count]; usernames_count++);
+	OPENCHANGE_RETVAL_IF(!usernames_count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
 	mem_ctx = talloc_named(session, 0, "ResolveNames");
 
 	switch (flags) {
 	case MAPI_UNICODE:
-		retval = nspi_ResolveNamesW(nspi, mem_ctx, usernames, props, &rowset, &flaglist);
+		retval = nspi_ResolveNamesW(nspi, mem_ctx, usernames, usernames_count,
+					    props, &rowset, &flaglist);
 		break;
 	default:
-		retval = nspi_ResolveNames(nspi, mem_ctx, usernames, props, &rowset, &flaglist);
+		retval = nspi_ResolveNames(nspi, mem_ctx, usernames, usernames_count,
+					   props, &rowset, &flaglist);
 		break;
 	}
 

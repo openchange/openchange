@@ -105,8 +105,8 @@ enum MAPISTATUS		nspi_ModLinkAtt(struct nspi_context *, bool, uint32_t, uint32_t
 enum MAPISTATUS		nspi_QueryColumns(struct nspi_context *, TALLOC_CTX *, bool, struct SPropTagArray **);
 enum MAPISTATUS		nspi_GetNamesFromIDs(struct nspi_context *, TALLOC_CTX *, struct FlatUID_r *, struct SPropTagArray *, struct SPropTagArray **, struct PropertyNameSet_r **);
 enum MAPISTATUS		nspi_GetIDsFromNames(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct PropertyName_r *, struct SPropTagArray **);
-enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
-enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, uint32_t, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, uint32_t, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
 void			nspi_dump_STAT(const char *, struct STAT *);
 
 /* The following public definitions come from libmapi/emsmdb.c */

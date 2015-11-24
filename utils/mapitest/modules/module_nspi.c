@@ -933,6 +933,7 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
+	bool				ret = true;
 	int				i;
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray = NULL;
@@ -970,16 +971,17 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &RowSet, &flaglist, 0);
 	mapitest_print_retval_clean(mt, "NspiResolveNames - existing", retval);
 	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
+		ret = false;
+		goto cleanup;
 	}
-	if ( ! flaglist) {
+	if (!flaglist) {
 		mapitest_print(mt, "\tNULL flaglist, which wasn't expected\n");
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
 		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
+		ret = false;
 	} else {
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
@@ -991,14 +993,15 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	mapitest_print_retval_clean(mt, "NspiResolveNamesW - existing", retval);
 	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
 		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
+		ret = false;
 	} else {
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
 	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Test with non-existant username */
@@ -1007,14 +1010,15 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	mapitest_print_retval_clean(mt, "NspiResolveNames - non existant user name", retval);
 	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
 		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
+		ret = false;
 	} else {
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
 	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	/* NspiResolveNamesW (0x14) */
@@ -1022,14 +1026,15 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	mapitest_print_retval_clean(mt, "NspiResolveNamesW - non existant user name", retval);
 	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
 		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
+		ret = false;
 	} else {
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
 	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Test with NULL for paWStr */
@@ -1046,8 +1051,8 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 			mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[i]);
 			talloc_free(flaglist);
 			talloc_free(RowSet);
-			MAPIFreeBuffer(SPropTagArray);
-			return false;
+			ret = false;
+			goto cleanup;
 		}
 	}
 
@@ -1062,15 +1067,16 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 			mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[i]);
 			talloc_free(flaglist);
 			talloc_free(RowSet);
-			MAPIFreeBuffer(SPropTagArray);
-			return false;
+			ret = false;
+			goto cleanup;
 		}
 	}
 	talloc_free(flaglist);
 	talloc_free(RowSet);
 
+cleanup:
 	MAPIFreeBuffer(SPropTagArray);
-	return true;
+	return ret;
 }
 
 /**

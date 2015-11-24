@@ -933,12 +933,15 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
+	int				i;
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray = NULL;
-	struct PropertyRowSet_r		*RowSet = NULL;
-	struct PropertyTagArray_r	*flaglist = NULL;
+	struct PropertyRowSet_r		*RowSet = NULL, **RowSet_ptr;
+	struct PropertyTagArray_r	*flaglist = NULL, **flaglist_ptr;
 	const char			*username[2];
-	const char     			*username_err[2];
+	const char			*username_err[2];
+	const size_t			null_count = 5;
+	const char			*null_strs[] = {NULL, NULL, NULL, NULL, NULL};
 
 	/* Build the username array */
 	username[0] = (const char *)mt->profile->mailbox;
@@ -1028,6 +1031,44 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 		MAPIFreeBuffer(SPropTagArray);
 		return false;
 	}
+
+	/* Test with NULL for paWStr */
+	RowSet_ptr = &RowSet;
+	flaglist_ptr = &flaglist;
+	/* NspiResolveNames (0x13) */
+	retval = nspi_ResolveNames((struct nspi_context *)mt->session->nspi->ctx,
+				    mt->session->nspi->ctx,
+				    null_strs, null_count, SPropTagArray, &RowSet_ptr,
+				    &flaglist_ptr);
+	mapitest_print_retval_clean(mt, "NspiResolveNames - NULL usernames", retval);
+	for (i=0; i < null_count && retval == MAPI_E_SUCCESS; i++) {
+		if (flaglist->aulPropTag[i] != MAPI_UNRESOLVED) {
+			mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[i]);
+			talloc_free(flaglist);
+			talloc_free(RowSet);
+			MAPIFreeBuffer(SPropTagArray);
+			return false;
+		}
+	}
+
+	/* NspiResolveNamesW (0x14) */
+	retval = nspi_ResolveNamesW((struct nspi_context *)mt->session->nspi->ctx,
+				    mt->session->nspi->ctx,
+				    null_strs, null_count, SPropTagArray, &RowSet_ptr,
+				    &flaglist_ptr);
+	mapitest_print_retval_clean(mt, "NspiResolveNamesW - NULL usernames", retval);
+	for (i=0; i < null_count && retval == MAPI_E_SUCCESS; i++) {
+		if (flaglist->aulPropTag[i] != MAPI_UNRESOLVED) {
+			mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[i]);
+			talloc_free(flaglist);
+			talloc_free(RowSet);
+			MAPIFreeBuffer(SPropTagArray);
+			return false;
+		}
+	}
+	talloc_free(flaglist);
+	talloc_free(RowSet);
+
 	MAPIFreeBuffer(SPropTagArray);
 	return true;
 }

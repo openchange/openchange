@@ -169,6 +169,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 	mstore_ctx->conn_info->sam_ctx = sam_ctx;
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	(void) talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
+	(void) talloc_reference(mstore_ctx->conn_info, sam_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
 
 	return MAPISTORE_SUCCESS;

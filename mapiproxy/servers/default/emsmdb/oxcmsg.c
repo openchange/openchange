@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,6 +30,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "mapiproxy/util/samdb.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct RecipientRow *row, struct mapistore_message_recipient *recipient, struct SPropTagArray *properties)
@@ -44,11 +45,11 @@ static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context
 		goto smtp_recipient;
 	}
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs,
-			 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-			 ldb_binary_encode_string(mem_ctx, recipient->username));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			     ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			     LDB_SCOPE_SUBTREE, recipient_attrs,
+			     "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
+			     ldb_binary_encode_string(mem_ctx, recipient->username));
 	/* If the search failed, build an external recipient: very basic for the moment */
 	if (ret != LDB_SUCCESS || !res->count) {
 		OC_DEBUG(0, "record not found for %s\n", recipient->username);
@@ -398,9 +399,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch ((int)mapistore) {
 	case true:
-		ret = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
-						      folder_object->backend_object, message_object, 
-						      messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
+		ret = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID,
+						      folder_object->backend_object, message_object,
+						      messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						      &message_object->backend_object);
 		if (ret != MAPISTORE_SUCCESS) {
 			if (ret == MAPISTORE_ERR_DENIED) {
@@ -729,9 +730,9 @@ static enum MAPISTATUS oxcmsg_resolve_partial_x500name(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 1. Try to find out an account with x500dn we have */
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE,
-			 attrs, "legacyExchangeDN=%s", x500dn);
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE,
+			      attrs, "legacyExchangeDN=%s", x500dn);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		/* no such user, just pass what we have */
 		username = x500dn;

@@ -28,53 +28,12 @@
 
 #define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
 #include "ldb.h"
 
-/* Expose samdb_connect prototype */
-struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
-				  struct loadparm_context *,
-				  struct auth_session_info *,
-				  unsigned int);
 
-/* Single connection to samdb */
-static struct ldb_context *samdb_ctx = NULL;
-
-/**
-   \details Initialize ldb_context to samdb, creates one for all emsabp
-   contexts
-
-   \param lp_ctx pointer to the loadparm context
- */
-static struct ldb_context *samdb_init(struct loadparm_context *lp_ctx)
-{
-	TALLOC_CTX		*mem_ctx;
-	struct tevent_context	*ev;
-	const char		*samdb_url;
-
-	if (samdb_ctx) return samdb_ctx;
-
-	mem_ctx = talloc_autofree_context();
-	ev = tevent_context_init(mem_ctx);
-	if (!ev) {
-		OC_PANIC(false, ("Fail to initialize tevent_context\n"));
-		return NULL;
-	}
-	tevent_loop_allow_nesting(ev);
-
-	/* Retrieve samdb url (local or external) */
-	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-
-	if (!samdb_url) {
-		samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
-	} else {
-		samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
-					      LDB_FLG_RECONNECT, samdb_url);
-	}
-
-	return samdb_ctx;
-}
 
 /**
    \details Initialize the EMSABP context and open connections to
@@ -107,7 +66,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;
 
-	emsabp_ctx->samdb_ctx = samdb_init(lp_ctx);
+	emsabp_ctx->samdb_ctx = samdb_init(emsabp_ctx);
 	if (!emsabp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		OC_DEBUG(0, "[nspi] Connection to \"sam.ldb\" failed");
@@ -173,10 +132,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
 	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL };
 
-	ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
-			 ldb_binary_encode_string(mem_ctx, username));
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, mem_ctx, &res,
+			      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
+			      ldb_binary_encode_string(mem_ctx, username));
 	OPENCHANGE_RETVAL_IF((ret != LDB_SUCCESS || !res->count), MAPI_E_NOT_FOUND, NULL);
 
 	/* Check if more than one record was found */
@@ -755,8 +714,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	ldb_dn = ldb_dn_new(mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
-			 recipient_attrs, NULL);
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
+			      recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
 	/* Step 2. Retrieve property values and build aRow */
@@ -990,9 +949,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	aRow_idx++;
 
 	/* Step 2. Retrieve the object pointed by addressBookRoots attribute: 'All Address Lists' */
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
-			 scope, recipient_attrs, "(addressBookRoots=*)");
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
+			      scope, recipient_attrs, "(addressBookRoots=*)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, aRow);
 
 	addressBookRoots = ldb_msg_find_attr_as_string(res->msgs[0], "addressBookRoots", NULL);
@@ -1003,8 +962,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, aRow);
 
 	scope = LDB_SCOPE_BASE;
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
-			 scope, recipient_attrs, NULL);
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+			      scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
 	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + 1);
@@ -1271,8 +1230,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
 	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
-			 LDB_SCOPE_BASE, recipient_attrs, NULL);
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+			      LDB_SCOPE_BASE, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
 	*ldb_res = res->msgs[0];
@@ -1308,17 +1267,17 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	OPENCHANGE_RETVAL_IF(!pbUseConfPartition, MAPI_E_INVALID_PARAMETER, NULL);
 
 	*pbUseConfPartition = true;
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
-			 ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
+	ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+			      ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
 
 	if (ret != LDB_SUCCESS || res->count == 0) {
 		*pbUseConfPartition = false;
-		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
-				 ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
+		ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+				      ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+				      ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
 	}
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, NULL);
 
@@ -1353,9 +1312,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_fetch_filter(TALLOC_CTX *mem_ctx,
 
 	if (!ContainerID) {
 		/* if GAL is requested */
-		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
-				 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "(globalAddressList=*)");
+		ret = safe_ldb_search(&emsabp_ctx->samdb_ctx, mem_ctx, &res,
+				      ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
+				      LDB_SCOPE_SUBTREE, recipient_attrs, "(globalAddressList=*)");
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, NULL);
 
 		/* We could have more than one GAL, but all of them are equal so

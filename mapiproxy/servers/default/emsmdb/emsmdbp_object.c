@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,6 +34,7 @@
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "mapiproxy/libmapistore/mapistore_nameid.h"
+#include "mapiproxy/util/samdb.h"
 #include "libmapi/property_tags.h"
 #include "libmapi/property_altnames.h"
 
@@ -1373,10 +1374,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->mailboxstore = mailboxstore;
 
 	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s",
-			 ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s",
+			      ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
 	if (!ret && res->count == 1) {
 		accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
 		if (accountName) {
@@ -2494,10 +2495,10 @@ static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALL
 	retval = emsmdbp_fetch_organizational_units(mem_ctx, emsmdbp_ctx, NULL, &group_name);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 basedn, LDB_SCOPE_SUBTREE, attrs,
-			 "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
-			 ldb_binary_encode_string(mem_ctx, group_name));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			      basedn, LDB_SCOPE_SUBTREE, attrs,
+			      "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
+			      ldb_binary_encode_string(mem_ctx, group_name));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {

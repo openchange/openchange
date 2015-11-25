@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +26,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
@@ -65,7 +66,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!request->EssDN, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Retrieve user record */
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE, attrs, "legacyExchangeDN=%s", request->EssDN);
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE, attrs, "legacyExchangeDN=%s", request->EssDN);
 	OPENCHANGE_RETVAL_IF((ret || res->count != 1), ecUnknownUser, NULL);
 
 	/* Step 1. Retrieve username from record */

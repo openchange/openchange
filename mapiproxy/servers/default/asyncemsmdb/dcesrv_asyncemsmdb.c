@@ -22,6 +22,7 @@
 
 #include "dcesrv_asyncemsmdb.h"
 #include "utils/dlinklist.h"
+#include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
@@ -1153,42 +1154,6 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 }
 
 
-/**
-   \details Initialize ldb_context to samdb, creates one for all emsmdbp
-   contexts
-
-   \param lp_ctx pointer to the loadparm context
- */
-static struct ldb_context *samdb_init(struct loadparm_context *lp_ctx)
-{
-	TALLOC_CTX		*mem_ctx;
-	struct tevent_context	*ev;
-	const char		*samdb_url;
-	struct ldb_context	*_samdb_ctx;
-
-	if (samdb_ctx) return samdb_ctx;
-
-	mem_ctx = talloc_autofree_context();
-	ev = tevent_context_init(mem_ctx);
-	if (!ev) {
-		return NULL;
-	}
-	tevent_loop_allow_nesting(ev);
-
-	/* Retrieve samdb url (local or external) */
-	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-
-	if (!samdb_url) {
-		_samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
-	} else {
-		_samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
-					       LDB_FLG_RECONNECT, samdb_url);
-	}
-
-	return _samdb_ctx;
-}
-
-
 static NTSTATUS dcerpc_server_asyncemsmdb_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
 	if (!openchangedb_ctx) {
@@ -1199,7 +1164,7 @@ static NTSTATUS dcerpc_server_asyncemsmdb_bind(struct dcesrv_call_state *dce_cal
 	}
 
 	if (!samdb_ctx) {
-		samdb_ctx = samdb_init(dce_call->conn->dce_ctx->lp_ctx);
+		samdb_ctx = samdb_init(talloc_autofree_context());
 		if (!samdb_ctx) {
 			OC_PANIC(true, ("Unable to initialize samdb"));
 		}

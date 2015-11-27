@@ -1363,6 +1363,11 @@ static void dcesrv_do_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 		struct ldb_result	*ldb_res;
 		char			*filter;
 		int			j;
+		if (!paWStr->Strings[i]) {
+			/* Section 3.1.4.7 indicates as ANR of NULL with MID_UNRESOLVED */
+			pMIds->aulPropTag[i] = MAPI_UNRESOLVED;
+			continue;
+		}
 
 		filter = talloc_strdup(mem_ctx, "");
 		if (!filter) {

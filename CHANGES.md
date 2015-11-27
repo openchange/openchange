@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
+## [unreleased] - XXXX-YY-ZZ
+
+### Improvements
+* Manage NULL as query values in resolving names in Global Address List
+
+
 ## [2.4-zentyal15] - 2015-11-26
 
 ### Fixes

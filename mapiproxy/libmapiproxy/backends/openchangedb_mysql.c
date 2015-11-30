@@ -2622,7 +2622,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND f.folder_id = %"PRIu64
 			"  AND f.ou_id = %"PRIu64
 			"  AND f.folder_class = '"PUBLIC_FOLDER"' "
-			"WHERE m2.message_type = '%s' ",
+			"WHERE m.message_type = '%s' ",
 			table->folder_id, table->username, msg_type,
 			table->folder_id, table->username, msg_type,
 			table->folder_id, table->ou_id, msg_type);
@@ -2986,12 +2986,12 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 		"  AND f.folder_id = %"PRIu64
 		"  AND f.ou_id = %"PRIu64
 		"  AND f.folder_class = '"PUBLIC_FOLDER"' "
-		"WHERE m2.message_type = '%s'"
+		"WHERE m.message_type = '%s'"
 		"  AND EXISTS ("
 		"     SELECT mp.message_id FROM messages_properties mp "
-		"     WHERE mp.message_id = m2.id "
+		"     WHERE mp.message_id = m.id "
 		"       AND mp.name = '%s' AND mp.value = '%s') "
-		"  AND m2.id = %"PRIu64,
+		"  AND m.id = %"PRIu64,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
 		table->folder_id, table->ou_id, msg_type, attr, value, row->id);

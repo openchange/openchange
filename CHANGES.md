@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased] - XXXX-YY-ZZ
 
+### Fixes
+* Fix table restriction wrong sql queries
+
 ### Improvements
 * Manage NULL as query values in resolving names in Global Address List
 

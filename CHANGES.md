@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
-## [unreleased] - XXXX-YY-ZZ
+## [2.4-zentyal16] - 2015-12-01
 
 ### Fixes
 * Fix table restriction wrong sql queries
@@ -198,7 +198,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal15...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal16...HEAD
+[2.4-zentyal16]: https://github.com/Zentyal/openchange/compare/2.4-zentyal15...2.4-zentyal16
 [2.4-zentyal15]: https://github.com/Zentyal/openchange/compare/2.4-zentyal14...2.4-zentyal15
 [2.4-zentyal14]: https://github.com/Zentyal/openchange/compare/2.4-zentyal13...2.4-zentyal14
 [2.4-zentyal13]: https://github.com/Zentyal/openchange/compare/2.4-zentyal12...2.4-zentyal13

@@ -1614,6 +1614,59 @@ end:
         return bin;
 }
 
+/**
+   \details Retrieve a TimeZoneDefinition structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw
+   TimeZoneDefinition data
+
+   \return Allocated TimeZoneDefinition structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated TimeZoneStruct when
+   finished.
+ */
+_PUBLIC_ struct TimeZoneDefinition *get_TimeZoneDefinition(TALLOC_CTX *mem_ctx,
+							   struct Binary_r *bin)
+{
+	struct TimeZoneDefinition	*TimeZoneDefinition = NULL;
+	struct ndr_pull			*ndr;
+	enum ndr_err_code		ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (ndr == NULL) {
+		OC_DEBUG(0, "Memory allocation failed");
+		return NULL;
+	}
+
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	TimeZoneDefinition = talloc_zero(mem_ctx, struct TimeZoneDefinition);
+	if (TimeZoneDefinition == NULL) {
+		OC_DEBUG(0, "Memory allocation failed");
+		talloc_free(ndr);
+		return NULL;
+	}
+	ndr_err_code = ndr_pull_TimeZoneDefinition(ndr, NDR_SCALARS, TimeZoneDefinition);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(TimeZoneDefinition);
+		return NULL;
+	}
+
+	return TimeZoneDefinition;
+}
 _PUBLIC_ struct Binary_r *set_TimeZoneDefinition(TALLOC_CTX *mem_ctx, const struct TimeZoneDefinition *TimeZoneDefinition)
 {
         struct Binary_r                 *bin = NULL;

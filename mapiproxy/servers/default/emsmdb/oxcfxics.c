@@ -757,16 +757,22 @@ static void oxcfxics_push_messageChange_attachments(struct emsmdbp_context *emsm
 	talloc_free(table_object);
 }
 
-static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, const char *owner, struct idset *cnset_seen)
+static enum MAPISTATUS oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, const char *owner, struct idset *cnset_seen)
 {
-	struct mapi_SRestriction cn_restriction;
-	struct idset *local_cnset;
-	uint16_t repl_id;
-	uint8_t state;
+	bool			     last;
+	struct globset_range	     *range;
+	struct idset		     *local_cnset;
+	int			     i;
+	struct mapi_SRestriction     *cn_restriction, *overall_restriction;
+	struct mapi_SRestriction_and *sub_restriction;
+	enum mapistore_error	     ret;
+	TALLOC_CTX		     *local_mem_ctx;
+	uint16_t		     repl_id;
+	uint8_t			     state;
 
 	if (!emsmdbp_is_mapistore(table_object)) {
 		OC_DEBUG(5, "table restrictions not supported by non-mapistore tables\n");
-		return;
+		return MAPI_E_NO_SUPPORT;
 	}
 
 	local_cnset = cnset_seen;
@@ -775,21 +781,66 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 	}
 
 	if (!local_cnset) {
-		OC_DEBUG(5, "no change set available -> no table restrictions\n");
-		return;
-	}
-	if (local_cnset->range_count != 1) {
-		OC_DEBUG(5, "no valid change set available (range_count = %d) -> no table restrictions\n", local_cnset->range_count);
-		return;
+		OC_DEBUG(5, "no change set available -> no table restrictions");
+		return MAPI_E_SUCCESS;
 	}
 
-	cn_restriction.rt = RES_PROPERTY;
-	cn_restriction.res.resProperty.relop = RELOP_GT;
-	cn_restriction.res.resProperty.ulPropTag = PidTagChangeNumber;
-	cn_restriction.res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
-	cn_restriction.res.resProperty.lpProp.value.d = (cnset_seen->ranges[0].high << 16) | repl_id;
+	if (local_cnset->range_count == 0) {
+		OC_DEBUG(5, "no ranges available -> no table restrictions");
+		return MAPI_E_SUCCESS;
+	}
 
-	mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, &cn_restriction, &state);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Set the restriction for change numbers based on the given idset:
+
+	   [cn_1:cn_2]		 x > cn_2 & x < cn_3
+	   [cn_3:cn_4]	 ===>  | x > cn_4 & x < cn_5
+	   [cn_5:cn_6]	       | x > cn_6
+	*/
+	overall_restriction = talloc_zero(local_mem_ctx, struct mapi_SRestriction);
+	OPENCHANGE_RETVAL_IF(!overall_restriction, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	overall_restriction->rt = RES_OR;
+	overall_restriction->res.resOr.cRes = cnset_seen->range_count;
+	overall_restriction->res.resOr.res = talloc_zero_array(local_mem_ctx, struct mapi_SRestriction_or,
+							       cnset_seen->range_count);
+	OPENCHANGE_RETVAL_IF(!overall_restriction->res.resOr.res, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	range = cnset_seen->ranges;
+	for (i = 0; i < cnset_seen->range_count; i++) {
+		last = (i + 1 >= cnset_seen->range_count);
+		/* Fill the "and" sub-restrictions */
+		sub_restriction = (struct mapi_SRestriction_and *)overall_restriction->res.resOr.res + i;
+		sub_restriction->rt = RES_AND;
+		sub_restriction->res.resAnd.cRes = last ? 1 : 2;
+		sub_restriction->res.resAnd.res = talloc_zero_array(local_mem_ctx, struct mapi_SRestriction_and,
+								    sub_restriction->res.resAnd.cRes);
+		OPENCHANGE_RETVAL_IF(!sub_restriction->res.resAnd.res, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		cn_restriction = (struct mapi_SRestriction *)sub_restriction->res.resAnd.res;
+		cn_restriction->rt = RES_PROPERTY;
+		cn_restriction->res.resProperty.relop = RELOP_GT;
+		cn_restriction->res.resProperty.ulPropTag = PidTagChangeNumber;
+		cn_restriction->res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
+		cn_restriction->res.resProperty.lpProp.value.d = (range->high << 16) | repl_id;
+		/* If there is a next range, then we have to set the minimum */
+		if (!last && range->next) {
+			range = range->next;
+			cn_restriction = (struct mapi_SRestriction *)sub_restriction->res.resAnd.res + 1;
+			cn_restriction->rt = RES_PROPERTY;
+			cn_restriction->res.resProperty.relop = RELOP_LT;
+			cn_restriction->res.resProperty.ulPropTag = PidTagChangeNumber;
+			cn_restriction->res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
+			cn_restriction->res.resProperty.lpProp.value.d = (range->low << 16) | repl_id;
+		}
+	}
+
+	ret = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, overall_restriction, &state);
+
+	talloc_free(local_mem_ctx);
+	return mapistore_error_to_mapi(ret);
 }
 
 static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)

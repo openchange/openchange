@@ -271,9 +271,9 @@ interface property
 
 	/* pidLidTimeZoneStruct */
 	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint32			lBias;
-		uint32			lStandardBias;
-		uint32			lDaylightBias;
+		int32			lBias;
+		int32			lStandardBias;
+		int32			lDaylightBias;
 		uint16			wStandardYear;
 		SYSTEMTIME     		stStandardDate;
 		uint16			wDaylightYear;
@@ -295,9 +295,9 @@ interface property
 		TZRuleFlag	flags;
 		uint16		wYear;
 		uint8		X[14]; /* all zeroes */
-		uint32		lBias;
-		uint32		lStandardBias;
-		uint32		lDaylightBias;
+		int32		lBias;
+		int32		lStandardBias;
+		int32		lDaylightBias;
 		SYSTEMTIME	stStandardDate;
 		SYSTEMTIME	stDaylightDate;
 	} TZRule;

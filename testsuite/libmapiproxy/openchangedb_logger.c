@@ -107,20 +107,25 @@ START_TEST (test_call_get_distinguishedName) {
 } END_TEST
 
 START_TEST(test_call_get_MailboxGuid) {
+	struct GUID local_guid = GUID_zero();
 	struct GUID MailboxGUID;
 
 	CHECK_SUCCESS(openchangedb_get_MailboxGuid(oc_ctx, "recipient", &MailboxGUID));
 
 	ck_assert_int_eq(functions_called.get_MailboxGuid, 1);
+	ck_assert(GUID_equal(&MailboxGUID, &local_guid));
 } END_TEST
 
 START_TEST(test_call_get_MailboxReplica) {
 	uint16_t ReplID;
+	struct GUID local_guid = GUID_zero();
 	struct GUID ReplGUID;
 
 	CHECK_SUCCESS(openchangedb_get_MailboxReplica(oc_ctx, "recipient", &ReplID, &ReplGUID));
 
 	ck_assert_int_eq(functions_called.get_MailboxReplica, 1);
+	ck_assert_int_eq(ReplID, 0x03);
+	ck_assert(GUID_equal(&ReplGUID, &local_guid));
 } END_TEST
 
 START_TEST(test_call_get_PublicFolderReplica) {
@@ -261,6 +266,7 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       struct GUID *MailboxGUID)
 {
 	functions_called.get_MailboxGuid++;
+	*MailboxGUID = GUID_zero();
 
 	return MAPI_E_SUCCESS;
 }
@@ -270,6 +276,8 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 					  struct GUID *ReplGUID)
 {
 	functions_called.get_MailboxReplica++;
+	*ReplID = 0x03;
+	*ReplGUID = GUID_zero();
 
 	return MAPI_E_SUCCESS;
 }

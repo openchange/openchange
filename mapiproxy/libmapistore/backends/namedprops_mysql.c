@@ -116,7 +116,7 @@ static enum mapistore_error next_unused_id(struct namedprops_context *nprops,
 	MAPISTORE_RETVAL_IF(!res, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	row = mysql_fetch_row(res);
-	if (!row) {
+	if (!row || !row[0]) {
 		mysql_free_result(res);
 		mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
 		talloc_free(mem_ctx);

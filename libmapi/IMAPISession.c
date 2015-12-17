@@ -336,6 +336,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 
 retry:
 	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	size = 0;
 
 	if (!username) {

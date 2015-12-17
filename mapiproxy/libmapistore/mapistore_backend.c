@@ -181,6 +181,7 @@ static init_backend_fn *load_backends(TALLOC_CTX *mem_ctx, const char *path)
 
 	dir = opendir(path);
 	if (dir == NULL) {
+		OC_DEBUG(3, "Cannot open backend store path '%s': %s", path, strerror(errno));
 		talloc_free(ret);
 		return NULL;
 	}

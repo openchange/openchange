@@ -109,12 +109,9 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 	DATA_BLOB		blob;
 	enum ndr_err_code	ndr_err;
 	struct ndr_pull		*ndr_pull;
-	struct ndr_pull		*sndr_pull;
 	struct EcDoRpcExt2	*r;
-	struct mapi2k7_request	mapi2k7_request;
 	struct mapi_request	*mapi_request;
 	struct SPropTagArray	*SPropTagArray = NULL;
-	DATA_BLOB		rgbIn;
 	uint32_t		i, j;
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
@@ -146,25 +143,7 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 	}
 
 	r = (struct EcDoRpcExt2 *) st;
-	rgbIn.data = r->in.rgbIn;
-	rgbIn.length = r->in.cbIn;
-
-	sndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
-	if (sndr_pull == NULL) {
-		perror("ndr_pull_init_blob");
-		talloc_free(ndr_pull);
-		return NULL;
-	}
-	ndr_set_flags(&sndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_err = ndr_pull_mapi2k7_request(sndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
-	talloc_free(ndr_pull);
-	if (ndr_err) {
-		OC_DEBUG(0, "Unable to pull mapi2k7_request, ndr_err = 0x%x", ndr_err);
-		talloc_free(sndr_pull);
-		return NULL;
-	}
-
-	mapi_request = mapi2k7_request.mapi_request;
+	mapi_request = r->in.pRequest->mapi_request;
 	for (i = 0; mapi_request->mapi_req[i].opnum; i++) {
 		switch (mapi_request->mapi_req[i].opnum) {
 		case op_MAPI_GetProps:
@@ -193,7 +172,6 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	}
-	talloc_free(sndr_pull);
 	return SPropTagArray;
 }
 
@@ -210,11 +188,8 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	DATA_BLOB		blob;
 	enum ndr_err_code	ndr_err;
 	struct ndr_pull		*ndr_pull;
-	struct ndr_pull		*sndr_pull;
 	struct EcDoRpcExt2	*r;
-	struct mapi2k7_response	mapi2k7_response;
 	struct mapi_response	*mapi_response;
-	DATA_BLOB		rgbOut;
 	int			index_out = -1;
 	int			i, j;
 
@@ -246,31 +221,13 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	}
 
 	r = (struct EcDoRpcExt2 *) st;
-	rgbOut.data = r->out.rgbOut;
-	rgbOut.length = *r->out.pcbOut;
-
-	sndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
-	if (sndr_pull == NULL) {
-		perror("ndr_pull_init_blob");
-		return -1;
-	}
-	ndr_set_flags(&sndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_err = ndr_pull_mapi2k7_response(sndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
-	talloc_free(ndr_pull);
-	if (ndr_err) {
-		OC_DEBUG(0, "Unable to pull response, ndr_err = 0x%x", ndr_err);
-		talloc_free(sndr_pull);
-		return -1;
-	}
-
-	mapi_response = mapi2k7_response.mapi_response;
+	mapi_response = r->out.pResponse->mapi_response;
 
 	switch (opnum) {
 	case op_MAPI_GetProps:
 	case op_MAPI_ModifyRecipients:
 		if (mapi_response->mapi_repl[index].opnum != opnum) {
 			OC_DEBUG(0, "Mismatching request vs reply");
-			talloc_free(sndr_pull);
 			return -1;
 		}
 		break;
@@ -286,7 +243,6 @@ static int process_response(TALLOC_CTX *mem_ctx,
 		}
 		if (index_out == -1) {
 			OC_DEBUG(0, "Unable to find ROP QueryRows, FindRow or ExpandRow in the reply");
-			talloc_free(sndr_pull);
 			return -1;
 		}
 		break;
@@ -349,7 +305,6 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	break;
 	}
 
-	talloc_free(sndr_pull);
 	return 0;
 }
 

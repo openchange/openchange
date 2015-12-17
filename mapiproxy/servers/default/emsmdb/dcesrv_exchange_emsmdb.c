@@ -1378,24 +1378,17 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct EcDoRpcExt2 *r)
 {
-	enum ndr_err_code		ndr_err;
 	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
-	struct mapi2k7_request		mapi2k7_request;
 	struct mapi_response		*mapi_response;
-	struct RPC_HEADER_EXT		RPC_HEADER_EXT;
-	struct ndr_pull			*ndr_pull = NULL;
-	struct ndr_push			*ndr_uncomp_rgbOut;
-	struct ndr_push			*ndr_comp_rgbOut;
-	struct ndr_push			*ndr_rgbOut;
+	struct ndr_push			*ndr_push = NULL;
 	uint32_t			pulFlags = 0x0;
 	uint32_t			pulTransTime = 0;
-	DATA_BLOB			rgbIn;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoRpcExt2 (0xB)\n");
 
-	r->out.rgbOut = NULL;
-	*r->out.pcbOut = 0;
+	r->out.pResponse = NULL;
+	*r->out.pcbResponse = 0;
 	r->out.rgbAuxOut = NULL;
 	*r->out.pcbAuxOut = 0;
 
@@ -1409,7 +1402,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-        session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+    session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
 	if (!session) {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
@@ -1418,69 +1411,33 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
-	/* Sanity checks on pcbOut input parameter */
-	if (*r->in.pcbOut < 0x00000008) {
+	/* Sanity checks on pcbResponse input parameter */
+	if (*r->in.pcbResponse < 0x00000008) {
 		r->out.result = ecRpcFailed;
 		return ecRpcFailed;
 	}
 
-	/* Extract mapi_request from rgbIn */
-	rgbIn.data = r->in.rgbIn;
-	rgbIn.length = r->in.cbIn;
-
-	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
-	if (ndr_pull->data_size > *r->in.pcbOut) {
-		r->out.result = ecBufferTooSmall;
-		talloc_free(ndr_pull);
-		return ecBufferTooSmall;
-	}
-
-	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
-	talloc_free(ndr_pull);
-
-	if (ndr_err != NDR_ERR_SUCCESS) {
-		r->out.result = ecRpcFormat;
-		return ecRpcFormat;
-	}
-
-	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
-	talloc_free(mapi2k7_request.mapi_request);
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, r->in.pRequest->mapi_request);
 
 	/* Fill EcDoRpcExt2 reply */
 	r->out.handle = r->in.handle;
 	*r->out.pulFlags = pulFlags;
 
-	/* Push MAPI response into a DATA blob */
-	ndr_uncomp_rgbOut = ndr_push_init_ctx(mem_ctx);
-	ndr_set_flags(&ndr_uncomp_rgbOut->flags, LIBNDR_FLAG_NOALIGN);
-	ndr_push_mapi_response(ndr_uncomp_rgbOut, NDR_SCALARS|NDR_BUFFERS, mapi_response);
-	talloc_free(mapi_response);
+	/* Step 1. Push mapi_request to determine sizes of packed requests */
+	ndr_push = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_push->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_mapi_response(ndr_push, NDR_SCALARS|NDR_BUFFERS, mapi_response);
 
-	/* TODO: compress if requested */
-	ndr_comp_rgbOut = ndr_uncomp_rgbOut;
+	/* Step 2. Setup request structure */
+	r->out.pResponse = talloc_zero(mem_ctx, struct mapi2k7_response);
+	r->out.pResponse->header.Version = 0x0000;
+	r->out.pResponse->header.Flags = RHEF_XorMagic|RHEF_Last;
+	r->out.pResponse->header.Size = ndr_push->offset;
+	r->out.pResponse->header.SizeActual = ndr_push->offset;
+	r->out.pResponse->mapi_response = mapi_response;
 
-	/* Build RPC_HEADER_EXT header for MAPI response DATA blob */
-	RPC_HEADER_EXT.Version = 0x0000;
-	RPC_HEADER_EXT.Flags = RHEF_Last;
-	RPC_HEADER_EXT.Flags |= (mapi2k7_request.header.Flags & RHEF_XorMagic);
-	RPC_HEADER_EXT.Size = ndr_comp_rgbOut->offset;
-	RPC_HEADER_EXT.SizeActual = ndr_comp_rgbOut->offset;
-
-	/* Obfuscate content if applicable*/
-	if (RPC_HEADER_EXT.Flags & RHEF_XorMagic) {
-		obfuscate_data(ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset, 0xA5);
-	}
-
-	/* Push the constructed blob */
-	ndr_rgbOut = ndr_push_init_ctx(mem_ctx);
-	ndr_set_flags(&ndr_rgbOut->flags, LIBNDR_FLAG_NOALIGN);
-	ndr_push_RPC_HEADER_EXT(ndr_rgbOut, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT);
-	ndr_push_bytes(ndr_rgbOut, ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset);
-
-	/* Push MAPI response into a DATA blob */
-	r->out.rgbOut = ndr_rgbOut->data;
-	*r->out.pcbOut = ndr_rgbOut->offset;
+	/* Size of bytes isn't known yet, it will be calculated during encoding */
+	*r->out.pcbResponse = 0;
 
 	*r->out.pulTransTime = pulTransTime;
 

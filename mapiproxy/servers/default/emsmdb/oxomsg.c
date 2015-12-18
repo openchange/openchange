@@ -4,6 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Brad Hards <bradh@openchange.org> 2010
+                 Enrique J. Hernandez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -156,6 +157,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data;
@@ -226,7 +228,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
 		owner = emsmdbp_get_owner(object);
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
+
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+					       object->backend_object, flags);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
+
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
@@ -384,6 +394,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 {
 	struct TransportSend_repl	*response;
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
@@ -429,7 +440,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
 		}
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
 
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
 		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */

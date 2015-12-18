@@ -15,6 +15,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
   the current status of the client
 
 
+### Improvements
+* Sharing messages are now managed in Online mode as well
+
 ## [2.4-zentyal16] - 2015-12-01
 
 ### Fixes

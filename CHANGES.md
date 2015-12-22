@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
+## [unreleased] - YYYY-MM-DD
+
+### Fixes
+* Do not crash if we receive OAuth2 Auth Request in NTLM handler
+
+
 ## [2.4-zentyal16] - 2015-12-01
 
 ### Fixes

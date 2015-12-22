@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Kamen Mazdrashki <kamenim@openchange.org> 2014
+                 Enrique J. Hernandez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,14 +108,22 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       const char *recipient,
 				       struct GUID *MailboxGUID)
 {
-	enum MAPISTATUS retval;
+	char			*guid_str = NULL;
+	enum MAPISTATUS		retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
 	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
 					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_MailboxGuid(priv_data->backend, recipient, MailboxGUID);
-	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
-					priv_data->log_prefix, mapi_get_errstr(retval));
+	if (retval == MAPI_E_SUCCESS && MailboxGUID) {
+		guid_str = GUID_string(NULL, MailboxGUID);
+		OPENCHANGE_RETVAL_IF(!guid_str, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	}
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], MailboxGUID=[%s]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 (guid_str) ? guid_str : "");
+
+	talloc_free(guid_str);
 
 	return retval;
 }
@@ -123,14 +132,23 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 					  const char *recipient, uint16_t *ReplID,
 				  	  struct GUID *ReplGUID)
 {
-	enum MAPISTATUS retval;
+	char			*guid_str = NULL;
+	enum MAPISTATUS		retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
 	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
 					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_MailboxReplica(priv_data->backend, recipient, ReplID, ReplGUID);
-	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
-					priv_data->log_prefix, mapi_get_errstr(retval));
+	if (retval == MAPI_E_SUCCESS && ReplGUID) {
+		guid_str = GUID_string(NULL, ReplGUID);
+		OPENCHANGE_RETVAL_IF(!guid_str, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	}
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], ReplID=[%d] ReplGUID=[%s]",
+		 priv_data->log_prefix, mapi_get_errstr(retval),
+		 (retval == MAPI_E_SUCCESS && ReplID) ? *ReplID : -1,
+		 (guid_str) ? guid_str : "");
+
+	talloc_free(guid_str);
 
 	return retval;
 }

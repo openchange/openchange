@@ -9,6 +9,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ### Fixes
 * Persist autocomplete on recipients in Outlook 2010 onwards between
   profiles and closing/opening Outlook process
+* Reconnect broken LDAP connections for some missing NSPI calls
 
 
 ## [2.4-zentyal17] - 2015-12-30

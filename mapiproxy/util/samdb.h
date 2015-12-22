@@ -38,6 +38,10 @@
 struct ldb_context *samdb_init(TALLOC_CTX *mem_ctx);
 struct ldb_context *samdb_reconnect(struct ldb_context *samdb_ctx);
 
+
+int safe_ldb_wait(struct ldb_context **ldb_ptr, struct ldb_request *req, enum ldb_wait_type type);
+
+
 #undef PRINTF_ATTRIBUTE
 #define PRINTF_ATTRIBUTE(a1, a2) __attribute__ ((format (__printf__, a1, a2)))
 

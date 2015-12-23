@@ -9,6 +9,10 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ### Fixes
 * Do not crash if we receive OAuth2 Auth Request in NTLM handler
 
+### Improvements
+* Perform Change Number restrictions to gather missing messages from
+  the current status of the client
+
 
 ## [2.4-zentyal16] - 2015-12-01
 

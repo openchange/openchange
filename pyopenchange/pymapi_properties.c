@@ -393,6 +393,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagFlatUrlName_Error", PyInt_FromLong(0x670E000A));
 	PyModule_AddObject(m, "PidTagFolderAssociatedContents", PyInt_FromLong(0x3610000D));
 	PyModule_AddObject(m, "PidTagFolderAssociatedContents_Error", PyInt_FromLong(0x3610000A));
+	PyModule_AddObject(m, "PidTagFolderFlags", PyInt_FromLong(0x66A80003));
+	PyModule_AddObject(m, "PidTagFolderFlags_Error", PyInt_FromLong(0x66A8000A));
 	PyModule_AddObject(m, "PidTagFolderId", PyInt_FromLong(0x67480014));
 	PyModule_AddObject(m, "PidTagFolderId_Error", PyInt_FromLong(0x6748000A));
 	PyModule_AddObject(m, "PidTagFolderType", PyInt_FromLong(0x36010003));
@@ -431,6 +433,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagHasNamedProperties_Error", PyInt_FromLong(0x664A000A));
 	PyModule_AddObject(m, "PidTagHasRules", PyInt_FromLong(0x663A000B));
 	PyModule_AddObject(m, "PidTagHasRules_Error", PyInt_FromLong(0x663A000A));
+	PyModule_AddObject(m, "PidTagHierRev", PyInt_FromLong(0x40820040));
+	PyModule_AddObject(m, "PidTagHierRev_Error", PyInt_FromLong(0x4082000A));
 	PyModule_AddObject(m, "PidTagHierarchyChangeNumber", PyInt_FromLong(0x663E0003));
 	PyModule_AddObject(m, "PidTagHierarchyChangeNumber_Error", PyInt_FromLong(0x663E000A));
 	PyModule_AddObject(m, "PidTagHobbies", PyInt_FromLong(0x3A43001F));

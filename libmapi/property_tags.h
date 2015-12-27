@@ -452,6 +452,8 @@
 #define PidTagFlatUrlName_Error                                              PROP_TAG(PT_ERROR     , 0x670E)  /* 0x670E000A */
 #define PidTagFolderAssociatedContents                                       PROP_TAG(PT_OBJECT    , 0x3610)  /* 0x3610000D */
 #define PidTagFolderAssociatedContents_Error                                 PROP_TAG(PT_ERROR     , 0x3610)  /* 0x3610000A */
+#define PidTagFolderFlags                                                    PROP_TAG(PT_LONG      , 0x66A8)  /* 0x66A80003 */
+#define PidTagFolderFlags_Error                                              PROP_TAG(PT_ERROR     , 0x66A8)  /* 0x66A8000A */
 #define PidTagFolderId                                                       PROP_TAG(PT_I8        , 0x6748)  /* 0x67480014 */
 #define PidTagFolderId_Error                                                 PROP_TAG(PT_ERROR     , 0x6748)  /* 0x6748000A */
 #define PidTagFolderType                                                     PROP_TAG(PT_LONG      , 0x3601)  /* 0x36010003 */
@@ -490,6 +492,8 @@
 #define PidTagHasNamedProperties_Error                                       PROP_TAG(PT_ERROR     , 0x664A)  /* 0x664A000A */
 #define PidTagHasRules                                                       PROP_TAG(PT_BOOLEAN   , 0x663A)  /* 0x663A000B */
 #define PidTagHasRules_Error                                                 PROP_TAG(PT_ERROR     , 0x663A)  /* 0x663A000A */
+#define PidTagHierRev                                                        PROP_TAG(PT_SYSTIME   , 0x4082)  /* 0x40820040 */
+#define PidTagHierRev_Error                                                  PROP_TAG(PT_ERROR     , 0x4082)  /* 0x4082000A */
 #define PidTagHierarchyChangeNumber                                          PROP_TAG(PT_LONG      , 0x663E)  /* 0x663E0003 */
 #define PidTagHierarchyChangeNumber_Error                                    PROP_TAG(PT_ERROR     , 0x663E)  /* 0x663E000A */
 #define PidTagHobbies                                                        PROP_TAG(PT_UNICODE   , 0x3A43)  /* 0x3A43001F */
@@ -1186,7 +1190,7 @@
 #define PidTagWlinkFolderType_Error                                          PROP_TAG(PT_ERROR     , 0x684F)  /* 0x684F000A */
 #define PidTagWlinkGroupClsid                                                PROP_TAG(PT_BINARY    , 0x6850)  /* 0x68500102 */
 #define PidTagWlinkGroupClsid_Error                                          PROP_TAG(PT_ERROR     , 0x6850)  /* 0x6850000A */
-#define PidTagWlinkGroupHeaderID                                             PROP_TAG(PT_CLSID     , 0x6842)  /* 0x68420048 */
+#define PidTagWlinkGroupHeaderID                                             PROP_TAG(PT_CLSID    , 0x6842)  /* 0x68420048 */
 #define PidTagWlinkGroupHeaderID_Error                                       PROP_TAG(PT_ERROR     , 0x6842)  /* 0x6842000A */
 #define PidTagWlinkGroupName                                                 PROP_TAG(PT_UNICODE   , 0x6851)  /* 0x6851001F */
 #define PidTagWlinkGroupName_Error                                           PROP_TAG(PT_ERROR     , 0x6851)  /* 0x6851000A */

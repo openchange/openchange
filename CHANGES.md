@@ -7,9 +7,11 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased] - YYYY-MM-DD
 
 ### Fixes
+* Do not lose a mail sent when SMTP server is down and notify the client
 * Do not crash if we receive OAuth2 Auth Request in NTLM handler
 
 ### Improvements
+* Sharing messages are now managed in Online mode as well
 * Perform Change Number restrictions to gather missing messages from
   the current status of the client
 

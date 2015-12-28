@@ -1850,10 +1850,12 @@ _PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_
 		mapi_err = MAPI_E_COLLISION;
 		break;
 	case MAPISTORE_ERR_INVALID_DATA:
-	case MAPISTORE_ERR_MSG_SEND:
 	case MAPISTORE_ERR_MSG_RCV:
 		mapi_err = MAPI_E_DISK_ERROR;
 		break;
+	case MAPISTORE_ERR_MSG_SEND:
+                mapi_err = ecRpcFailed;  /* MAPI_E_NETWORK_ERROR */
+                break;
 	case MAPISTORE_ERR_DENIED:
 		mapi_err = MAPI_E_NO_ACCESS;
 		break;

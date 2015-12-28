@@ -4,6 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Brad Hards <bradh@openchange.org> 2010
+                 Enrique J. Hernandez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -135,8 +136,8 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 }
 
 /**
-   \details EcDoRpc SubmitMessage (0x32) Rop. This operation marks a message
-   as being ready to send (subject to some flags).
+   \details EcDoRpc SubmitMessage (0x32) Rop. This operation sends a message
+   to its designated recipients. It is usually performed in online mode.
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
@@ -156,13 +157,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	char			*owner;
-	uint64_t		messageID;
 	uint32_t		contextID;
 	uint8_t			flags;
 
@@ -222,13 +222,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		messageID = object->object.message->messageID;
+		retval = emsmdbp_object_attach_sharing_metadata_XML_file(emsmdbp_ctx, object);
+		if (retval != MAPI_E_SUCCESS) {
+			OC_DEBUG(1, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
+		}
+
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
-		owner = emsmdbp_get_owner(object);
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, contextID,
+					       object->backend_object, flags);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
+
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 
@@ -363,7 +372,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 }
 
 /**
-   \details EcDoRpc TransportSend (0x4a) Rop. This operation sends a message.
+   \details EcDoRpc TransportSend (0x4a) Rop. This operation requests
+   to the server to send a message to recipients. It is usually
+   performed in cached mode.
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
@@ -384,6 +395,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 {
 	struct TransportSend_repl	*response;
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
@@ -427,12 +439,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	case true:
 		retval = emsmdbp_object_attach_sharing_metadata_XML_file(emsmdbp_ctx, object);
 		if (retval != MAPI_E_SUCCESS) {
-			OC_DEBUG(0, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
+			OC_DEBUG(1, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
 		}
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
 
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
-		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}
 

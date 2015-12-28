@@ -1033,6 +1033,8 @@
 #define PR_RETENTION_PERIOD_ERROR                                            PROP_TAG(PT_ERROR     , 0x301A)  /* 0x301A000A */
 #define PR_RIGHTS                                                            PidTagRights
 #define PR_RIGHTS_ERROR                                                      PROP_TAG(PT_ERROR     , 0x6639)  /* 0x6639000A */
+#define PR_ROAMING_BINARYSTREAM                                              PidTagRoamingBinary
+#define PR_ROAMING_BINARYSTREAM_ERROR                                        PROP_TAG(PT_ERROR     , 0x7C09)  /* 0x7C09000A */
 #define PR_ROAMING_DATATYPES                                                 PidTagRoamingDatatypes
 #define PR_ROAMING_DATATYPES_ERROR                                           PROP_TAG(PT_ERROR     , 0x7C06)  /* 0x7C06000A */
 #define PR_ROAMING_DICTIONARY                                                PidTagRoamingDictionary

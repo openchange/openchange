@@ -553,11 +553,19 @@ def make_mapi_properties_file():
 	proplines = []
 	altnamelines = []
 	previous_propid_list = []
+
+	# Additional properties referenced on MSDN but not in MS-OXPROPS
+	properties.append({'CanonicalName': 'PidTagRoamingBinary',
+			   'DataTypeName': 'PtypBinary',
+			   'PropertyId': 0x7C09,
+			   'AlternateNames': 'PR_ROAMING_BINARYSTREAM',
+			   'Area': 'Configuration'})
+
 	for entry in properties:
-		if (entry.has_key("CanonicalName") == False):
+		if entry.has_key("CanonicalName") == False:
 			print "Section", entry["OXPROPS_Sect"], "has no canonical name entry"
 			continue
-		if (entry.has_key("DataTypeName") == False):
+		if entry.has_key("DataTypeName") == False:
 			print "Section", entry["OXPROPS_Sect"], "has no data type entry"
 			continue
 		if entry.has_key("PropertyId"):
@@ -828,7 +836,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	for propline in sortedproplines:
 		f.write(propline)
 
-	# Add additional properties, referenced on MSDN but not in MS-OXCPROPS
+	# Add additional properties, referenced on MSDN but not in MS-OXPROPS
 	f.write("\t" + string.ljust("PidTagAssociatedContentCount", 68) + " = 0x36170003,\n")
 	f.write("\t" + string.ljust("PidTagFolderChildCount", 68) + " = 0x66380003,\n")
 	f.write("\t" + string.ljust("PidTagIpmPublicFoldersEntryId", 68) + " = 0x66310102,\n")

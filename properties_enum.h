@@ -1019,6 +1019,8 @@ typedef [v1_enum, flag(NDR_PAHEX)] enum {
 	PidTagRetentionPeriod_Error                                          = 0x301A000A,
 	PidTagRights                                                         = 0x66390003,
 	PidTagRights_Error                                                   = 0x6639000A,
+	PidTagRoamingBinary                                                  = 0x7C090102,
+	PidTagRoamingBinary_Error                                            = 0x7C09000A,
 	PidTagRoamingDatatypes                                               = 0x7C060003,
 	PidTagRoamingDatatypes_Error                                         = 0x7C06000A,
 	PidTagRoamingDictionary                                              = 0x7C070102,

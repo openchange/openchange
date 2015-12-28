@@ -441,6 +441,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagRetentionFlags,                                               "PidTagRetentionFlags" },
 	{ PidTagRetentionPeriod,                                              "PidTagRetentionPeriod" },
 	{ PidTagRights,                                                       "PidTagRights" },
+	{ PidTagRoamingBinary,                                                "PidTagRoamingBinary" },
 	{ PidTagRoamingDatatypes,                                             "PidTagRoamingDatatypes" },
 	{ PidTagRoamingDictionary,                                            "PidTagRoamingDictionary" },
 	{ PidTagRoamingXmlStream,                                             "PidTagRoamingXmlStream" },

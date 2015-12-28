@@ -922,6 +922,8 @@
 #define PidTagRetentionPeriod_Error                                          PROP_TAG(PT_ERROR     , 0x301A)  /* 0x301A000A */
 #define PidTagRights                                                         PROP_TAG(PT_LONG      , 0x6639)  /* 0x66390003 */
 #define PidTagRights_Error                                                   PROP_TAG(PT_ERROR     , 0x6639)  /* 0x6639000A */
+#define PidTagRoamingBinary                                                  PROP_TAG(PT_BINARY    , 0x7C09)  /* 0x7C090102 */
+#define PidTagRoamingBinary_Error                                            PROP_TAG(PT_ERROR     , 0x7C09)  /* 0x7C09000A */
 #define PidTagRoamingDatatypes                                               PROP_TAG(PT_LONG      , 0x7C06)  /* 0x7C060003 */
 #define PidTagRoamingDatatypes_Error                                         PROP_TAG(PT_ERROR     , 0x7C06)  /* 0x7C06000A */
 #define PidTagRoamingDictionary                                              PROP_TAG(PT_BINARY    , 0x7C07)  /* 0x7C070102 */
@@ -1190,7 +1192,7 @@
 #define PidTagWlinkFolderType_Error                                          PROP_TAG(PT_ERROR     , 0x684F)  /* 0x684F000A */
 #define PidTagWlinkGroupClsid                                                PROP_TAG(PT_BINARY    , 0x6850)  /* 0x68500102 */
 #define PidTagWlinkGroupClsid_Error                                          PROP_TAG(PT_ERROR     , 0x6850)  /* 0x6850000A */
-#define PidTagWlinkGroupHeaderID                                             PROP_TAG(PT_CLSID    , 0x6842)  /* 0x68420048 */
+#define PidTagWlinkGroupHeaderID                                             PROP_TAG(PT_CLSID     , 0x6842)  /* 0x68420048 */
 #define PidTagWlinkGroupHeaderID_Error                                       PROP_TAG(PT_ERROR     , 0x6842)  /* 0x6842000A */
 #define PidTagWlinkGroupName                                                 PROP_TAG(PT_UNICODE   , 0x6851)  /* 0x6851001F */
 #define PidTagWlinkGroupName_Error                                           PROP_TAG(PT_ERROR     , 0x6851)  /* 0x6851000A */

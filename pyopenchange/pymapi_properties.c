@@ -859,6 +859,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagRetentionPeriod_Error", PyInt_FromLong(0x301A000A));
 	PyModule_AddObject(m, "PidTagRights", PyInt_FromLong(0x66390003));
 	PyModule_AddObject(m, "PidTagRights_Error", PyInt_FromLong(0x6639000A));
+	PyModule_AddObject(m, "PidTagRoamingBinary", PyInt_FromLong(0x7C090102));
+	PyModule_AddObject(m, "PidTagRoamingBinary_Error", PyInt_FromLong(0x7C09000A));
 	PyModule_AddObject(m, "PidTagRoamingDatatypes", PyInt_FromLong(0x7C060003));
 	PyModule_AddObject(m, "PidTagRoamingDatatypes_Error", PyInt_FromLong(0x7C06000A));
 	PyModule_AddObject(m, "PidTagRoamingDictionary", PyInt_FromLong(0x7C070102));

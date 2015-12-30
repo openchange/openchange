@@ -6,6 +6,10 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased] - YYYY-MM-DD
 
+
+
+## [2.4-zentyal17] - 2015-12-30
+
 ### Fixes
 * Do not lose a mail sent when SMTP server is down and notify the client
 * Do not crash if we receive OAuth2 Auth Request in NTLM handler
@@ -210,7 +214,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal16...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal17...HEAD
+[2.4-zentyal17]: https://github.com/Zentyal/openchange/compare/2.4-zentyal16...2.4-zentyal17
 [2.4-zentyal16]: https://github.com/Zentyal/openchange/compare/2.4-zentyal15...2.4-zentyal16
 [2.4-zentyal15]: https://github.com/Zentyal/openchange/compare/2.4-zentyal14...2.4-zentyal15
 [2.4-zentyal14]: https://github.com/Zentyal/openchange/compare/2.4-zentyal13...2.4-zentyal14

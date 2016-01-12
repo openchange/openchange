@@ -452,6 +452,8 @@
 #define PidTagFlatUrlName_Error                                              PROP_TAG(PT_ERROR     , 0x670E)  /* 0x670E000A */
 #define PidTagFolderAssociatedContents                                       PROP_TAG(PT_OBJECT    , 0x3610)  /* 0x3610000D */
 #define PidTagFolderAssociatedContents_Error                                 PROP_TAG(PT_ERROR     , 0x3610)  /* 0x3610000A */
+#define PidTagFolderFlags                                                    PROP_TAG(PT_LONG      , 0x66A8)  /* 0x66A80003 */
+#define PidTagFolderFlags_Error                                              PROP_TAG(PT_ERROR     , 0x66A8)  /* 0x66A8000A */
 #define PidTagFolderId                                                       PROP_TAG(PT_I8        , 0x6748)  /* 0x67480014 */
 #define PidTagFolderId_Error                                                 PROP_TAG(PT_ERROR     , 0x6748)  /* 0x6748000A */
 #define PidTagFolderType                                                     PROP_TAG(PT_LONG      , 0x3601)  /* 0x36010003 */
@@ -490,6 +492,8 @@
 #define PidTagHasNamedProperties_Error                                       PROP_TAG(PT_ERROR     , 0x664A)  /* 0x664A000A */
 #define PidTagHasRules                                                       PROP_TAG(PT_BOOLEAN   , 0x663A)  /* 0x663A000B */
 #define PidTagHasRules_Error                                                 PROP_TAG(PT_ERROR     , 0x663A)  /* 0x663A000A */
+#define PidTagHierRev                                                        PROP_TAG(PT_SYSTIME   , 0x4082)  /* 0x40820040 */
+#define PidTagHierRev_Error                                                  PROP_TAG(PT_ERROR     , 0x4082)  /* 0x4082000A */
 #define PidTagHierarchyChangeNumber                                          PROP_TAG(PT_LONG      , 0x663E)  /* 0x663E0003 */
 #define PidTagHierarchyChangeNumber_Error                                    PROP_TAG(PT_ERROR     , 0x663E)  /* 0x663E000A */
 #define PidTagHobbies                                                        PROP_TAG(PT_UNICODE   , 0x3A43)  /* 0x3A43001F */
@@ -918,6 +922,8 @@
 #define PidTagRetentionPeriod_Error                                          PROP_TAG(PT_ERROR     , 0x301A)  /* 0x301A000A */
 #define PidTagRights                                                         PROP_TAG(PT_LONG      , 0x6639)  /* 0x66390003 */
 #define PidTagRights_Error                                                   PROP_TAG(PT_ERROR     , 0x6639)  /* 0x6639000A */
+#define PidTagRoamingBinary                                                  PROP_TAG(PT_BINARY    , 0x7C09)  /* 0x7C090102 */
+#define PidTagRoamingBinary_Error                                            PROP_TAG(PT_ERROR     , 0x7C09)  /* 0x7C09000A */
 #define PidTagRoamingDatatypes                                               PROP_TAG(PT_LONG      , 0x7C06)  /* 0x7C060003 */
 #define PidTagRoamingDatatypes_Error                                         PROP_TAG(PT_ERROR     , 0x7C06)  /* 0x7C06000A */
 #define PidTagRoamingDictionary                                              PROP_TAG(PT_BINARY    , 0x7C07)  /* 0x7C070102 */

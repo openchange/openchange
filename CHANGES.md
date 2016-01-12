@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [unreleased] - YYYY-MM-DD
 
+### Fixes
+* Persist autocomplete on recipients in Outlook 2010 onwards between
+  profiles and closing/opening Outlook process
 
 
 ## [2.4-zentyal17] - 2015-12-30

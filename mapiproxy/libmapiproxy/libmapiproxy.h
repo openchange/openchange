@@ -31,7 +31,7 @@
 #include <ldb_errors.h>
 #include <fcntl.h>
 #include <errno.h>
-
+#include <samba/version.h>
 #include <gen_ndr/server_id.h>
 #include <gen_ndr/exchange.h>
 
@@ -162,6 +162,12 @@ static const uint8_t GUID_NSPI[] = {
 #endif
 
 __BEGIN_DECLS
+
+#if SAMBA_VERSION_MAJOR == 4 && SAMBA_VERSION_MINOR < 2
+/* Compatibility with samba 4.1 */
+struct server_id_buf { char buf[48]; };
+char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
+#endif
 
 /* definitions from dcesrv_mapiproxy_module.c */
 NTSTATUS mapiproxy_module_register(const void *);

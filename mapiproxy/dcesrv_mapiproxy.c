@@ -134,10 +134,18 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 
 		switch (dce_call->pkt.ptype) {
 		case DCERPC_PKT_BIND:
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
 			dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.bind.assoc_group_id);
+#else
+			b->assoc_group_id = dce_call->pkt.u.bind.assoc_group_id;
+#endif
 			break;
 		case DCERPC_PKT_ALTER:
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
 			dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.alter.assoc_group_id);
+#else
+			b->assoc_group_id = dce_call->pkt.u.alter.assoc_group_id;
+#endif
 			break;
 		default:
 			break;
@@ -154,7 +162,11 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
 		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+#else
+		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
+#endif
 		
 	} else {
 		status = dcerpc_pipe_connect(dce_call->context,
@@ -169,7 +181,11 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
 		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+#else
+		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
+#endif
 	}
 
 	private->connected = true;

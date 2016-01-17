@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased] - 2016-0X-XX
 
 ### Fixes
+* Import deletes of already deleted messages now works
 * Reconnect broken LDAP connections for some missing NSPI calls
 
 

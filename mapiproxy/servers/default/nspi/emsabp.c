@@ -31,6 +31,7 @@
 #include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
+#include "mapiproxy/util/samdb.h"
 #include "ldb.h"
 
 
@@ -989,7 +990,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 
 	ret = ldb_request(emsabp_ctx->samdb_ctx, req);
 	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		ret = safe_ldb_wait(&emsabp_ctx->samdb_ctx, req, LDB_WAIT_ALL);
 	}
 	talloc_free(req);
 
@@ -1176,7 +1177,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 	ldb_ret = ldb_request(emsabp_ctx->samdb_ctx, ldb_req);
 	OPENCHANGE_RETVAL_IF(ldb_ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 
-	ldb_ret = ldb_wait(ldb_req->handle, LDB_WAIT_ALL);
+	ldb_ret = safe_ldb_wait(&emsabp_ctx->samdb_ctx, ldb_req, LDB_WAIT_ALL);
 	OPENCHANGE_RETVAL_IF(ldb_ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 	OPENCHANGE_RETVAL_IF(ldb_res == NULL, MAPI_E_INVALID_OBJECT, local_mem_ctx);
 	OPENCHANGE_RETVAL_IF(ldb_res->count == 0, MAPI_E_NOT_FOUND, local_mem_ctx);
@@ -1400,7 +1401,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 	ldb_ret = ldb_request(emsabp_ctx->samdb_ctx, ldb_req);
 
 	if (ldb_ret == LDB_SUCCESS) {
-		ldb_ret = ldb_wait(ldb_req->handle, LDB_WAIT_ALL);
+		ldb_ret = safe_ldb_wait(&emsabp_ctx->samdb_ctx, ldb_req, LDB_WAIT_ALL);
 	}
 
 done:

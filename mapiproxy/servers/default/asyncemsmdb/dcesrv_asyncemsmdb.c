@@ -23,6 +23,7 @@
 #include "dcesrv_asyncemsmdb.h"
 #include "utils/dlinklist.h"
 #include "mapiproxy/util/samdb.h"
+#include "mapiproxy/util/oc_timer.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
@@ -824,21 +825,24 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	struct ndr_print				*ndr_print;
 	struct ndr_pull					*ndr_pull;
 	enum ndr_err_code				ndr_err_code;
+	struct oc_timer_ctx				*oc_t_ctx;
 
 	if (!p) {
 		OC_DEBUG(0, "[asyncemsmdb]: private_data is NULL");
 		return;
 	}
-
+	oc_t_ctx = OC_TIMER_START;
 	bytes = nn_recv(p->sock, &str, NN_MSG, NN_DONTWAIT);
 	if (bytes == 0) {
 		OC_DEBUG(0, "[asyncemsmdb]: EcDoAsyncWaitEx_handler: str is NULL!");
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 
 	mem_ctx = talloc_new(NULL);
 	if (!mem_ctx) {
 		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 
@@ -848,6 +852,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	if (!ndr_pull) {
 		nn_freemsg(str);
 		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
@@ -857,6 +862,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	if (ndr_err_code != NDR_ERR_SUCCESS) {
 		OC_DEBUG(0, "[asyncemsmdb]: Invalid mapistore_notification structure");
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 
@@ -865,6 +871,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 		OC_DEBUG(0, "[asyncemsmdb]: Invalid version, expected at max %d but got %d",
 			 MAPISTORE_NOTIFICATION_VMAX - 1, n.vnum);
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 
@@ -872,6 +879,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	if (!ndr_print) {
 		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 	ndr_print->depth = 1;
@@ -886,6 +894,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "no subscription to process");
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 
@@ -900,12 +909,14 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 		if (ret) {
 			OC_DEBUG(0, "[asyncemsmdb]: Failed to process newmail notification (error=0x%x)", ret);
 			talloc_free(mem_ctx);
+			oc_timer_end(oc_t_ctx);
 			return;
 		}
 		break;
 	default:
 		OC_DEBUG(0, "[asyncemsmdb]: Unsupported notification 0x%x", n.v.v1.flags);
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return;
 	}
 	talloc_free(ndr_pull);
@@ -921,6 +932,7 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 
 	talloc_free(p->fd_event);
 	p->fd_event = NULL;
+	oc_timer_end(oc_t_ctx);
 }
 
 
@@ -948,13 +960,16 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 	size_t					sz = 0;
 	char					*bind_addr = NULL;
 	int					port = 0;
+	struct oc_timer_ctx			*oc_t_ctx;
 
 	OC_DEBUG(3, "exchange_asyncemsmdb: EcDoAsyncWaitEx (0x0)");
+	oc_t_ctx = OC_TIMER_START;
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		*r->out.pulFlagsOut = 0x1;
+		oc_timer_end(oc_t_ctx);
 		return NT_STATUS_OK;
 	}
 
@@ -969,6 +984,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (retval != MAPISTORE_SUCCESS) {
 			OC_DEBUG(0, "[asyncemsmdb]: no matching emsmdb session found");
 			*r->out.pulFlagsOut = 0x1;
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -980,6 +996,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!mstore_ctx) {
 			OC_DEBUG(0, "[asyncemsmdb]: MAPIStore initialized failed");
 			*r->out.pulFlagsOut = 0x1;
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -989,6 +1006,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb]: unable to set mapistore connection info");
 			*r->out.pulFlagsOut = 0x1;
 			talloc_free(mstore_ctx);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 		talloc_set_destructor((void *)mstore_ctx, (int (*)(void *))asyncemsmdb_mapistore_destructor);
@@ -998,6 +1016,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb]: unable to fetch emsmdb session data");
 			*r->out.pulFlagsOut = 0x1;
 			talloc_free(mstore_ctx);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1006,6 +1025,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!session) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
 			talloc_free(mstore_ctx);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1017,6 +1037,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!session->emsmdb_session_str) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
 			talloc_free(session);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 		session->r = r;
@@ -1026,6 +1047,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (session->sock == -1) {
 			OC_DEBUG(0, "[asyncemsmdb]: failed to create socket: %s", nn_strerror(errno));
 			talloc_free(session);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1034,6 +1056,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (port == -1) {
 			OC_DEBUG(0, "[asyncemsmdb]: no port available!");
 			talloc_free(session);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1050,6 +1073,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		if (!bind_addr) {
 			OC_DEBUG(0, "[asyncemsmdb][ERR]: no more memory");
 			talloc_free(session);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1058,6 +1082,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb] nn_bind failed on %s failed: %s", bind_addr, nn_strerror(errno));
 			talloc_free(session);
 			talloc_free(bind_addr);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1068,6 +1093,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 				 mapistore_errstr(retval));
 			talloc_free(session);
 			talloc_free(bind_addr);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1077,6 +1103,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb] nn_getsockopt failed: %s", nn_strerror(errno));
 			talloc_free(session);
 			talloc_free(bind_addr);
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1103,6 +1130,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		failure:
 			OC_DEBUG(0, "[asyncemsmdb][ERR]: No more memory");
 			*r->out.pulFlagsOut = 0x1;
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -1120,10 +1148,11 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 						  session);
 		if (session->fd_event == NULL) {
 			OC_DEBUG(0, "[asyncemsmdb] unable to subscribe for fd event in event loop");
+			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
 	}
-
+	oc_timer_end(oc_t_ctx);
 	return NT_STATUS_OK;
 }
 

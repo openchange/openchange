@@ -28,6 +28,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/util/samdb.h"
+#include "mapiproxy/util/oc_timer.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
 
@@ -1510,6 +1511,8 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 {
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
+	char					*op_description;
+	struct oc_timer_ctx			*oc_t_ctx;
 
 	OC_DEBUG(5, "dcesrv_exchange_nsp_dispatch opnum: %u",  dce_call->pkt.u.request.opnum);
 
@@ -1519,6 +1522,10 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	/* Sanity checks */
 	if (!table) return NT_STATUS_UNSUCCESSFUL;
 	if (table->name && strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) return NT_STATUS_UNSUCCESSFUL;
+
+	op_description = talloc_asprintf(mem_ctx, "NSPI operation 0x%02X",
+	                                 dce_call->pkt.u.request.opnum);
+	oc_t_ctx = oc_timer_start(OC_TIMER_DEFAULT_LOG_LEVEL, op_description);
 
 	switch (opnum) {
 	case NDR_NSPIBIND:
@@ -1586,6 +1593,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 		break;
 	}
 
+	oc_timer_end(oc_t_ctx);
 	return NT_STATUS_OK;
 }
 

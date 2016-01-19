@@ -812,6 +812,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/modules.po			\
 							mapiproxy/libmapiproxy/fault_util.po			\
 							mapiproxy/util/mysql.po					\
+							mapiproxy/util/oc_timer.po				\
 							mapiproxy/util/samba_util_backport.po			\
 							mapiproxy/util/samdb.po					\
 							mapiproxy/util/schema_migration.po			\
@@ -968,6 +969,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/m
 							mapiproxy/util/mysql.po						\
 							mapiproxy/util/samdb.po						\
 							mapiproxy/util/oc_memcached.po					\
+							mapiproxy/util/oc_timer.po					\
 							mapiproxy/util/ccan/htable/htable.po				\
 							mapiproxy/util/ccan/hash/hash.po				\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\

@@ -9,19 +9,19 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "mysql.h"
 
-#include <time.h>
+#include "oc_timer.h"
 #include "ccan/htable/htable.h"
 #include "ccan/hash/hash.h"
 #include "libmapi/mapicode.h"
@@ -50,13 +50,6 @@ static bool _ht_cmp(const void *e, void *string)
 /* This is a dictionary [connection_string] -> [MYSQL *] (actually struct conn_v) */
 static struct htable ht = HTABLE_INITIALIZER(ht, _ht_rehash, NULL);
 
-
-static float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
-{
-	return ((float)((end->tv_sec * 1000000000 + end->tv_nsec) -
-			(start->tv_sec * 1000000000 + start->tv_nsec)))
-		/ 1000000000;
-}
 
 /**
     \details Close and delete all mysql connections already open
@@ -286,22 +279,19 @@ void release_connection(MYSQL *conn)
 
 enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 {
-	struct timespec start, end;
+	struct oc_timer_ctx *oc_t_ctx;
 	float seconds_spent;
 
-	clock_gettime(CLOCK_MONOTONIC, &start);
+	oc_t_ctx = oc_timer_start_with_threshold(5, NULL, THRESHOLD_SLOW_QUERIES);
 	if (mysql_query(conn, sql) != 0) {
 		OC_DEBUG(3, "Error on query `%s`: %s", sql, mysql_error(conn));
 		return MYSQL_ERROR;
 	}
-	clock_gettime(CLOCK_MONOTONIC, &end);
 
-	seconds_spent = timespec_diff_in_seconds(&end, &start);
+	seconds_spent = oc_timer_end_diff(oc_t_ctx);
 	if (seconds_spent > THRESHOLD_SLOW_QUERIES) {
-		printf("MySQL slow query!\n"
-		       "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
-		OC_DEBUG(5, "MySQL slow query!"
-			  "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
+		OC_DEBUG(5, "MySQL slow query!\n\tQuery: `%s`\n\tTime: %.3f\n",
+		         sql, seconds_spent);
 	}
 	return MYSQL_SUCCESS;
 }

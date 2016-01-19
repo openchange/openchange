@@ -362,9 +362,15 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				current_entry = current_entry->next;
 			}
 			if (!exists) {
-				OC_DEBUG(5, "  removing entry '%s'\n", mapistore_url);
 				openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid);
-				openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, username, found_fid);
+				if (!oxosfld_is_special_folder(emsmdbp_ctx, found_fid)) {
+					OC_DEBUG(5, "Removing entry '%s'", mapistore_url);
+					openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, username, found_fid);
+				} else {
+					/* Do not delete a special folder */
+					OC_DEBUG(5, "Special folder %s (%"PRIx64") is missing but not deleting...",
+						 mapistore_url, found_fid);
+				}
 			}
 		}
 	}

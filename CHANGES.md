@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased] - 2016-0X-XX
 
 ### Fixes
+* Deny the removal of special folders on provisioning
 * Changed :days parameter in ocsmanager to a value which is RFC-compliant
 * Reconnect broken LDAP connections for some missing NSPI calls
 

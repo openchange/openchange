@@ -24,6 +24,8 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 
+#include <ldb_module.h>
+
 /* Expose samdb_connect prototype */
 struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
 				  struct loadparm_context *,
@@ -239,6 +241,7 @@ int safe_ldb_wait(struct ldb_context **ldb_ptr, struct ldb_request *req, enum ld
 		new_ldb = samdb_init(talloc_parent(*ldb_ptr));
 
 		if (new_ldb) {
+			req->handle = ldb_handle_new(req, new_ldb);
 			/* Perform request again */
 			ret = ldb_request(new_ldb, req);
 			if (ret != LDB_SUCCESS) {

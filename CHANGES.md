@@ -7,8 +7,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [unreleased] - 2016-0X-XX
 
 ### Fixes
-* Reconnect broken LDAP connections for some missing NSPI calls
 * Changed :days parameter in ocsmanager to a value which is RFC-compliant
+* Reconnect broken LDAP connections for some missing NSPI calls
 
 ## [2.4-zentyal18] - 2016-01-18
 

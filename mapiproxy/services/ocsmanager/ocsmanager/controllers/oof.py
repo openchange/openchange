@@ -552,7 +552,7 @@ class OofSettings(object):
                          "\"from\" \"$internal_domain\" {\n")
             template += "vacation\n"
             template += "    :subject \"$subject\"\n"
-            template += "    :days    0\n"
+            template += "    :days    1\n"
             template += "    :mime    \"MIME-Version: 1.0\r\n"
             template += "Content-Type: text/html; charset=UTF-8\r\n"
             template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
@@ -563,7 +563,7 @@ class OofSettings(object):
                 template += "} else {\n"
                 template += "vacation\n"
                 template += "    :subject \"$subject\"\n"
-                template += "    :days    0\n"
+                template += "    :days    1\n"
                 template += "    :mime    \"MIME-Version: 1.0\r\n"
                 template += "Content-Type: text/html; charset=UTF-8\r\n"
                 template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "

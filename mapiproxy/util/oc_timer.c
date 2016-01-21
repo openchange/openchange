@@ -44,7 +44,11 @@ static float _diff_in_seconds(struct timespec *start)
 
 struct oc_timer_ctx *oc_timer_start(enum oc_log_level log_level, const char *name)
 {
+#ifdef OC_TIMERS
 	return oc_timer_start_with_threshold(log_level, name, 0.0);
+#else
+	return NULL;
+#endif
 }
 
 struct oc_timer_ctx *oc_timer_start_with_threshold(

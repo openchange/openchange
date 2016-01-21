@@ -78,8 +78,11 @@ void oc_timer_end(struct oc_timer_ctx *oc_t_ctx);
 float oc_timer_end_diff(struct oc_timer_ctx *oc_t_ctx);
 
 
+#ifdef OC_TIMERS
 #define OC_TIMER_START \
-	oc_timer_start_with_threshold(OC_TIMER_DEFAULT_LOG_LEVEL, __PRETTY_FUNCTION__, OC_TIMER_DEFAULT_THRESHOLD);
-
+	oc_timer_start_with_threshold(OC_TIMER_DEFAULT_LOG_LEVEL, __PRETTY_FUNCTION__, OC_TIMER_DEFAULT_THRESHOLD)
+#else
+#define OC_TIMER_START NULL
+#endif
 
 #endif /* __OC_TIMER_H__ */

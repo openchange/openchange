@@ -888,17 +888,21 @@ notif:
 		enum mapistore_error	ret;
 		struct ndr_pull		*ndr;
 		enum ndr_err_code	ndr_err_code;
+#ifdef OC_TIMERS
 		struct oc_timer_ctx	*oc_t_ctx;
 
 		oc_t_ctx = oc_timer_start_with_threshold(
 			OC_TIMER_DEFAULT_LOG_LEVEL, "EcDoRpc_process_transaction.notif", OC_TIMER_DEFAULT_THRESHOLD);
+#endif
 		ret = mapistore_notification_deliver_get(mem_ctx, emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid,
 							 &payload.data, &payload.length);
 		if (ret == MAPISTORE_SUCCESS) {
 			ndr = ndr_pull_init_blob(&payload, mem_ctx);
 			if (!ndr) {
-				oc_timer_end(oc_t_ctx);
 				OC_DEBUG(0, "Unable to initialize notification ndr pull blob");
+#ifdef OC_TIMERS
+				oc_timer_end(oc_t_ctx);
+#endif
 				goto end;
 			}
 			while (ndr->offset != payload.length) {
@@ -910,7 +914,9 @@ notif:
 				}
 				if (!mapi_response->mapi_repl) {
 					OC_DEBUG(0, "No memory available");
+#ifdef OC_TIMERS
 					oc_timer_end(oc_t_ctx);
+#endif
 					goto end;
 				}
 				ndr_err_code = ndr_pull_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &(mapi_response->mapi_repl[idx]));
@@ -928,9 +934,10 @@ notif:
 			}
 			talloc_free(ndr);
 		}
+#ifdef OC_TIMERS
 		oc_timer_end(oc_t_ctx);
+#endif
 	}
-
 end:
 	if (mapi_response->mapi_repl) {
 		mapi_response->mapi_repl[idx].opnum = 0;

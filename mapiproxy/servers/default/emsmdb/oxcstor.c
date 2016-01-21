@@ -73,7 +73,12 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	username = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
-	/* Step 2. Init and or update the user mailbox (auto-provisioning) */
+	/* Step 2. Set the logon map */
+	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
+	ret = mapi_logon_set(emsmdbp_ctx->logon_ctx, mapi_req->logon_id, username);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
+
+	/* Step 3. Init and or update the user mailbox (auto-provisioning) */
 	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
@@ -82,10 +87,10 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	}
 
-	/* Step 3. Set LogonFlags */
+	/* Step 4. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;
 
-	/* Step 4. Build FolderIds list */
+	/* Step 5. Build FolderIds list */
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.Root);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTION, &response->LogonType.store_mailbox.DeferredAction);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.SpoolerQueue);
@@ -100,21 +105,21 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_VIEWS, &response->LogonType.store_mailbox.Views);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.Shortcuts);
 
-	/* Step 5. Set ResponseFlags */
+	/* Step 6. Set ResponseFlags */
 	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved;
 	if (username && emsmdbp_ctx->username && strcmp(username, emsmdbp_ctx->username) == 0) {
 		response->LogonType.store_mailbox.ResponseFlags |= ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
 	}
 
-	/* Step 6. Retrieve MailboxGuid */
+	/* Step 7. Retrieve MailboxGuid */
 	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, username, &response->LogonType.store_mailbox.MailboxGuid);
 
-	/* Step 7. Retrieve mailbox replication information */
+	/* Step 8. Retrieve mailbox replication information */
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username,
 					&response->LogonType.store_mailbox.ReplId,
 					&response->LogonType.store_mailbox.ReplGUID);
 
-	/* Step 8. Set LogonTime both in openchange dispatcher database and reply */
+	/* Step 9. Set LogonTime both in openchange dispatcher database and reply */
 	t = time(NULL);
 	LogonTime = localtime(&t);
 	response->LogonType.store_mailbox.LogonTime.Seconds = LogonTime->tm_sec;
@@ -125,11 +130,11 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response->LogonType.store_mailbox.LogonTime.Month = LogonTime->tm_mon + 1;
 	response->LogonType.store_mailbox.LogonTime.Year = LogonTime->tm_year + 1900;
 
-	/* Step 9. Retrieve GwartTime */
+	/* Step 10. Retrieve GwartTime */
 	unix_to_nt_time(&nttime, t);
 	response->LogonType.store_mailbox.GwartTime = nttime - 1000000;
 
-	/* Step 10. Set StoreState */
+	/* Step 11. Set StoreState */
 	response->LogonType.store_mailbox.StoreState = 0x0;
 
 	return MAPI_E_SUCCESS;
@@ -283,6 +288,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	   struct mapistore_subscription_list	*el;*/
 	enum MAPISTATUS				retval;
 	uint32_t				handle;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->logon_user, MAPI_E_LOGON_FAILED, NULL);
 
 	handle = handles[request->handle_idx];
 #if 0
@@ -731,6 +738,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
@@ -835,6 +849,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;

@@ -4,6 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,8 +83,27 @@ static int emsmdbp_mapi_handles_destructor(void *data)
 }
 
 /**
+   \details Release the MAPI logon context used by EMSMDB provider
+   context
+
+   \param data pointer on data to destroy
+
+   \return 0 on success, otherwise -1
+ */
+static int emsmdbp_mapi_logon_destructor(void *data)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_logon_context	*logon_ctx = (struct mapi_logon_context *) data;
+
+	retval = mapi_logon_release(logon_ctx);
+	OC_DEBUG(6, "MAPI logon context released (%s)", mapi_get_errstr(retval));
+
+	return (retval == MAPI_E_SUCCESS) ? 0 : -1;
+}
+
+/**
    \details Initialize the EMSMDBP context and open connections to
-   Samba databases.
+   the databases.
 
    \param lp_ctx pointer to the loadparm_context
    \param username account name for current session
@@ -150,6 +170,15 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->handles_ctx, (int (*)(void *))emsmdbp_mapi_handles_destructor);
+
+	/* Initialise MAPI logon context */
+	emsmdbp_ctx->logon_ctx = mapi_logon_init(mem_ctx);
+	if (!emsmdbp_ctx->logon_ctx) {
+		OC_DEBUG(1, "MAPI logon context initialisation failed");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+	talloc_set_destructor((void *)emsmdbp_ctx->logon_ctx, (int (*)(void *))emsmdbp_mapi_logon_destructor);
 
 	return emsmdbp_ctx;
 }

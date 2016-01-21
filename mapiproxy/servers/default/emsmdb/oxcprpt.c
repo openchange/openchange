@@ -103,6 +103,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
         object = private_data;
 	if (!object) {
@@ -260,6 +266,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = private_data;
 	if (!object) {
@@ -359,6 +371,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesList(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = private_data;
 	if (!object) {
@@ -432,6 +450,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -565,6 +589,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -728,7 +758,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* Step 2. Retrieve the stream object */
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
+	/* Step 3. Retrieve the stream object */
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *) private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
@@ -737,7 +773,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* Step 3. Return the data and update the position in the stream */
+	/* Step 4. Return the data and update the position in the stream */
 	buffer_size = mapi_req->u.mapi_ReadStream.ByteCount;
 	/* careful here, let's switch to idiot mode */
 	if (buffer_size == 0xBABE) {
@@ -806,6 +842,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -884,6 +926,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCommitStream(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *) private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
@@ -954,6 +1002,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
@@ -1016,6 +1070,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1105,6 +1165,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1398,6 +1464,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(0, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 

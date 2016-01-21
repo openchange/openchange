@@ -81,6 +81,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(parent, &data);
 	if (retval || !data) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -167,6 +173,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 

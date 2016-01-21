@@ -5,6 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2009-2010
    Copyright (C) Carlos Pérez-Aradros Herce 2015
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,6 +50,7 @@ struct emsmdbp_context {
 	char					*szUserDN;
 	char					*szDisplayName;
 	uint32_t				userLanguage;
+	const char				*logon_user;
 	char					*username;
 	char					*szDNPrefix;
 	struct loadparm_context			*lp_ctx;
@@ -59,6 +61,7 @@ struct emsmdbp_context {
 
 	TALLOC_CTX				*mem_ctx;
 	struct GUID				session_uuid;
+	struct mapi_logon_context		*logon_ctx;
 };
 
 struct emsmdbp_stream {

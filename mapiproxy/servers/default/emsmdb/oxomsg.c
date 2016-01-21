@@ -186,6 +186,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
@@ -422,6 +428,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
@@ -560,7 +572,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* Step 2. Search for the specified MessageClass substring within user mailbox */
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
+	/* Step 3. Search for the specified MessageClass substring within user mailbox */
 	retval = openchangedb_get_TransportFolder(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
 						  &mapi_repl->u.mapi_GetTransportFolder.FolderId);
 	if (retval) {

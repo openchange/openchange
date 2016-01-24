@@ -78,6 +78,16 @@ interface property
 		CAL_LUNAR_KOREAN		= 0x14
 	} CalendarType;
 
+	/* [MS-OXOCAL] 2.2.6.5 */
+	typedef [v1_enum] enum {
+		mtgEmpty	    = 0x00000000,
+		mtgRequest	    = 0x00000001,
+		mtgFull		    = 0x00010000,
+		mtgInfo		    = 0x00020000,
+		mtgOutOfDate	    = 0x00080000,
+		mtgDelegatorCopy    = 0x00100000
+	} MeetingType;
+
 	typedef [bitmap32bit] bitmap {
 		Su		= 0x00000001,
 		M		= 0x00000002,

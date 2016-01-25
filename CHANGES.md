@@ -4,11 +4,18 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
+## [2.4-zentyal20] - 2016-0X-XX
+
+### Fixes
+* Deny the removal of special folders on provisioning
+
+
 ## [2.4-zentyal19] - 2016-01-22
 
 ### Fixes
 * Changed :days parameter in ocsmanager to a value which is RFC-compliant
 * Reconnect broken LDAP connections for some missing NSPI calls
+
 
 ## [2.4-zentyal18] - 2016-01-18
 

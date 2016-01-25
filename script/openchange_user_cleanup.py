@@ -185,11 +185,27 @@ class MemcachedCleaner(object):
             print " [Memcached] There are no keys to delete"
             return
 
-        print "WARNING: All data from memcached will be deleted"
-        if not self.dry_run:
-            for key in keys:
-                mc.delete(key)
-        print " [Memcached] Deleted %d keys" % len(keys)
+        deleted_keys = 0
+        keys_with_username = False
+        prefix = "indexing:" + username
+        for key in keys:
+            if key.startswith(prefix):
+                keys_with_username = True
+                deleted_keys += 1
+                if not self.dry_run:
+                    mc.delete(key)
+
+        if not keys_with_username:
+            # Old indexing keys didn't have username as prefix
+            # We didn't find any key with the username as prefix, so to be
+            # sure we remove username's keys we have to empty memcached
+            print "WARNING: All data from memcached will be deleted"
+            deleted_keys = len(keys)
+            if not self.dry_run:
+                for key in keys:
+                    mc.delete(key)
+
+        print " [Memcached] Deleted %d keys" % deleted_keys
 
     def _connect_to_memcached(self):
         # FIXME read from openchange conf

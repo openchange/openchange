@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [2.4-zentyal20] - 2016-0X-XX
 
 ### Fixes
+* Import deletes of already deleted messages now works
 * Deny the removal of special folders on provisioning
 
 

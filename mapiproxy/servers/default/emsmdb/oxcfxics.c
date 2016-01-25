@@ -2716,14 +2716,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
 			if (ret == MAPISTORE_SUCCESS) {
 				ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
-				if (ret == MAPISTORE_SUCCESS) {
+				if (ret == MAPISTORE_SUCCESS || ret == MAPISTORE_ERR_NOT_FOUND) {
 					object_ids[i] = objectID;
+					ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
+					if (ret != MAPISTORE_SUCCESS) {
+						OC_DEBUG(5, "message deletion of index record failed for fmid: 0x%.16"PRIx64": %s",
+							 objectID, mapistore_errstr(ret));
+					}
 				} else {
-					OC_DEBUG(5, "message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID);
-				}
-				ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
-				if (ret != MAPISTORE_SUCCESS) {
-					OC_DEBUG(5, "message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID);
+					OC_DEBUG(5, "message deletion failed for fmid: 0x%.16"PRIx64": %s", objectID,
+						 mapistore_errstr(ret));
 				}
 			}
 		}

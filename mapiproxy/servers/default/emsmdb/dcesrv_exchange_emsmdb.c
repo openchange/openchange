@@ -29,6 +29,7 @@
 #include <sys/time.h>
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/util/oc_timer.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
@@ -293,6 +294,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
 	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
+		struct oc_timer_ctx	*oc_t_ctx;
+		char			*op_description;
+
+		op_description = talloc_asprintf(mem_ctx, "EMSMDB operation 0x%02X",
+		                                 mapi_request->mapi_req[i].opnum);
+		oc_t_ctx = oc_timer_start(OC_TIMER_DEFAULT_LOG_LEVEL, op_description);
 		OC_DEBUG(0, "MAPI Rop: 0x%.2x (%d)\n", mapi_request->mapi_req[i].opnum, size);
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
@@ -870,6 +877,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		if (retval) {
 			OC_DEBUG(5, "MAPI Rop: 0x%.2x [retval=0x%.8x]\n", mapi_request->mapi_req[i].opnum, retval);
 		}
+		oc_timer_end(oc_t_ctx);
 	}
 
 notif:
@@ -880,13 +888,21 @@ notif:
 		enum mapistore_error	ret;
 		struct ndr_pull		*ndr;
 		enum ndr_err_code	ndr_err_code;
+#ifdef OC_TIMERS
+		struct oc_timer_ctx	*oc_t_ctx;
 
+		oc_t_ctx = oc_timer_start_with_threshold(
+			OC_TIMER_DEFAULT_LOG_LEVEL, "EcDoRpc_process_transaction.notif", OC_TIMER_DEFAULT_THRESHOLD);
+#endif
 		ret = mapistore_notification_deliver_get(mem_ctx, emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid,
 							 &payload.data, &payload.length);
 		if (ret == MAPISTORE_SUCCESS) {
 			ndr = ndr_pull_init_blob(&payload, mem_ctx);
 			if (!ndr) {
 				OC_DEBUG(0, "Unable to initialize notification ndr pull blob");
+#ifdef OC_TIMERS
+				oc_timer_end(oc_t_ctx);
+#endif
 				goto end;
 			}
 			while (ndr->offset != payload.length) {
@@ -898,6 +914,9 @@ notif:
 				}
 				if (!mapi_response->mapi_repl) {
 					OC_DEBUG(0, "No memory available");
+#ifdef OC_TIMERS
+					oc_timer_end(oc_t_ctx);
+#endif
 					goto end;
 				}
 				ndr_err_code = ndr_pull_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &(mapi_response->mapi_repl[idx]));
@@ -915,8 +934,10 @@ notif:
 			}
 			talloc_free(ndr);
 		}
+#ifdef OC_TIMERS
+		oc_timer_end(oc_t_ctx);
+#endif
 	}
-
 end:
 	if (mapi_response->mapi_repl) {
 		mapi_response->mapi_repl[idx].opnum = 0;
@@ -1512,8 +1533,10 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	struct dcesrv_endpoint		*item;
 	bool				found;
 	const char			*email;
+	struct oc_timer_ctx		*oc_t_ctx;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe)\n");
+	oc_t_ctx = OC_TIMER_START;
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
@@ -1521,6 +1544,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_LOGON_FAILED;
 	}
 
@@ -1537,7 +1561,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		OC_DEBUG(3, "exchange_emsmdb: asyncemsmdb endpoint missing\n");
 		r->out.result = ecRejected;
 		DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -1548,6 +1572,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_LOGON_FAILED;
 	}
 
@@ -1558,6 +1583,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_LOGON_FAILED;
 	}
 
@@ -1569,6 +1595,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_LOGON_FAILED;
 	}
 	retval = mapistore_notification_session_add(emsmdbp_ctx->mstore_ctx, r->in.handle->uuid,
@@ -1579,12 +1606,13 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		oc_timer_end(oc_t_ctx);
 		return MAPI_E_LOGON_FAILED;
 	}
 
 	*r->out.async_handle = handle->wire_handle;
 	r->out.result = MAPI_E_SUCCESS;
-
+	oc_timer_end(oc_t_ctx);
 	return MAPI_E_SUCCESS;
 }
 
@@ -1607,6 +1635,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 {
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
+	struct oc_timer_ctx			*oc_t_ctx = NULL;
 
 	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
@@ -1614,6 +1643,11 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 	/* Sanity checks */
 	if (!table) return NT_STATUS_UNSUCCESSFUL;
 	if (table->name && strcmp(table->name, NDR_EXCHANGE_EMSMDB_NAME)) return NT_STATUS_UNSUCCESSFUL;
+
+	if (opnum != NDR_ECDORPC && opnum != NDR_ECDORPCEXT2 && opnum != NDR_ECDOASYNCCONNECTEX) {
+		/* These operations have a timer on their own */
+		oc_t_ctx = OC_TIMER_START;
+	}
 
 	switch (opnum) {
 	case NDR_ECDOCONNECT:
@@ -1662,7 +1696,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 		dcesrv_EcDoAsyncConnectEx(dce_call, mem_ctx, (struct EcDoAsyncConnectEx *)r);
 		break;
 	}
-
+	oc_timer_end(oc_t_ctx);
 	return NT_STATUS_OK;
 }
 

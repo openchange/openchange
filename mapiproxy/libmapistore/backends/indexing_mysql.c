@@ -22,7 +22,6 @@
  */
 
 #include <string.h>
-#include <time.h>
 
 #include "../mapistore.h"
 #include "../mapistore_private.h"
@@ -35,6 +34,8 @@
 #include "../../util/schema_migration.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include "mapiproxy/util/oc_memcached.h"
+#include "mapiproxy/util/oc_timer.h"
+
 
 #include <talloc.h>
 
@@ -68,14 +69,7 @@ static char *_memcached_gen_value(TALLOC_CTX *mem_ctx, uint64_t fmid)
 	return talloc_asprintf(mem_ctx, "%"PRIu64, fmid);
 }
 
-static float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
-{
-	return ((float)((end->tv_sec * 1000000000 + end->tv_nsec) -
-			(start->tv_sec * 1000000000 + start->tv_nsec)))
-		/ 1000000000;
-}
-
-
+#define THRESHOLD_SLOW_MEMCACHED_SETUP 0.5
 /**
    \details Prepare FMID cache for specified user
 
@@ -99,8 +93,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	memcached_st		*memc = NULL;
 	memcached_return	rc;
 	uint32_t		i;
-	struct timespec		start, end;
-	float			seconds_spent;
+	struct oc_timer_ctx	*oc_t_ctx;
 
 	OC_DEBUG(5, "[INFO] _memcached_setup for '%s'\n", username);
 
@@ -120,7 +113,8 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	mem_ctx = talloc_new(NULL);
 	if (!mem_ctx) return NULL;
 
-	clock_gettime(CLOCK_MONOTONIC, &start);
+	oc_t_ctx = oc_timer_start_with_threshold(
+		3, "Indexing setup memcached", THRESHOLD_SLOW_MEMCACHED_SETUP);
 	sql = talloc_asprintf(mem_ctx, "SELECT fmid,url FROM "INDEXING_TABLE" "
 			      "WHERE username = '%s' AND soft_deleted = '%d'",
 			      _sql(mem_ctx, username), 0);
@@ -128,6 +122,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	mret = select_without_fetch(MYSQL(ictx), sql, &res);
 	if (mret != MYSQL_SUCCESS) {
 		talloc_free(mem_ctx);
+		oc_timer_end(oc_t_ctx);
 		return NULL;
 	}
 
@@ -155,9 +150,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 
 	mysql_free_result(res);
 
-	clock_gettime(CLOCK_MONOTONIC, &end);
-	seconds_spent = timespec_diff_in_seconds(&end, &start);
-	OC_DEBUG(5, "Indexing setup memcached: %.3f seconds", seconds_spent);
+	oc_timer_end(oc_t_ctx);
 
 	talloc_free(mem_ctx);
 	return memc;

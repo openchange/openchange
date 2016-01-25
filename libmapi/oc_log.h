@@ -23,6 +23,8 @@
 #define _OC_LOG_H_
 
 #include <stdarg.h>
+#include <stdbool.h>
+#include <talloc.h>
 #include <param.h>
 
 #define OC_LOG_MAX_LINE 1024

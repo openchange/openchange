@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
-## [2.4-zentyal20] - 2016-0X-XX
+## [2.4-zentyal20] - 2016-01-26
 
 ### Fixes
 * Import deletes of already deleted messages now works
 * Deny the removal of special folders on provisioning
+
+### Added
+* Log timers for each operation done
+* Constants for PidLidClientIntent masks
+* Constants for PidLidMeetingType values
 
 
 ## [2.4-zentyal19] - 2016-01-22
@@ -231,7 +236,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal19...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal20...HEAD
+[2.4-zentyal20]: https://github.com/Zentyal/openchange/compare/2.4-zentyal19...2.4-zentyal20
 [2.4-zentyal19]: https://github.com/Zentyal/openchange/compare/2.4-zentyal18...2.4-zentyal19
 [2.4-zentyal18]: https://github.com/Zentyal/openchange/compare/2.4-zentyal17...2.4-zentyal18
 [2.4-zentyal17]: https://github.com/Zentyal/openchange/compare/2.4-zentyal16...2.4-zentyal17

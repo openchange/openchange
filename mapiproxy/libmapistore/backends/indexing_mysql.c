@@ -41,20 +41,32 @@
 
 #define MYSQL(context)	((MYSQL *)context->data)
 
+/* 250 (max memcached key size) - strlen("indexing::") - strlen(hash64(...)) */
+#define MAX_ALLOWED_USERNAME_SIZE_FOR_PREFIXED_KEY 224
 
 /**
    \details Generate key for FMID cache
 
    \param mem_ctx pointer to the memory context
+   \param username samAccountName for current user
    \param uri pointer to the uri to use for hashing
 
    \return String allocated with TALLOC on success, otherwise NULL
  */
-static char *_memcached_gen_key(TALLOC_CTX *mem_ctx, const char *uri)
+static char *_memcached_gen_key(TALLOC_CTX *mem_ctx, const char *username,
+                                const char *uri)
 {
-	return talloc_asprintf(mem_ctx, "%"PRIx64, hash64((void *)uri, strlen(uri), 0));
-}
+	if (strlen(username) > MAX_ALLOWED_USERNAME_SIZE_FOR_PREFIXED_KEY) {
+		/* Memcached keys cannot be longer than 250 characters long,
+		so if we have a very long username, we cannot use prefixed
+		keys with the username */
+		return talloc_asprintf(mem_ctx, "%"PRIx64,
+		                       hash64((void *)uri, strlen(uri), 0));
+	}
 
+	return talloc_asprintf(mem_ctx, "indexing:%s:%"PRIx64,
+	                       username, hash64((void *)uri, strlen(uri), 0));
+}
 
 /**
    \details Generate value for FMID cache
@@ -136,7 +148,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 		if (row) {
 			char *hashstr = NULL;
 
-			hashstr = _memcached_gen_key(mem_ctx, row[1]);
+			hashstr = _memcached_gen_key(mem_ctx, username, row[1]);
 			if (hashstr) {
 				rc = memcached_add(memc, hashstr, strlen(hashstr),
 						   row[0], strlen(row[0]), 0, 0);
@@ -161,13 +173,16 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
    \details Retrieve FMID value from cache database given its uri
 
    \param ictx valid pointer to the indexing context
+   \param username samAccountName for current user
    \param uri pointer to the uri used to hash the key
    \param pointer to the fmid to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
-						  const char *uri, uint64_t *fmid)
+                                                  const char *username,
+                                                  const char *uri,
+                                                  uint64_t *fmid)
 {
 	TALLOC_CTX		*mem_ctx;
 	memcached_st		*memc;
@@ -188,7 +203,7 @@ static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	key = _memcached_gen_key(mem_ctx, uri);
+	key = _memcached_gen_key(mem_ctx, username, uri);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	memc = ictx->cache;
@@ -208,13 +223,16 @@ static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
    \details Add record to the cache database
 
    \param ictx valid pointer to the indexing context
+   \param username samAccountName for current user
    \param uri pointer to the uri used to hash the key
    \param fmid the value of the key/value pair
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static enum mapistore_error _memcached_add_record(struct indexing_context *ictx,
-						  const char *uri, uint64_t fmid)
+                                                  const char *username,
+                                                  const char *uri,
+                                                  uint64_t fmid)
 {
 	TALLOC_CTX		*mem_ctx;
 	memcached_st		*memc;
@@ -232,7 +250,7 @@ static enum mapistore_error _memcached_add_record(struct indexing_context *ictx,
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	key = _memcached_gen_key(mem_ctx, uri);
+	key = _memcached_gen_key(mem_ctx, username, uri);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	value = _memcached_gen_value(mem_ctx, fmid);
@@ -251,13 +269,16 @@ static enum mapistore_error _memcached_add_record(struct indexing_context *ictx,
    \details Update record in the cache database
 
    \param ictx valid pointer to the indexing context
+   \param username samAccountName for current user
    \param uri pointer to the uri used to hash the key
    \param fmid the value of the key/value pair
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static enum mapistore_error _memcached_update_record(struct indexing_context *ictx,
-						     const char *uri, uint64_t fmid)
+                                                     const char *username,
+                                                     const char *uri,
+                                                     uint64_t fmid)
 {
 	TALLOC_CTX		*mem_ctx;
 	memcached_st		*memc;
@@ -275,7 +296,7 @@ static enum mapistore_error _memcached_update_record(struct indexing_context *ic
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	key = _memcached_gen_key(mem_ctx, uri);
+	key = _memcached_gen_key(mem_ctx, username, uri);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	value = _memcached_gen_value(mem_ctx, fmid);
@@ -294,13 +315,14 @@ static enum mapistore_error _memcached_update_record(struct indexing_context *ic
    \details Delte record from the cache database
 
    \param ictx valid pointer to the indexing context
+   \param username samAccountName for current user
    \param uri pointer to the uri used to hash the key
-   \param fmid the value of the key/value pair
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static enum mapistore_error _memcached_delete_record(struct indexing_context *ictx,
-						     const char *uri)
+                                                     const char *username,
+                                                     const char *uri)
 {
 	TALLOC_CTX		*mem_ctx;
 	memcached_st		*memc;
@@ -317,7 +339,7 @@ static enum mapistore_error _memcached_delete_record(struct indexing_context *ic
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	key = _memcached_gen_key(mem_ctx, uri);
+	key = _memcached_gen_key(mem_ctx, username, uri);
 	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	memc = (memcached_st *)ictx->cache;
@@ -412,7 +434,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
-	retval = _memcached_add_record(ictx, mapistore_URI, fmid);
+	retval = _memcached_add_record(ictx, username, mapistore_URI, fmid);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "[indexing] Failed to add record `%s: %"PRIu64"` on memcached (%s)",
 			 mapistore_URI, fmid, mapistore_errstr(retval));
@@ -472,7 +494,7 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 		MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
 	}
 
-	retval = _memcached_update_record(ictx, mapistore_URI, fmid);
+	retval = _memcached_update_record(ictx, username, mapistore_URI, fmid);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "[indexing] Failed to update record `%s` with `%"PRIu64"` on memcached (%s)",
 			 mapistore_URI, fmid, mapistore_errstr(retval));
@@ -604,7 +626,7 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
-	retval = _memcached_delete_record(ictx, uri);
+	retval = _memcached_delete_record(ictx, username, uri);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "[indexing] Failed to delete record `%s` on memcached (%s)",
 			 uri, mapistore_errstr(retval));
@@ -652,7 +674,7 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	retval = _memcached_get_record(ictx, uri, &fmid);
+	retval = _memcached_get_record(ictx, username, uri, &fmid);
 	if (retval == MAPISTORE_SUCCESS) {
 		*fmidp = fmid;
 		*soft_deletedp = 0;

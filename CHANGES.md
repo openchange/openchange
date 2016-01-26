@@ -9,6 +9,11 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ### Added
 * Dump PT_MV_LONG properties in FastTransfer Buffer NDR dump
 
+### Improvements
+* Indexing warm up much more efficient
+* Indexing keys store on memcached normally have username as prefix
+
+
 ## [2.4-zentyal20] - 2016-01-26
 
 ### Fixes

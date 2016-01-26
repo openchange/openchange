@@ -63,6 +63,13 @@ class SambaOCHelper(object):
         c.execute("SELECT name FROM mailboxes")
         return sorted([row[0] for row in c.fetchall()])
 
+    def get_indexing_cache(self):
+        memcached_server = self.samba_lp.get('mapistore:indexing_cache')
+        if not memcached_server:
+            return "127.0.0.1:11211"
+        # This should has a format like: --SERVER=11.22.33.44:11211
+        return memcached_server.split('=')[1]
+
 
 class ImapCleaner(object):
     def __init__(self, dry_run=False, samba_helper=SambaOCHelper(),
@@ -208,9 +215,7 @@ class MemcachedCleaner(object):
         print " [Memcached] Deleted %d keys" % deleted_keys
 
     def _connect_to_memcached(self):
-        # FIXME read from openchange conf
-        host = "127.0.0.1:11211"
-        return memcache.Client([host])
+        return memcache.Client([self.samba_helper.get_indexing_cache()])
 
     def _get_all_keys(self, mc):
         keys = []

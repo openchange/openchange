@@ -81,6 +81,71 @@ static char *_memcached_gen_value(TALLOC_CTX *mem_ctx, uint64_t fmid)
 	return talloc_asprintf(mem_ctx, "%"PRIu64, fmid);
 }
 
+/* 250 (max memcached key size) - strlen("indexing:") */
+#define MAX_ALLOWED_USERNAME_SIZE_FOR_INITIALIZED_KEY 241
+
+/**
+   \details Generate key to mark an user as initialized. The returned value
+   will normally have the format indexing:USERNAME unless the username is
+   longer than MAX_ALLOWED_USERNAME_SIZE_FOR_INITIALIZED_KEY, in that case
+   the returned value will be indexing:hash(USERNAME), because memcached keys
+   cannot be longer than 250 chars.
+
+   \param mem_ctx pointer to the memory context
+   \param username samAccountName for current user
+
+   \return String allocated with TALLOC on success, otherwise NULL
+ */
+static char *_memcached_gen_initialized_key(TALLOC_CTX *mem_ctx, const char *username)
+{
+	if (!username) return NULL;
+
+	if (strlen(username) > MAX_ALLOWED_USERNAME_SIZE_FOR_INITIALIZED_KEY)
+		return talloc_asprintf(mem_ctx, "indexing:%"PRIu32,
+		                       hash_string(username));
+	return talloc_asprintf(mem_ctx, "indexing:%s", username);
+}
+
+/**
+   \details Mark on memcached an username as initialized. This basically stores
+   on memcacached a key with the format indexing:USERNAME with a value of '1'
+
+   \see _memcached_is_initialized
+   \see _memcached_gen_initialized_key
+ */
+static void _memcached_mark_as_initialized(memcached_st *memc, const char *username)
+{
+	const char	*value = "1";
+	char		*key;
+
+	if (!memc || !username) return;
+	key = _memcached_gen_initialized_key(NULL, username);
+	if (!key) return;
+	memcached_add(memc, key, strlen(key), value, strlen(value), 0, 0);
+	talloc_free(key);
+}
+
+/**
+   \details Check whether an user has been previously initialized or not
+
+   \see _memcached_mark_as_initialized
+ */
+static bool _memcached_is_initialized(memcached_st *memc, const char *username)
+{
+	const char		*value;
+	char			*key;
+	memcached_return_t	error;
+	uint32_t		flags;
+	size_t			value_len;
+
+	if (!memc || !username) return false;
+	key = _memcached_gen_initialized_key(NULL, username);
+	if (!key) return false;
+	value = memcached_get(memc, key, strlen(key), &value_len, &flags, &error);
+	talloc_free(key);
+	return error == MEMCACHED_SUCCESS && value_len == 1 && value[0] == '1';
+}
+
 #define THRESHOLD_SLOW_MEMCACHED_SETUP 0.5
 /**
    \details Prepare FMID cache for specified user
@@ -107,8 +172,6 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	uint32_t		i;
 	struct oc_timer_ctx	*oc_t_ctx;
 
-	OC_DEBUG(5, "[INFO] _memcached_setup for '%s'\n", username);
-
 	/* Sanity checks */
 	if (!ictx) return NULL;
 	if (!username) return NULL;
@@ -121,6 +184,12 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	memc = oc_memcached_new_connection(conn_str, true);
 	if (!memc) return NULL;
 
+	if (_memcached_is_initialized(memc, username)) {
+		/* Initialize only once per user */
+		return memc;
+	}
+
+	OC_DEBUG(5, "memcached_setup for '%s'", username);
 	/* Retrieve indexing records for user */
 	mem_ctx = talloc_new(NULL);
 	if (!mem_ctx) return NULL;
@@ -139,27 +208,26 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	}
 
 	num_rows = mysql_num_rows(res);
-	OC_DEBUG(5, "[INFO] _memcached_setup: %d values to index\n", num_rows);
+	OC_DEBUG(5, "memcached_setup: %d values to index", num_rows);
 
 	/* store records into memcached */
 	for (i = 0; i < num_rows; i++) {
+		char *hashstr;
 		MYSQL_ROW row = mysql_fetch_row(res);
 
-		if (row) {
-			char *hashstr = NULL;
+		if (!row) continue;
 
-			hashstr = _memcached_gen_key(mem_ctx, username, row[1]);
-			if (hashstr) {
-				rc = memcached_add(memc, hashstr, strlen(hashstr),
-						   row[0], strlen(row[0]), 0, 0);
-				talloc_free(hashstr);
-				if (rc != MEMCACHED_SUCCESS) {
-					OC_DEBUG(8, "[ERR] Key %s not stored\n", row[1]);
-				}
-			}
+		hashstr = _memcached_gen_key(mem_ctx, username, row[1]);
+		if (!hashstr) continue;
+		rc = memcached_add(memc, hashstr, strlen(hashstr), row[0],
+		                   strlen(row[0]), 0, 0);
+		talloc_free(hashstr);
+		if (rc != MEMCACHED_SUCCESS) {
+			OC_DEBUG(5, "Key %s not stored: %s", row[1],
+			         memcached_last_error_message(memc));
 		}
 	}
-
+	_memcached_mark_as_initialized(memc, username);
 	mysql_free_result(res);
 
 	oc_timer_end(oc_t_ctx);

@@ -935,6 +935,18 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	oc_timer_end(oc_t_ctx);
 }
 
+static bool asyncemsmdb_session_destructor(void *data)
+{
+	struct exchange_asyncemsmdb_session *session;
+
+	session = talloc_get_type(data, struct exchange_asyncemsmdb_session);
+	if (!session) return false;
+
+	OC_DEBUG(5, "Releasing exchange_asyncemsmdb_session `%s`", session->cn);
+	talloc_free(session->mem_ctx);
+
+	return true;
+}
 
  /**
     \details exchange_async_emsmdb EcDoAsyncWaitEx (0x0) function
@@ -961,6 +973,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 	char					*bind_addr = NULL;
 	int					port = 0;
 	struct oc_timer_ctx			*oc_t_ctx;
+	TALLOC_CTX				*session_mem_ctx;
 
 	OC_DEBUG(3, "exchange_asyncemsmdb: EcDoAsyncWaitEx (0x0)");
 	oc_t_ctx = OC_TIMER_START;
@@ -1021,13 +1034,22 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 		}
 
 		/* we're allowed to reply async */
-		session = talloc_zero(dce_call->event_ctx, struct exchange_asyncemsmdb_session);
-		if (!session) {
+		session_mem_ctx = talloc_named(NULL, 0, "asyncemsmdb session");
+		if (!session_mem_ctx) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
 			talloc_free(mstore_ctx);
 			oc_timer_end(oc_t_ctx);
 			return NT_STATUS_OK;
 		}
+		session = talloc_zero(session_mem_ctx, struct exchange_asyncemsmdb_session);
+		if (!session) {
+			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
+			talloc_free(mstore_ctx);
+			talloc_free(session_mem_ctx);
+			oc_timer_end(oc_t_ctx);
+			return NT_STATUS_OK;
+		}
+		session->mem_ctx = session_mem_ctx;
 
 		session->dce_call = dce_call;
 		session->mstore_ctx = talloc_steal(session, mstore_ctx);
@@ -1134,8 +1156,8 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			return NT_STATUS_OK;
 		}
 
-		// Do not set destructor, as private_data will be cleaned by tevent
-		mpm_session_set_private_data(mpm_session, (void *)session);
+		mpm_session_set_private_data(mpm_session, session);
+		mpm_session_set_destructor(mpm_session, asyncemsmdb_session_destructor);
 		OC_DEBUG(5, "[asyncemsmdb]: New session added: %s", session->emsmdb_session_str);
 	}
 

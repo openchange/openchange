@@ -11,6 +11,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 * Do not crash if we receive OAuth2 Auth Request in NTLM handler
 
 ### Improvements
+* Retry the samba connection attempt on ocsmanager startup
 * Sharing messages are now managed in Online mode as well
 * Perform Change Number restrictions to gather missing messages from
   the current status of the client

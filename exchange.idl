@@ -309,7 +309,7 @@ System Attendant Private Interface
 		[size_is(cValues)] uint16	*lpi;
 	} ShortArray_r;
 
-	typedef struct {
+	typedef [public] struct {
 		[range(0,100000)] uint32	cValues;
 		[size_is(cValues)] uint32	*lpl;
 	} LongArray_r;

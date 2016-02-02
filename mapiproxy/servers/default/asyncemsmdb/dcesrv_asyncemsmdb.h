@@ -37,6 +37,7 @@
 
 
 struct exchange_asyncemsmdb_session {
+	TALLOC_CTX				*mem_ctx;
 	char					*cn;
 	char					*bind_addr;
 	struct dcesrv_call_state		*dce_call;

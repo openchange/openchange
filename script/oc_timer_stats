@@ -17,11 +17,12 @@ function report {
       FS=":";
       print "RoP      Amount  Total time   Average time"
     } {
-      total++; 
+      total++;
       total_time+=$2;
       a[$1]++;
       b[$1] = b[$1]+$2
     } END {
+      PROCINFO["sorted_in"] = "@ind_num_asc";
       for (i in a) {
         average = b[i] / a[i]
         if (average > 1.0)
@@ -45,5 +46,5 @@ report EMSMDB
 if [[ "`grep oc_timer $LOG_FILE | grep threshold | wc -l`" != "0" ]]; then
   echo
   echo "================ Threshold ==============="
-  grep oc_timer $LOG_FILE | grep threshold
+  grep oc_timer $LOG_FILE | grep threshold | sort
 fi

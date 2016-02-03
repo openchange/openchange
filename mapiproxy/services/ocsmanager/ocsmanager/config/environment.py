@@ -36,14 +36,16 @@ from ocsmanager.lib.samdb import SamDBWrapper
 
 # samba
 import samba.param
-from samba.auth import system_session, admin_session
+from samba.auth import system_session
 from samba.credentials import Credentials
 import ldb
 
+import time
 import logging
 logger = logging.getLogger(__name__)
 
-def _load_samba_environment():
+
+def _load_samba_environment(retries):
     """Load the samba configuration vars from smb.conf and the sam.db."""
     params = samba.param.LoadParm()
     params.load_default()
@@ -62,10 +64,34 @@ def _load_samba_environment():
     if samdb_url is None:
         samdb_url = params.samdb_url()
 
-    samdb_ldb = SamDBWrapper(url=samdb_url,
-                             session_info=system_session(),
-                             credentials=creds,
-                             lp=params)
+    samdb_ldb = None
+    backoff = 0.2
+    next_retry = 0
+    while samdb_ldb is None:
+        try:
+            samdb_ldb = SamDBWrapper(url=samdb_url,
+                                     session_info=system_session(),
+                                     credentials=creds,
+                                     lp=params)
+        except ldb.LdbError as ex:
+            number, desc = ex
+            if number == ldb.ERR_OPERATIONS_ERROR:
+                # this is a cannot connect error
+                if retries != 0:
+                    next_retry += 1
+                    if next_retry > retries:
+                        logger.error("Maximum samba connection retries reached (%i)"
+                                     % retries)
+                        raise ex
+                logger.warn("Cannot connect to samba server. Backing off for %.2f seconds"
+                             % backoff)
+                time.sleep(backoff)
+                backoff *= 2
+                if backoff > 60:
+                    backoff = 60
+            else:
+                raise ex
+
     domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn
@@ -110,8 +136,6 @@ def _load_samba_environment():
                    'username_mail': username_mail,
     }
 
-    # OpenChange dispatcher DB names
-
     return sam_environ
 
 
@@ -149,8 +173,9 @@ def load_environment(global_conf, app_conf):
     # any Pylons config options)
     ocsconfig = OCSConfig.OCSConfig(global_conf['__file__'])
     config['ocsmanager'] = ocsconfig.load()
-
-    config['samba'] = _load_samba_environment()
+    
+    samba_retries = config['ocsmanager']['main']['samba_retries']
+    config['samba'] = _load_samba_environment(samba_retries)
     config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].lp)
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])

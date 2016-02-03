@@ -110,6 +110,8 @@ class OCSConfig(object):
         self.__get_option('main', 'auth', 'auth', 'type')
         self.__get_option('main', 'mapistore_root')
         self.__get_option('main', 'mapistore_data')
+        self.__get_option('main', 'samba_retries', dflt=0)
+        self.d['main']['samba_retries'] = int(self.d['main']['samba_retries'])
         self.__get_option('main', 'debug')
         if self.d['main']['debug'] != "yes" and self.d['main']['debug'] != "no":
             log.error("%s: invalid debug value: %s. Must be set to yes or no", self.config, self.d['main']['debug'])

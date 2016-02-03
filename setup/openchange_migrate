@@ -53,6 +53,8 @@ parser.add_option("--list", action="store_true",
                   help="List MySQL schema migrations applied in an existing OpenChange installation")
 parser.add_option("--fake", action="store_true",
                   help="Fake a migration. Requires to set --target-version")
+parser.add_option("--exception-on-error", action="store_true",
+                  help="Throw exception when an error happens migrating directory")
 
 
 apps = []
@@ -89,26 +91,32 @@ if 'directory' in apps:
     elif opts.fake:
         provision.directory_fake_migration(lp, opts.openchangedb_uri, opts.target_version)
     else:
-        credopts = CredentialsOptions(parser)
-        creds = credopts.get_credentials(lp)
-        provisionnames = provision.guess_names_from_smbconf(lp, creds)
+        try:
+            credopts = CredentialsOptions(parser)
+            creds = credopts.get_credentials(lp)
+            provisionnames = provision.guess_names_from_smbconf(lp, creds)
 
-        _setupdir = os.path.dirname(__file__)
-        if not os.path.exists(os.path.join(_setupdir, "AD")):
-            _setupdir = samba.param.setup_dir()
+            _setupdir = os.path.dirname(__file__)
+            if not os.path.exists(os.path.join(_setupdir, "AD")):
+                _setupdir = samba.param.setup_dir()
 
-        def setup_path(*args):
-            global _setupdir
-            return os.path.join(_setupdir, *args)
-        kwargs = {
-            'lp': lp,
-            'credopts': credopts,
-            'creds': creds,
-            'names': provisionnames,
-            'setup_path': setup_path,
-        }
+            def setup_path(*args):
+                global _setupdir
+                return os.path.join(_setupdir, *args)
+            kwargs = {
+                'lp': lp,
+                'credopts': credopts,
+                'creds': creds,
+                'names': provisionnames,
+                'setup_path': setup_path,
+            }
 
-        provision.directory_migrate(opts.openchangedb_uri, opts.target_version, **kwargs)
+            provision.directory_migrate(opts.openchangedb_uri, opts.target_version, **kwargs)
+        except Exception as e:
+            if opts.exception_on_error:
+                raise e
+            else:
+                sys.stderr.write("Error while migrating directory, ignored\n")
 
 
 if 'openchangedb' in apps:

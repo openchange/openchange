@@ -5,6 +5,8 @@
 
    Copyright (C) Julien Kerihuel 2006-2014.
    Copyright (C) Pauline Khun 2006.
+                 Jesus Garcia 2014-2015
+                 Javier Amor Garcia 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -447,11 +449,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
    return the values of the property PidTagEntryId in the Ephemeral
    or Permanent Entry ID format
 
-
-   \note This implementation is at the moment limited to MAILUSER,
-   which means we arbitrary set PR_OBJECT_TYPE and PR_DISPLAY_TYPE
-   while we should have a generic method to fill these properties.
-
    \return Valid generic pointer on success, otherwise NULL
  */
 _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
@@ -596,6 +593,9 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		OC_DEBUG(3, "Unsupported property type: 0x%x", (ulPropTag & 0xFFFF));
 		break;
 	}
+
+	/* Step 4. Adapt derived properties from stored value in AD */
+	data = emsabp_property_derive(mem_ctx, ulPropTag, data);
 
 	return data;
 }

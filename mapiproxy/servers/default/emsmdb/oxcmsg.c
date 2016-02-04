@@ -430,7 +430,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
 						     emsmdbp_ctx->oc_ctx,
-						     emsmdbp_ctx->username,
+						     emsmdbp_ctx->logon_user,
 						     messageID, folderID,
 						     mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						     &message_object->backend_object);

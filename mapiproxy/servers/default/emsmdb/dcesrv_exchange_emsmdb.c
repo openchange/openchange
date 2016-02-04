@@ -1604,7 +1604,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	retval = emsmdbp_get_external_email(emsmdbp_ctx, &email);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(1, "[EcDoAsyncConnectEx] Unable to find external email "
-			 "(for %s) to register session", emsmdbp_ctx->username);
+			 "(for %s) to register session", emsmdbp_ctx->auth_user);
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;

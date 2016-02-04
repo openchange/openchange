@@ -74,7 +74,6 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
 	/* Step 2. Set the logon map */
-	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
 	ret = mapi_logon_set(emsmdbp_ctx->logon_ctx, mapi_req->logon_id, username);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
@@ -82,7 +81,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
-	if (strncmp(username, emsmdbp_ctx->username, strlen(username)) == 0) {
+	if (strncmp(username, emsmdbp_ctx->auth_user, strlen(username)) == 0) {
 		ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	}
@@ -107,7 +106,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 
 	/* Step 6. Set ResponseFlags */
 	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved;
-	if (username && emsmdbp_ctx->username && strcmp(username, emsmdbp_ctx->username) == 0) {
+	if (username && emsmdbp_ctx->auth_user && strcmp(username, emsmdbp_ctx->auth_user) == 0) {
 		response->LogonType.store_mailbox.ResponseFlags |= ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
 	}
 
@@ -164,20 +163,21 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 
 	response->LogonFlags = request->LogonFlags;
 
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
+        /* FIXME we are getting the user from EcDoConnect(|Ex) instead of Logon ROP */
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
 	response->LogonType.store_pf.LocalizedEFormsRegistry = 0;
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
 	response->LogonType.store_pf.NNTPIndex = 0;
 	memset(response->LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
-					     emsmdbp_ctx->username,
+					     emsmdbp_ctx->logon_user,
 					     &response->LogonType.store_pf.ReplId,
 					     &response->LogonType.store_pf.Guid);
 	memset(&response->LogonType.store_pf.PerUserGuid, 0, sizeof(struct GUID));
@@ -534,7 +534,7 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
 
 	if (mapi_repl->u.mapi_GetReceiveFolder.MessageClass == NULL) {
-		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_INBOX,
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_INBOX,
 						&mapi_repl->u.mapi_GetReceiveFolder.folder_id);
 		mapi_repl->u.mapi_GetReceiveFolder.MessageClass = "";
 	}

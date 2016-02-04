@@ -477,7 +477,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		/* Step 3. Turn CreateFolder parameters into MAPI property array */
 		parent_fid = parent_object->object.folder->folderID;
 		if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
-			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fid);
+			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, &fid);
 		} else {
 			retval = mapistore_error_to_mapi(mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fid));
 		}
@@ -487,7 +487,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, &cn);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n");
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;

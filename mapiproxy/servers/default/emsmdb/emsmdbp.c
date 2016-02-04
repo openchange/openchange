@@ -276,8 +276,8 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Get a copy of the username for later use and setup missing conn_info components */
-	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
+	emsmdbp_ctx->auth_user = talloc_strdup(emsmdbp_ctx, username);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
 
 	return true;
 }
@@ -687,10 +687,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_external_email(struct emsmdbp_context *emsm
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, attrs,
 			      "(&(objectClass=user)(sAMAccountName=%s))",
-			      ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->username));
+			      ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->auth_user));
 
 	if (ret != LDB_SUCCESS || res->count == 0) {
-		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->username);
+		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->auth_user);
 		return MAPI_E_NOT_FOUND;
 	}
 

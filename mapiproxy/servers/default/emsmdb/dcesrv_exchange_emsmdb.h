@@ -50,8 +50,8 @@ struct emsmdbp_context {
 	char					*szUserDN;
 	char					*szDisplayName;
 	uint32_t				userLanguage;
-	const char				*logon_user;
-	char					*username;
+	const char				*auth_user;  /* From EcDoConnect(|Ex) */
+	const char				*logon_user; /* From Logon ROP */
 	char					*szDNPrefix;
 	struct loadparm_context			*lp_ctx;
 	struct openchangedb_context		*oc_ctx;

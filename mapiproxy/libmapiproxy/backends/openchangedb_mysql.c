@@ -1098,8 +1098,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 		data = (void *)long_array;
 		break;
 	default:
-		OC_DEBUG(0, "Property Type 0x%.4x not supported\n", (proptag & 0xFFFF));
-		abort();
+		OC_DEBUG(1, "Property Type %#.4x not supported", proptag & 0xFFFF);
 		return NULL;
 	}
 
@@ -1192,6 +1191,7 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	// Transform string into the expected data type
 	*data = get_property_data(parent_ctx, proptag, value);
+	OPENCHANGE_RETVAL_IF(*data == NULL, MAPI_E_NOT_FOUND, mem_ctx);
 end:
 	talloc_free(mem_ctx);
 	return retval;
@@ -3758,6 +3758,7 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 	if (value != NULL) {
 		// Transform string into the expected data type
 		*data = get_property_data(parent_ctx, proptag, value);
+		OPENCHANGE_RETVAL_IF(*data == NULL, MAPI_E_NOT_FOUND, mem_ctx);
 		retval = MAPI_E_SUCCESS;
 	}
 

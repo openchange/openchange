@@ -523,11 +523,11 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	default:
-		if (property != 0) {
-			OC_DEBUG(5, "unsupported type: %.4x", (property & 0xffff));
-			abort();
-		}
-		break;
+		if (!property) break;
+		OC_DEBUG(1, "Property type %#.4x not supported, value not "
+			 "pushed", property & 0xffff);
+		talloc_free(ndr);
+		return -1;
 	}
 end:
 	/* Step 4. Steal ndr context */

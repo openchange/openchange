@@ -223,9 +223,9 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedp
 	case PT_MV_BINARY:
 		break;
 	default:
-		OC_DEBUG(0, "%d is not a valid type for a named property (%.4x)",
-			  *propTypeP, propID);
-		abort();
+		OC_DEBUG(0, "Property type %#.4x not supported for a named "
+		         "property (%#.4x)", *propTypeP, propID);
+		return MAPISTORE_ERR_NOT_IMPLEMENTED;
 	}
 
 	return MAPISTORE_SUCCESS;

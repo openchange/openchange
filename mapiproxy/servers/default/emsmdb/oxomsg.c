@@ -4,7 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Brad Hards <bradh@openchange.org> 2010
-                 Enrique J. Hernandez 2015
+                 Enrique J. Hernandez 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,11 +45,12 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 	uint64_t			folderID;
 	uint64_t			messageID;
 	uint16_t			replID;
-	int				ret, i;
+	int				i;
 	char				*owner;
 	struct emsmdbp_object		*folder_object;
 	struct emsmdbp_object		*message_object;
 	enum MAPISTATUS			retval;
+	enum mapistore_error ret;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -77,16 +78,16 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 				continue;
 			}
 
-			ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->FolderDatabaseGuid, &replID);
-			if (ret) {
+			retval = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->FolderDatabaseGuid, &replID);
+			if (retval != MAPI_E_SUCCESS) {
 				OC_DEBUG(5, "unable to deduce folder replID\n");
 				continue;
 			}
 			folderID = (entryID->FolderGlobalCounter.value << 16) | replID;
 			/* OC_DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 
-			ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->MessageDatabaseGuid, &replID);
-			if (ret) {
+			retval = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->MessageDatabaseGuid, &replID);
+			if (retval != MAPI_E_SUCCESS) {
 				OC_DEBUG(5, "unable to deduce message replID\n");
 				continue;
 			}
@@ -101,7 +102,14 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			}
 
 			folderID = folderSvrID->FolderId;
-			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+									  emsmdbp_ctx->logon_user,
+									  &messageID);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(1, "Impossible to get new message id: %s",
+					 mapistore_errstr(ret));
+				continue;
+			}
 
 			/* OC_DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 			break;

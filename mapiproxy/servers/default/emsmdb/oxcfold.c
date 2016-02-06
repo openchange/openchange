@@ -479,7 +479,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
 			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, &fid);
 		} else {
-			retval = mapistore_error_to_mapi(mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fid));
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+									  emsmdbp_ctx->logon_user, &fid);
+			retval = mapistore_error_to_mapi(ret);
 		}
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n");
@@ -993,6 +995,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 	uint64_t                *targetMIDs;
         uint32_t                i;
 	bool			mapistore = false;
+	enum mapistore_error ret;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCFOLD] RopMoveCopyMessages (0x33)\n");
 
@@ -1057,7 +1060,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 		/* We prepare a set of new MIDs for the backend */
 		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
 		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
-			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &targetMIDs[i]);
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+									  emsmdbp_ctx->logon_user,
+									  &targetMIDs[i]);
+			if (ret != MAPISTORE_SUCCESS) {
+				mapi_repl->error_code = mapistore_error_to_mapi(ret);
+				OC_DEBUG(1, "Impossible to get new message id: %s",
+					 mapistore_errstr(ret));
+				goto end;
+			}
 		}
 
 		/* We invoke the backend method */

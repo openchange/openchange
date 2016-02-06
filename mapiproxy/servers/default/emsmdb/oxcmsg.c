@@ -4,6 +4,8 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2014
+                 Wolfgang Wourdeau 2011
+                 Enrique J. Hernandez 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -390,9 +392,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* This should be handled differently here: temporary hack */
-	ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-	if (ret) {
+	ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+							  emsmdbp_ctx->logon_user,
+							  &messageID);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(1, "Impossible to get new message id: %s",
+			 mapistore_errstr(ret));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -1694,8 +1699,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
 		if (request->OpenModeFlags == MAPI_CREATE) {
-			ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-			if (ret) {
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->logon_user, &messageID);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(1, "Impossible to get new message id: %s",
+					 mapistore_errstr(ret));
 				mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 				goto end;
 			}

@@ -1287,7 +1287,15 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 	uint16_t eid_id;
 	uint64_t eid_globcnt;
 
-	if (!rawidset) return;
+	if (!rawidset) {
+		oc_log(OC_LOG_ERROR, "RAWIDSET is empty. Skipping.");
+		return;
+	}
+
+	if (!rawidset->idbased) {
+		oc_log(OC_LOG_ERROR, "Attempting to push an ID into a GUID-based RAWIDSET. Skipping.");
+		return;
+	}
 
 	eid_id = eid & 0xffff;
 	eid_globcnt = eid >> 16;

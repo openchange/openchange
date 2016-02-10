@@ -1326,7 +1326,15 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 	struct rawidset		*last_glob_idset = NULL;
 	static struct GUID	*zero_guid = NULL;
 
-	if (!rawidset) return;
+	if (!rawidset) {
+		oc_log(OC_LOG_ERROR, "RAWIDSET is empty. Skipping.");
+		return;
+	}
+
+	if (rawidset->idbased) {
+		oc_log(OC_LOG_ERROR, "Attempting to push a GUID into an ID-based RAWIDSET. Skipping.");
+		return;
+	}
 
 	/* OC_DEBUG(0, "pushing %.16"PRIx64" into idset...", globcnt); */
 

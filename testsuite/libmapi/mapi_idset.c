@@ -138,6 +138,68 @@ START_TEST (test_IDSET_parse_bitmask_cmd) {
 	ck_assert_int_eq(res->ranges->next->next->high, 0x098906000000);
 } END_TEST
 
+START_TEST (test_RAWIDSET_push_eid) {
+	struct rawidset	    *idbased_rawidset;
+	struct rawidset	    *guidbased_rawidset;
+        const uint64_t    id_1 = 0x1804010000000001;
+        const uint64_t    id_2 = 0x1804010000000002;
+
+	idbased_rawidset = RAWIDSET_make(mem_ctx, true, false);
+	ck_assert(idbased_rawidset != NULL);
+
+	guidbased_rawidset = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(guidbased_rawidset != NULL);
+
+	/* Push ID */
+	RAWIDSET_push_eid(idbased_rawidset, id_1);
+	ck_assert_int_eq(idbased_rawidset->count, 1);
+	ck_assert_int_eq(idbased_rawidset->globcnts[0], id_1 >> 16);
+	ck_assert_int_eq(idbased_rawidset->repl.id, id_1 & 0xffff);
+
+	/* Push ID with different replica ID */
+	RAWIDSET_push_eid(idbased_rawidset, id_2);
+	ck_assert(idbased_rawidset->next != NULL);
+	ck_assert_int_eq(idbased_rawidset->next->count, 1);
+	ck_assert_int_eq(idbased_rawidset->next->globcnts[0], id_2 >> 16);
+	ck_assert_int_eq(idbased_rawidset->next->repl.id, id_2 & 0xffff);
+
+	/* Push ID into GUID-based RAWIDSET */
+	RAWIDSET_push_eid(guidbased_rawidset, id_1);
+	ck_assert_int_eq(guidbased_rawidset->count, 0);
+
+} END_TEST
+
+START_TEST (test_RAWIDSET_push_guid_glob) {
+	struct rawidset	    *idbased_rawidset;
+	struct rawidset	    *guidbased_rawidset;
+	struct GUID	    guid_1 = GUID_random();
+	struct GUID	    guid_2 = GUID_random();
+	const uint64_t	    id = 0xbc1c02000000;
+
+	guidbased_rawidset = RAWIDSET_make(mem_ctx, false, false);
+	ck_assert(guidbased_rawidset != NULL);
+
+	idbased_rawidset = RAWIDSET_make(mem_ctx, true, false);
+	ck_assert(idbased_rawidset != NULL);
+
+	/* Push GUID */
+	RAWIDSET_push_guid_glob(guidbased_rawidset, &guid_1, id);
+	ck_assert_int_eq(guidbased_rawidset->count, 1);
+	ck_assert_int_eq(guidbased_rawidset->globcnts[0], id);
+	ck_assert(!GUID_compare(&guidbased_rawidset->repl.guid, &guid_1));
+
+	/* Push GUID with a different replica GUID */
+	RAWIDSET_push_guid_glob(guidbased_rawidset, &guid_2, id);
+	ck_assert_int_eq(guidbased_rawidset->next->count, 1);
+	ck_assert_int_eq(guidbased_rawidset->next->globcnts[0], id);
+	ck_assert(!GUID_compare(&guidbased_rawidset->next->repl.guid, &guid_2));
+
+	/* Push GUIDID into ID-based RAWIDSET */
+	RAWIDSET_push_guid_glob(idbased_rawidset, &guid_1, id);
+	ck_assert_int_eq(idbased_rawidset->count, 0);
+
+} END_TEST
+
 START_TEST (test_IDSET_includes_guid_glob) {
         struct GUID       server_guid = GUID_random();
         struct GUID       random_guid = GUID_random();
@@ -549,6 +611,12 @@ Suite *libmapi_idset_suite(void)
 	tcase_add_test(tc, test_IDSET_parse_invalid);
 	tcase_add_test(tc, test_IDSET_parse_bitmask_cmd);
 	suite_add_tcase(s, tc);
+
+	tc = tcase_create("RAWIDSET_push");
+	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);
+	tcase_add_test(tc, test_RAWIDSET_push_eid);
+	tcase_add_test(tc, test_RAWIDSET_push_guid_glob);
+	suite_add_tcase(s,tc);
 
 	tc = tcase_create("IDSET_includes_guid_glob");
 	tcase_add_checked_fixture(tc, tc_mapi_idset_setup, tc_mapi_idset_teardown);

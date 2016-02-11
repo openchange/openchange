@@ -274,8 +274,8 @@ System Attendant Private Interface
 		[string,size_is(cValues)] uint8	**lppszA;
 	} StringArray_r;
 
-	typedef struct {
-		[range(0,100000)] uint32		       	Count;
+	typedef [public,noprint] struct {
+		[range(0,100000)] uint32		Count;
 		[string,size_is(Count)] uint8     	*Strings[];
 	} StringsArray_r;
 

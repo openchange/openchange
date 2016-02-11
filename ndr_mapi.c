@@ -4,6 +4,10 @@
    libndr mapi support
 
    Copyright (C) Julien Kerihuel 2005-2014
+   Copyright (C) Wolfgang Wourdeau 2011-2012
+   Copyright (C) Murray McCulligh 2015
+   Copyright (C) Javier Amor Garcia 2015
+   Copyright (C) Enrique J. Hernandez 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2046,6 +2050,24 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
+}
+
+_PUBLIC_ void ndr_print_StringsArray_r(struct ndr_print *ndr, const char *name, const struct StringsArray_r *r)
+{
+	uint32_t cntr_Strings_0;
+	ndr_print_struct(ndr, name, "StringsArray_r");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	ndr->depth++;
+	ndr_print_uint32(ndr, "Count", r->Count);
+	ndr->print(ndr, "%s: ARRAY(%d)", "Strings", (int)r->Count);
+	ndr->depth++;
+	for (cntr_Strings_0 = 0; cntr_Strings_0 < (r->Count); cntr_Strings_0++) {
+		if (r->Strings[cntr_Strings_0]) {
+			ndr_print_string(ndr, "String", (char *)r->Strings[cntr_Strings_0]);
+		}
+	}
+	ndr->depth--;
+	ndr->depth--;
 }
 
 _PUBLIC_ void ndr_print_Binary_r(struct ndr_print *ndr, const char *name, const struct Binary_r *r)

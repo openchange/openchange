@@ -276,17 +276,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 	}
 
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, SPropTagArray, &retvals);
-	if (data_pointers) {		
-		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, SPropTagArray->cValues);
-		response->properties.cValues = 0;
-		for (i = 0; i < SPropTagArray->cValues; i++) {
-			if (retvals[i] == MAPI_E_SUCCESS) {
-				tmp_value.ulPropTag = SPropTagArray->aulPropTag[i];
-				if (set_SPropValue(&tmp_value, data_pointers[i])) {
-					cast_mapi_SPropValue(mem_ctx, response->properties.lpProps + response->properties.cValues, &tmp_value);
-					response->properties.cValues++;
-				}
-			}
+	if (!data_pointers) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		OC_DEBUG(5, "  object properties (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	response->properties.lpProps = talloc_zero_array(mem_ctx, struct mapi_SPropValue, SPropTagArray->cValues);
+	response->properties.cValues = 0;
+	for (i = 0; i < SPropTagArray->cValues; i++) {
+		if (retvals[i] != MAPI_E_SUCCESS) continue;
+
+		tmp_value.ulPropTag = SPropTagArray->aulPropTag[i];
+		if (set_SPropValue(&tmp_value, data_pointers[i])) {
+			cast_mapi_SPropValue(mem_ctx, response->properties.lpProps + response->properties.cValues, &tmp_value);
+			response->properties.cValues++;
+		} else {
+			OC_DEBUG(1, "Property ignored because cannot be handled %#.4x", tmp_value.ulPropTag);
 		}
 	}
 

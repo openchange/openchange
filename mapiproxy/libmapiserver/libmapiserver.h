@@ -537,7 +537,76 @@ uint16_t libmapiserver_RopGetNamesFromIDs_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCopyTo_size(struct EcDoRpc_MAPI_REPL *);
-int libmapiserver_push_property(TALLOC_CTX *, uint32_t, const void *, DATA_BLOB *, uint8_t, uint8_t, uint8_t);
+
+/**
+   \details Add a property value to a DATA blob. This convenient
+   function should be used when creating a GetPropertiesSpecific reply
+   response blob.
+
+   \param mem_ctx pointer to the memory context
+   \param property the property tag which value is meant to be
+   appended to the blob
+   \param value generic pointer on the property value
+   \param blob the data blob the function uses to return the blob
+   \param layout whether values should be prefixed by a layout
+   \param flagged define if the properties are flagged or not
+   \param untyped Whether the property type was originally untyped or not
+   and in that case we will push the property type as well
+
+   \note blob.length must be set to 0 before this function is called
+   the first time. Also the function only supports a limited set of
+   property types at the moment.
+
+   \return 0 on success, -1 otherwise
+ */
+int libmapiserver_push_property(TALLOC_CTX *mem_ctx, uint32_t property,
+	const void *value, DATA_BLOB *blob, uint8_t layout, uint8_t flagged,
+	uint8_t untyped);
+
+/**
+   \details Add properties values to a DATA blob.
+
+   \param mem_ctx pointer to the memory context
+   \param num_props number of properties to push
+   \param properties array of property tags which values are meant to be
+   appended to the blob
+   \param value array with generic pointers on the properties values
+   \param retvals array of error codes for the properties to push
+   \param blob the data blob the function uses to return the blob
+   \param layout whether values should be prefixed by a layout
+   \param flagged define whether the properties are flagged or not
+   \param untyped Whether to push property type or not
+
+   \see libmapiserver_push_property
+ */
+void libmapiserver_push_properties(TALLOC_CTX *mem_ctx, size_t num_props,
+	enum MAPITAGS *properties, void **values, enum MAPISTATUS *retvals,
+	DATA_BLOB *blob, uint8_t layout, uint8_t flagged, bool untyped);
+
+/**
+   \details Add properties values to a DATA blob.
+
+   \param mem_ctx pointer to the memory context
+   \param num_props number of properties to push
+   \param properties array of property tags which values are meant to be
+   appended to the blob
+   \param value array with generic pointers on the properties values
+   \param retvals array of error codes for the properties to push
+   \param blob the data blob the function uses to return the blob
+   \param layout whether values should be prefixed by a layout
+   \param flagged define whether the properties are flagged or not
+   \param untyped Array of booleans whether to push each property type or not
+
+   \note retvals array will be check and if the value is different of
+   MAPI_E_SUCCESS the property will be pushed as an error
+
+   \see libmapiserver_push_property
+ */
+void libmapiserver_push_properties_with_untyped(TALLOC_CTX *mem_ctx,
+	size_t num_props, enum MAPITAGS *properties, void **values,
+	enum MAPISTATUS *retvals, DATA_BLOB *blob, uint8_t layout,
+	uint8_t flagged, bool *untyped);
+
 struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *, void *, uint8_t);
 
 /* definitions from libmapiserver_oxcstor.c */

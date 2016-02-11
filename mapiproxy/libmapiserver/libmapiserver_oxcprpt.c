@@ -385,39 +385,16 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
 	return size;
 }
 
-
-/**
-   \details Add a property value to a DATA blob. This convenient
-   function should be used when creating a GetPropertiesSpecific reply
-   response blob.
-
-   \param mem_ctx pointer to the memory context
-   \param property the property tag which value is meant to be
-   appended to the blob
-   \param value generic pointer on the property value
-   \param blob the data blob the function uses to return the blob
-   \param layout whether values should be prefixed by a layout
-   \param flagged define if the properties are flagged or not
-
-   \note blob.length must be set to 0 before this function is called
-   the first time. Also the function only supports a limited set of
-   property types at the moment.
-
-   \return 0 on success;
- */
-_PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
-					 uint32_t property, 
-					 const void *value, 
-					 DATA_BLOB *blob,
-					 uint8_t layout, 
-					 uint8_t flagged,
+_PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx, uint32_t property,
+					 const void *value, DATA_BLOB *blob,
+					 uint8_t layout, uint8_t flagged,
 					 uint8_t untyped)
 {
 	struct ndr_push		*ndr;
-        struct SBinary_short    bin;
-        struct BinaryArray_r    *bin_array;
+	struct SBinary_short    bin;
+	struct BinaryArray_r    *bin_array;
 	uint32_t		i;
-	
+
 	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	ndr->offset = 0;
@@ -493,7 +470,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		break;
 	case PT_BINARY:
 	case PT_SVREID:
-                /* PropertyRow expect a 16 bit header for BLOB in RopQueryRows and RopGetPropertiesSpecific */
+		/* PropertyRow expect a 16 bit header for BLOB in RopQueryRows
+		   and RopGetPropertiesSpecific */
 		bin.cb = ((struct Binary_r *) value)->cb;
 		bin.lpb = ((struct Binary_r *) value)->lpb;
 		ndr_push_SBinary_short(ndr, NDR_SCALARS, &bin);
@@ -504,15 +482,12 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 	case PT_SYSTIME:
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
-
 	case PT_MV_LONG:
 		ndr_push_mapi_MV_LONG_STRUCT(ndr, NDR_SCALARS, (struct mapi_MV_LONG_STRUCT *) value);
 		break;
-
 	case PT_MV_UNICODE:
-                ndr_push_mapi_SLPSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SLPSTRArrayW *) value);
+		ndr_push_mapi_SLPSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SLPSTRArrayW *) value);
 		break;
-
 	case PT_MV_BINARY:
 		bin_array = (struct BinaryArray_r *) value;
 		ndr_push_uint32(ndr, NDR_SCALARS, bin_array->cValues);
@@ -539,6 +514,62 @@ end:
 	return 0;
 }
 
+void libmapiserver_push_properties(TALLOC_CTX *mem_ctx,
+	size_t num_props, enum MAPITAGS *properties, void **values,
+	enum MAPISTATUS *retvals, DATA_BLOB *blob, uint8_t layout,
+	uint8_t flagged, bool untyped)
+{
+	bool *untyped_values;
+
+	untyped_values = talloc_array(mem_ctx, bool, num_props);
+	if (!untyped_values) {
+		OC_DEBUG(1, "Out of memory");
+		return;
+	}
+	memset(untyped_values, untyped, sizeof(bool) * num_props);
+
+	libmapiserver_push_properties_with_untyped(mem_ctx, num_props, properties,
+		values, retvals, blob, layout, flagged, untyped_values);
+
+	talloc_free(untyped_values);
+}
+
+void libmapiserver_push_properties_with_untyped(TALLOC_CTX *mem_ctx,
+	size_t num_props, enum MAPITAGS *properties, void **values,
+	enum MAPISTATUS *retvals, DATA_BLOB *blob, uint8_t layout,
+	uint8_t flagged, bool *untyped)
+{
+	size_t i;
+	enum MAPITAGS property;
+	void *value;
+	enum MAPISTATUS retval;
+	int ret;
+
+	for (i = 0; i < num_props; i++) {
+		property = properties[i];
+		retval = retvals[i];
+		if (retval != MAPI_E_SUCCESS) {
+			property = (property & 0xFFFF0000) + PT_ERROR;
+			value = &retval;
+		} else {
+			value = values[i];
+		}
+
+		ret = libmapiserver_push_property(mem_ctx, property, value, blob,
+						  layout, flagged, untyped[i]);
+		if (ret == -1) {
+			/* This could happen with multivalue instance properties
+			   or other properties that are not supported yet */
+			OC_DEBUG(1, "Property %#.4x changed and pushed as an "
+				 "error because is not supported", property);
+			retval = MAPI_E_NOT_IMPLEMENTED;
+			property = (property & 0xFFFF0000) + PT_ERROR;
+			value = &retval;
+			libmapiserver_push_property(mem_ctx, property, value, blob,
+						    layout, flagged, untyped[i]);
+		}
+	}
+}
 
 /**
    \details Turn request parameters to SPropValue array. This

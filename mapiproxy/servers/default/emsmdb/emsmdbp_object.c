@@ -2403,13 +2403,12 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
         }
 
         if (flagged) {
-                libmapiserver_push_property(mem_ctx,
-                                            0x0000000b, (const void *)&flagged,
+                libmapiserver_push_property(mem_ctx, PT_BOOLEAN,
+                                            (const void *)&flagged,
                                             table_row, 0, 0, 0);
-        }
-        else {
-                libmapiserver_push_property(mem_ctx,
-                                            0x00000000, (const void *)&flagged,
+        } else {
+                libmapiserver_push_property(mem_ctx, PT_UNSPECIFIED,
+                                            (const void *)&flagged,
                                             table_row, 0, 1, 0);
         }
 

@@ -579,9 +579,9 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 
 				memset(&payload, 0, sizeof(DATA_BLOB));
 				if (flagged) {
-					libmapiserver_push_property(mem_ctx, 0xb, (const void *)&flagged, &payload, 0, 0, 0);
+					libmapiserver_push_property(mem_ctx, PT_BOOLEAN, (const void *)&flagged, &payload, 0, 0, 0);
 				} else {
-					libmapiserver_push_property(mem_ctx, 0x0, (const void *)&flagged, &payload, 0, 1, 0);
+					libmapiserver_push_property(mem_ctx, PT_UNSPECIFIED, (const void *)&flagged, &payload, 0, 1, 0);
 				}
 
 				/* Push properties */

@@ -861,13 +861,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 				}
 
 				if (flagged) {
-					libmapiserver_push_property(mem_ctx, 
-								    0x0000000b, (const void *)&flagged,
+					libmapiserver_push_property(mem_ctx, PT_BOOLEAN,
+								    (const void *)&flagged,
 								    &row, 0, 0, 0);
-				}
-				else {
-					libmapiserver_push_property(mem_ctx, 
-								    0x00000000, (const void *)&flagged,
+				} else {
+					libmapiserver_push_property(mem_ctx, PT_UNSPECIFIED,
+								    (const void *)&flagged,
 								    &row, 0, 1, 0);
 				}
 
@@ -918,13 +917,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 				}
 
 				if (flagged) {
-					libmapiserver_push_property(mem_ctx, 
-								    0x0000000b, (const void *)&flagged,
+					libmapiserver_push_property(mem_ctx, PT_BOOLEAN,
+								    (const void *)&flagged,
 								    &row, 0, 0, 0);
 				}
 				else {
-					libmapiserver_push_property(mem_ctx, 
-								    0x00000000, (const void *)&flagged,
+					libmapiserver_push_property(mem_ctx, PT_UNSPECIFIED,
+								    (const void *)&flagged,
 								    &row, 0, 1, 0);
 				}
 

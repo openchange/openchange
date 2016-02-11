@@ -509,8 +509,6 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 	int				ret;
 	uint32_t			prop_idx;
 	int				flagged = 0;
-	uint32_t			property;
-	void				*data = NULL;
 	enum ndr_err_code		ndr_err_code;
 	struct ndr_push			*ndr;
 	char				*mapistoreURI = NULL;
@@ -587,17 +585,9 @@ static int process_tablemodified_contentstable_notification(TALLOC_CTX *mem_ctx,
 				}
 
 				/* Push properties */
-				for (prop_idx = 0; prop_idx < SPropTagArray.cValues; prop_idx++) {
-					property = SPropTagArray.aulPropTag[prop_idx];
-					retval = retvals[prop_idx];
-					if (retval == MAPI_E_NOT_FOUND) {
-						property = (property & 0xFFFF0000) + PT_ERROR;
-						data = &retval;
-					} else {
-						data = data_pointers[prop_idx];
-					}
-					libmapiserver_push_property(mem_ctx, property, data, &payload, flagged?PT_ERROR:0, flagged, 0);
-				}
+				libmapiserver_push_properties(mem_ctx, SPropTagArray.cValues,
+					SPropTagArray.aulPropTag, data_pointers, retvals,
+					&payload, flagged ? PT_ERROR : 0, flagged, 0);
 
 				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns = payload;
 				reply.u.mapi_Notify.NotificationData.ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.ColumnsSize = payload.length;

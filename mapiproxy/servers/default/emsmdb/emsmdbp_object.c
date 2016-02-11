@@ -2393,9 +2393,6 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
 {
         uint16_t i;
         uint8_t flagged;
-        enum MAPITAGS property;
-        void *data;
-        uint32_t retval;
 
         flagged = 0;
 
@@ -2416,21 +2413,9 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
                                             table_row, 0, 1, 0);
         }
 
-        for (i = 0; i < num_props; i++) {
-                property = properties[i];
-                retval = retvals[i];
-                if (retval != MAPI_E_SUCCESS) {
-                        property = (property & 0xFFFF0000) + PT_ERROR;
-                        data = &retval;
-                }
-                else {
-                        data = data_pointers[i];
-                }
-
-                libmapiserver_push_property(mem_ctx,
-                                            property, data, table_row,
-                                            flagged?PT_ERROR:0, flagged, 0);
-        }
+        libmapiserver_push_properties(mem_ctx, num_props, properties,
+                data_pointers, retvals, table_row, flagged ? PT_ERROR : 0,
+                flagged, 0);
 }
 
 /**
@@ -3560,9 +3545,6 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
 {
         uint16_t i;
         uint8_t flagged;
-        enum MAPITAGS property;
-        void *data;
-        uint32_t retval;
 
         flagged = 0;
         for (i = 0; !flagged && i < properties->cValues; i++) {
@@ -3572,20 +3554,9 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
         }
 	*layout = flagged;
 
-        for (i = 0; i < properties->cValues; i++) {
-                retval = retvals[i];
-                if (retval != MAPI_E_SUCCESS) {
-                        property = (properties->aulPropTag[i] & 0xFFFF0000) + PT_ERROR;
-                        data = &retval;
-                }
-                else {
-                        property = properties->aulPropTag[i];
-                        data = data_pointers[i];
-                }
-                libmapiserver_push_property(mem_ctx,
-                                            property, data, property_row,
-                                            flagged ? PT_ERROR : 0, flagged, untyped_status[i]);
-        }
+	libmapiserver_push_properties_with_untyped(mem_ctx, properties->cValues,
+		properties->aulPropTag, data_pointers, retvals, property_row,
+		flagged ? PT_ERROR : 0, flagged, untyped_status);
 }
 
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value, bool read_write)

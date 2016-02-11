@@ -107,32 +107,28 @@ smtp_recipient:
 
 static void oxcmsg_fill_RecipientRow_data(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct RecipientRow *row, struct SPropTagArray *properties, struct mapistore_message_recipient *recipient)
 {
-	uint32_t	i, retval;
-	void		*data;
-	enum MAPITAGS	property;
+	uint32_t	i;
+	enum MAPISTATUS	*retvals;
 
+	retvals = talloc_zero_array(mem_ctx, enum MAPISTATUS, properties->cValues);
 	row->prop_count = properties->cValues;
 	row->prop_values.length = 0;
 	row->layout = 0;
 	for (i = 0; i < properties->cValues; i++) {
 		if (recipient->data[i] == NULL) {
 			row->layout = 1;
-			break;
+		}
+
+		if (recipient->data[i]) {
+			retvals[i] = MAPI_E_SUCCESS;
+		} else {
+			retvals[i] = MAPI_E_NOT_FOUND;
 		}
 	}
 
-	for (i = 0; i < properties->cValues; i++) {
-		property = properties->aulPropTag[i];
-		data = recipient->data[i];
-		if (data == NULL) {
-			retval = MAPI_E_NOT_FOUND;
-			property = (property & 0xffff0000) + PT_ERROR;
-			data = (void *)&retval;
-		}
-		libmapiserver_push_property(mem_ctx,
-					    property, (const void *)data, &row->prop_values, 
-					    row->layout, 0, 0);
-	}
+	libmapiserver_push_properties(mem_ctx, properties->cValues,
+		properties->aulPropTag, recipient->data, retvals,
+		&row->prop_values, row->layout, 0, 0);
 }
 
 static void oxcmsg_fill_OpenRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct OpenRecipientRow *row, struct SPropTagArray *properties, struct mapistore_message_recipient *recipient)

@@ -215,8 +215,7 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 	case PT_NULL:
 		break;
 	default:
-		OC_DEBUG(5, "unsupported property type: %.4x\n", prop_type);
-		abort();
+		OC_DEBUG(1, "Property type %#.4x not supported, value not pushed", prop_type);
 	}
 }
 
@@ -249,8 +248,8 @@ static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type)
 			min_value_buffer = 8;
 			break;
 		default:
-			OC_DEBUG(5, "unsupported property type: %.4x\n", prop_type);
-			abort();
+			OC_DEBUG(1, "Property type %#.4x not supported", prop_type);
+			min_value_buffer = 0;
 		}
 	}
 
@@ -342,8 +341,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					}
 					break;
 				default:
-					OC_DEBUG(5, "no handling for multi values of type %.4x\n", prop_type);
-					abort();
+					OC_DEBUG(1, "No handling for multivalues of type %#.4x", prop_type);
 				}
 			}
 			else {

@@ -259,9 +259,10 @@ _PUBLIC_ uint16_t libmapiserver_mapi_SPropValue_size(uint16_t cValues, struct ma
 			}
 			break;
 		default:
-			abort();
+			OC_DEBUG(1, "Property Type %#.4x not supported, imprecise size "
+			         "will be returned", lpProps[i].ulPropTag & 0xffff);
 		}
 	}
-	
+
 	return size;
 }

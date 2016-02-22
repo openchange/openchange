@@ -3,7 +3,8 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Enrique J. Hernández 2015
+   Copyright (C) Enrique J. Hernández 2015-2016
+   Copyright (C) Jesus Garcia 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -178,7 +179,7 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
                                 persist_element_array = persist_data.DataElements;
                                 for (k = 0; k < persist_element_array.cValues; k++) {
                                         persist_element = persist_element_array.lpPersistElement[k];
-                                        if (persist_element.ElementID == PERSIST_SENTINEL) {
+                                        if (persist_element.ElementID == ELEMENT_SENTINEL) {
                                                 /* This is the last PersistElement */
                                                 break;
                                         }

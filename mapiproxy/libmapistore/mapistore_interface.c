@@ -150,8 +150,9 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \details Set connection info for current mapistore context
 
    \param mstore_ctx pointer to the mapistore context
-   \param oc_ctx pointer to the openchange ldb database
-   \param username pointer to the current username
+   \param sam_ctx pointer to the samba (LDAP) directory
+   \param oc_ctx pointer to the openchange database
+   \param username pointer to the current connected username
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -180,10 +181,15 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context
+   \param owner the username of the owner of the resource from that URI
    \param uri the connection context URI
+   \param fid the folder identifier related with that URI
    \param context_id pointer to the context identifier the function returns
+   \param backend_object pointer to the recently created backend object
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+
+   \note it is responsability of the caller to free the returned data.
  */
 _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
 						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)

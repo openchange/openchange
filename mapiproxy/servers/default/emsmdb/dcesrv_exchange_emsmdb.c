@@ -5,6 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2009-2015
    Copyright (C) Carlos Pérez-Aradros Herce 2015
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -307,6 +308,18 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 								  struct EcDoRpc_MAPI_REPL, idx + 2);
 		}
 
+		if (mapi_request->mapi_req[i].opnum != op_MAPI_Logon) {
+			retval = mapi_logon_search(emsmdbp_ctx->logon_ctx,
+						   mapi_request->mapi_req[i].logon_id,
+						   &emsmdbp_ctx->logon_user);
+			if (retval != MAPI_E_SUCCESS) {
+				emsmdbp_ctx->logon_user = NULL;
+				OC_DEBUG(1, "Logon_id: %x not found", mapi_request->mapi_req[i].logon_id);
+			} else {
+				OC_DEBUG(6, "Logon user: %s", emsmdbp_ctx->logon_user);
+			}
+		}
+
 		switch (mapi_request->mapi_req[i].opnum) {
 		case op_MAPI_Release: /* 0x01 */
 			retval = EcDoRpc_RopRelease(mem_ctx, emsmdbp_ctx,
@@ -319,7 +332,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
-		case op_MAPI_OpenMessage: /* 0x3 */
+		case op_MAPI_OpenMessage: /* 0x03 */
 			retval = EcDoRpc_RopOpenMessage(mem_ctx, emsmdbp_ctx,
 							&(mapi_request->mapi_req[i]),
 							&(mapi_response->mapi_repl[idx]),
@@ -367,7 +380,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_DeleteProps: /* 0xb */
+		case op_MAPI_DeleteProps: /* 0x0b */
 			retval = EcDoRpc_RopDeleteProperties(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
 							     &(mapi_response->mapi_repl[idx]),
@@ -392,7 +405,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							     mapi_response->handles, &size);
 			break;
 
-		/* op_MAPI_ReadRecipients: 0xf */
+		/* op_MAPI_ReadRecipients: 0x0f */
 		case op_MAPI_ReloadCachedInformation: /* 0x10 */
 			retval = EcDoRpc_RopReloadCachedInformation(mem_ctx, emsmdbp_ctx,
 								    &(mapi_request->mapi_req[i]),
@@ -1591,7 +1604,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 	retval = emsmdbp_get_external_email(emsmdbp_ctx, &email);
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(1, "[EcDoAsyncConnectEx] Unable to find external email "
-			 "(for %s) to register session", emsmdbp_ctx->username);
+			 "(for %s) to register session", emsmdbp_ctx->auth_user);
 		r->out.async_handle->handle_type = 0;
 		r->out.async_handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;

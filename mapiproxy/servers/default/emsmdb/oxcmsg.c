@@ -4,6 +4,8 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2014
+                 Wolfgang Wourdeau 2011
+                 Enrique J. Hernandez 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -206,6 +208,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
+	/* Check we have the logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	/* OpenMessage can only be called for mailbox/folder objects */
 	if (!(context_object->type == EMSMDBP_OBJECT_MAILBOX || context_object->type == EMSMDBP_OBJECT_FOLDER)) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
@@ -357,13 +365,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
-	/* With CreateMessage, the parent object may NOT BE the direct parent folder of the message */
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(context_handle, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
 		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
+
+	/* With CreateMessage, the parent object may NOT BE the direct
+           parent folder of the message */
 	context_object = data;
 
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
@@ -375,9 +392,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* This should be handled differently here: temporary hack */
-	ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-	if (ret) {
+	ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+							  emsmdbp_ctx->logon_user,
+							  &messageID);
+	if (ret != MAPISTORE_SUCCESS) {
+		OC_DEBUG(1, "Impossible to get new message id: %s",
+			 mapistore_errstr(ret));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -415,7 +435,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
 						     emsmdbp_ctx->oc_ctx,
-						     emsmdbp_ctx->username,
+						     emsmdbp_ctx->logon_user,
 						     messageID, folderID,
 						     mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						     &message_object->backend_object);
@@ -567,6 +587,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
@@ -654,6 +680,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	}
 
 	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
@@ -887,6 +919,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
@@ -979,6 +1017,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1099,6 +1143,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
@@ -1183,6 +1233,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &folder_private_data);
 	if (retval) {
 		mapi_repl->error_code = retval;
@@ -1261,6 +1317,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1345,6 +1407,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1445,6 +1513,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -1602,6 +1676,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(attachment_rec, (void *) &attachment_object);
 	if (!attachment_object || attachment_object->type != EMSMDBP_OBJECT_ATTACHMENT) {
 		OC_DEBUG(5, "  no object or object is not an attachment\n");
@@ -1619,8 +1699,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
 		if (request->OpenModeFlags == MAPI_CREATE) {
-			ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-			if (ret) {
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->logon_user, &messageID);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(1, "Impossible to get new message id: %s",
+					 mapistore_errstr(ret));
 				mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 				goto end;
 			}

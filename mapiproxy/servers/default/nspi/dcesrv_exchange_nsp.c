@@ -877,8 +877,7 @@ static void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiDNToMId request data
 
-   \note Only searches within configuration.ldb are supported at the
-   moment.
+   \note it searches in directory for the legacy DN
 
    \return MAPI_E_SUCCESS on success
  */

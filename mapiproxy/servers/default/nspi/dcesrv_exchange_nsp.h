@@ -170,6 +170,20 @@ uint32_t		emsabp_property_get_ulPropTag(const char *);
 int			emsabp_property_is_ref(uint32_t);
 const char		*emsabp_property_get_ref_attr(uint32_t);
 
+
+/**
+   \details Derive data for prop_tag from the given data
+   It returns the same pointer if the data is not derived
+
+   \param mem_ctx pointer to the memory context if requires new dynamic memory
+   \param prop_tag property tag to update
+   \param data pointer to the pointer from where the data is derived
+
+   \return pointer to a valid derived data
+
+ */
+void                    *emsabp_property_derive(TALLOC_CTX *mem_ctx, uint32_t prop_tag, void *data);
+
 __END_DECLS
 
 #endif /* __DCESRV_EXCHANGE_NSP_H */

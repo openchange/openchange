@@ -87,6 +87,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
         retval = mapi_handles_get_private_data(parent_rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;

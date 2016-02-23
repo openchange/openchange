@@ -4,6 +4,9 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008-2011
+   Copyright (C) Jesus Garcia 2013-2015
+   Copyright (C) Carlos Perez-Aradros 2015
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -137,6 +140,17 @@ struct mapi_handles_context {
 #define	MAPI_HANDLES_ROOT	"root"
 #define	MAPI_HANDLES_NULL	"null"
 
+/**
+   Logon map
+*/
+struct mapi_logon_context {
+        struct htable           *logon_table;
+};
+
+struct logon_table_value {
+        const char              *username;
+        uint8_t                 logon_id;
+};
 
 /**
    EMSABP server defines
@@ -291,6 +305,45 @@ enum MAPISTATUS mapi_handles_get_private_data(struct mapi_handles *, void **);
 enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *, void *);
 enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *, int *);
 enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
+
+/* definitions from mapi_logon.c */
+
+/**
+   \details Initialise MAPI logon context
+
+   \param mem_ctx pointer to the memory context
+
+   \return Allocated MAPI logon context on success, otherwise NULL
+*/
+struct mapi_logon_context *mapi_logon_init(TALLOC_CTX *mem_ctx);
+/**
+   \details Release MAPI handles context
+
+   \param logon_ctx pointer to the MAPI logon context
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_release(struct mapi_logon_context *logon_ctx);
+/**
+   \details Search for the logon_id in Logon Table
+
+   \param logon_ctx pointer to the MAPI logon context
+   \param logon_id the logon identifier
+   \param username pointer to the username associated with that logon_id if success
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_search(struct mapi_logon_context *logon_ctx, uint8_t logon_id, const char **username_p);
+/**
+   \details Set the map between a logon_id and a username
+
+   \param logon_ctx pointer to the MAPI logon context
+   \param logon_id the logon id to set
+   \param username the associated username with that logon
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_set(struct mapi_logon_context *logon_ctx, uint8_t logon_id, const char *username);
 
 /* definitions from entryid.c */
 enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);

@@ -89,14 +89,14 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
 
         /* 1. The fids returned in RopLogon are special folders, as they are set with SystemIdx
            higher than -1. See emsmdbp_provisioning.c for details */
-        retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid,
+        retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, fid,
                                              &system_idx);
         if (retval == MAPI_E_SUCCESS && system_idx > -1) {
                 OC_DEBUG(5, "Fid 0x%"PRIx64 " is a system special folder whose system_idx is %d", fid, system_idx);
                 return true;
         }
 
-        retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+        retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user,
                                                  EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
         if (retval == MAPI_E_SUCCESS && mailbox_fid == fid) {
                 OC_DEBUG(5, "Fid 0x%"PRIx64 " is the mailbox ID", fid);
@@ -105,20 +105,20 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
 
         /* 2. Set of binary properties on the root folder or inbox folder */
         /* TODO: work in Delegate mode */
-        retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+        retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user,
                                                  EMSMDBP_INBOX, &inbox_fid);
         if (retval != MAPI_E_SUCCESS) {
                 return false;
         }
 
         memset(&folder_entry_id, 0, sizeof(struct FolderEntryId));
-        retval = openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+        retval = openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user,
                                               &folder_entry_id.ProviderUID);
 
         if (retval != MAPI_E_SUCCESS) {
                 return false;
         }
-        retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+        retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user,
                                                  NULL, &folder_entry_id.FolderDatabaseGuid);
         if (retval != MAPI_E_SUCCESS) {
                 return false;
@@ -129,7 +129,7 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
 
         for (i = 0; i < IDENTIFICATION_PROP_COUNT; i++) {
                 retval = openchangedb_get_folder_property(local_mem_ctx, emsmdbp_ctx->oc_ctx,
-                                                          emsmdbp_ctx->username, identification_properties[i],
+                                                          emsmdbp_ctx->logon_user, identification_properties[i],
                                                           inbox_fid, (void **) &entry_id);
                 if (retval == MAPI_E_SUCCESS
                     && fid_in_entry_id(entry_id, inbox_fid, &folder_entry_id, fid)) {
@@ -141,7 +141,7 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
 
         /* 3. The PidTagAdditionalRenEntryIds contains an array of entry IDs with special folders */
         retval = openchangedb_get_folder_property(local_mem_ctx, emsmdbp_ctx->oc_ctx,
-                                                  emsmdbp_ctx->username, PidTagAdditionalRenEntryIds,
+                                                  emsmdbp_ctx->logon_user, PidTagAdditionalRenEntryIds,
                                                   inbox_fid, (void **) &entries_ids);
         if (retval == MAPI_E_SUCCESS && entries_ids
             && entries_ids->cValues >= ADDITIONAL_REN_ENTRY_IDS_COUNT) {
@@ -156,7 +156,7 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
 
         /* 4. The PidTagAdditionalRenEntryIdsEx on the store object */
         retval = openchangedb_get_folder_property(local_mem_ctx, emsmdbp_ctx->oc_ctx,
-                                                  emsmdbp_ctx->username, PidTagAdditionalRenEntryIdsEx,
+                                                  emsmdbp_ctx->logon_user, PidTagAdditionalRenEntryIdsEx,
                                                   inbox_fid, (void **) &entry_id);
         if (retval == MAPI_E_SUCCESS) {
                 int j, k;
@@ -204,7 +204,7 @@ _PUBLIC_ bool oxosfld_is_special_folder(struct emsmdbp_context *emsmdbp_ctx, uin
         /* 5. The entry ID indexed by 3 in PidTagFreeBusyEntryIds on the root folder stores
            the Freebusy data folder */
         retval = openchangedb_get_folder_property(local_mem_ctx, emsmdbp_ctx->oc_ctx,
-                                                  emsmdbp_ctx->username, PidTagFreeBusyEntryIds,
+                                                  emsmdbp_ctx->logon_user, PidTagFreeBusyEntryIds,
                                                   inbox_fid, (void **) &entries_ids);
         if (retval == MAPI_E_SUCCESS && entries_ids
             && entries_ids->cValues >= FREEBUSY_DATA_ENTRYID_IDX

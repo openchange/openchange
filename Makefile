@@ -808,6 +808,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
 							mapiproxy/libmapiproxy/backends/openchangedb_logger.po	\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
+							mapiproxy/libmapiproxy/mapi_logon.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
 							mapiproxy/libmapiproxy/modules.po			\
 							mapiproxy/libmapiproxy/fault_util.po			\
@@ -817,6 +818,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/util/samdb.po					\
 							mapiproxy/util/schema_migration.po			\
 							mapiproxy/util/ccan/htable/htable.po			\
+							mapiproxy/util/ccan/hash/hash.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS)
@@ -1448,6 +1450,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
 				testsuite/libmapistore/mapistore_indexing.c		\
 				testsuite/libmapistore/mapistore_notification.c		\
+				testsuite/libmapiproxy/logon_table.c			\
 				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c			\

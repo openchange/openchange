@@ -4,6 +4,9 @@
    EMSABP: Address Book Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2013.
+                 Kamen Mazdrashki 2014
+                 Javier Amor Garcia 2015
+                 Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -57,6 +60,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagAddressBookObjectGuid,		"objectGUID",		false,	NULL			},
 	{ PidTagObjectType,			"msExchRecipientTypeDetails",		false,	NULL			},
 	{ PidTagDisplayType,			"msExchRecipientDisplayType",		false,	NULL			},
+	{ PidTagDisplayTypeEx,			"msExchRecipientDisplayType",		false,	NULL			},
 	{ PidTagBusinessTelephoneNumber,	"telephoneNumber",	false,	NULL			},
 	{ PidTagOfficeLocation,			"physicalDeliveryOfficeName",	false,	NULL			},
 	{ 0,					NULL,			false,	NULL			}
@@ -195,4 +199,27 @@ _PUBLIC_ const char *emsabp_property_get_ref_attr(uint32_t ulPropTag)
 	}
 
 	return NULL;
+}
+
+_PUBLIC_ void* emsabp_property_derive(TALLOC_CTX *mem_ctx, uint32_t prop_tag, void *data)
+{
+	uint32_t *i_ret;
+	void *ret;
+
+	if (!data) return NULL;
+
+	switch (prop_tag) {
+	case PidTagDisplayTypeEx:
+		i_ret = talloc_zero(mem_ctx, uint32_t);
+		if (!i_ret) {
+			return data;
+		}
+		/* Only support local forest */
+		*i_ret =  (1 << 30) | (*((uint32_t *)data) & 0xFF);
+		ret = (void *)i_ret;
+		break;
+	default:
+		ret = data;
+	}
+	return ret;
 }

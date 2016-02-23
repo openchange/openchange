@@ -4,6 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,8 +83,27 @@ static int emsmdbp_mapi_handles_destructor(void *data)
 }
 
 /**
+   \details Release the MAPI logon context used by EMSMDB provider
+   context
+
+   \param data pointer on data to destroy
+
+   \return 0 on success, otherwise -1
+ */
+static int emsmdbp_mapi_logon_destructor(void *data)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_logon_context	*logon_ctx = (struct mapi_logon_context *) data;
+
+	retval = mapi_logon_release(logon_ctx);
+	OC_DEBUG(6, "MAPI logon context released (%s)", mapi_get_errstr(retval));
+
+	return (retval == MAPI_E_SUCCESS) ? 0 : -1;
+}
+
+/**
    \details Initialize the EMSMDBP context and open connections to
-   Samba databases.
+   the databases.
 
    \param lp_ctx pointer to the loadparm_context
    \param username account name for current session
@@ -150,6 +170,15 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->handles_ctx, (int (*)(void *))emsmdbp_mapi_handles_destructor);
+
+	/* Initialise MAPI logon context */
+	emsmdbp_ctx->logon_ctx = mapi_logon_init(mem_ctx);
+	if (!emsmdbp_ctx->logon_ctx) {
+		OC_DEBUG(1, "MAPI logon context initialisation failed");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+	talloc_set_destructor((void *)emsmdbp_ctx->logon_ctx, (int (*)(void *))emsmdbp_mapi_logon_destructor);
 
 	return emsmdbp_ctx;
 }
@@ -247,8 +276,8 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Get a copy of the username for later use and setup missing conn_info components */
-	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
+	emsmdbp_ctx->auth_user = talloc_strdup(emsmdbp_ctx, username);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
 
 	return true;
 }
@@ -658,10 +687,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_external_email(struct emsmdbp_context *emsm
 			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			      LDB_SCOPE_SUBTREE, attrs,
 			      "(&(objectClass=user)(sAMAccountName=%s))",
-			      ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->username));
+			      ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->auth_user));
 
 	if (ret != LDB_SUCCESS || res->count == 0) {
-		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->username);
+		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->auth_user);
 		return MAPI_E_NOT_FOUND;
 	}
 

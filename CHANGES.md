@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
+## [unreleased] - 2016-XX-YY
+
+### Added
+
+* Give support to sharing calendars, contacts, tasks and
+  notes with different roles including Author, Editor or Folder Owner
+
 ## [2.4-zentyal22] - 2016-02-22
 
 ### Fixes

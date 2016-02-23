@@ -107,6 +107,7 @@ int main(int argc, const char *argv[])
 	srunner_add_suite(sr, mapiproxy_openchangedb_ldb_suite());
 	srunner_add_suite(sr, mapiproxy_openchangedb_multitenancy_mysql_suite());
 	srunner_add_suite(sr, mapiproxy_openchangedb_logger_suite());
+	srunner_add_suite(sr, mapiproxy_logon_table_suite());
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());

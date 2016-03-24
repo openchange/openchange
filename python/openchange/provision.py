@@ -238,7 +238,8 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg,
             match = re.search('^\s*dn:\s+(.*)$', element, flags=re.M)
             if match:
                 dn = match.group(1)
-                if ignore_already_exists and exists_dn(sam_db, dn):
+				# TODO : Workaround for #404 the check must be more complex
+                if ignore_already_exists and exists_dn(sam_db, dn) and not modify_mode:
                     # TODO: check that the existent element has correct values
                     continue
                 elements_to_add.append(element)

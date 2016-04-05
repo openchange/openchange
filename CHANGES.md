@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
-## [unreleased] - 2016-XX-YY
+## [2.4-zentyal23] - 2016-05-04
 
 ### Added
 
@@ -267,7 +267,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 
 [//]: # (unreleased compare link should be changed to the latest release)
-[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal22...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.4-zentyal23...HEAD
+[2.4-zentyal23]: https://github.com/Zentyal/openchange/compare/2.4-zentyal22...2.4-zentyal23
 [2.4-zentyal22]: https://github.com/Zentyal/openchange/compare/2.4-zentyal21...2.4-zentyal22
 [2.4-zentyal21]: https://github.com/Zentyal/openchange/compare/2.4-zentyal20...2.4-zentyal21
 [2.4-zentyal20]: https://github.com/Zentyal/openchange/compare/2.4-zentyal19...2.4-zentyal20

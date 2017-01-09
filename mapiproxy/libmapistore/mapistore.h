@@ -264,6 +264,7 @@ struct processing_context;
 
 struct mapistore_notification_context {
 	memcached_st				*memc_ctx;
+	bool					threading;
 };
 
 struct mapistore_context {

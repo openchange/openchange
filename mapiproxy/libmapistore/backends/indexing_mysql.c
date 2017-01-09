@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -33,9 +33,9 @@
 #include "../../util/ccan/hash/hash.h"
 #include "../../util/schema_migration.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
+#include "mapiproxy/util/oc_memcached.h"
 
 #include <talloc.h>
-#include <libmemcached/memcached.h>
 
 #define MYSQL(context)	((MYSQL *)context->data)
 
@@ -88,7 +88,6 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	int			mret;
 	MYSQL_RES		*res;
 	uint32_t		num_rows = 0;
-	memcached_server_st	*servers = NULL;
 	memcached_st		*memc = NULL;
 	memcached_return	rc;
 	uint32_t		i;
@@ -103,21 +102,10 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 		return ictx->cache;
 	}
 
-	/* Initialize memcached connection */
-	if (conn_str) {
-		memc = memcached(conn_str, strlen(conn_str));
-		if (!memc) return NULL;
-	} else {
-		memc = (memcached_st *) memcached_create(NULL);
-		if (!memc) return NULL;
+	/* Request a memcached connection */
+	memc = oc_memcached_new_connection(conn_str, true);
+	if (!memc) return NULL;
 
-		servers = memcached_server_list_append(servers, "127.0.0.1", 11211, &rc);
-		rc = memcached_server_push(memc, servers);
-		if (rc != MEMCACHED_SUCCESS) {
-			OC_DEBUG(0, "[ERR]: Unable to add server to memcached list\n");
-			return NULL;
-		}
-	}
 	/* Retrieve indexing records for user */
 	mem_ctx = talloc_new(NULL);
 	if (!mem_ctx) return NULL;
@@ -782,7 +770,7 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 	if (ictx && ictx->data) {
 		MYSQL *conn = ictx->data;
 		if (ictx->cache) {
-			memcached_free((memcached_st *)ictx->cache);
+			oc_memcached_release_connection((memcached_st *)ictx->cache, true);
 		}
 		if (ictx->url) {
 			OC_DEBUG(5, "Destroying indexing context `%s`\n", ictx->url);

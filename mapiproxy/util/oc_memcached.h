@@ -1,9 +1,9 @@
 /*
-   OpenChange Storage Abstraction Layer library
+   Memcached util functions
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2015
+   Copyright (C) Jesús García Sáez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,18 +19,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef	MAPISTORE_NOTIFICATION_H
-#define	MAPISTORE_NOTIFICATION_H
+#ifndef __OC_MEMCACHED_H__
+#define __OC_MEMCACHED_H__
 
-#include "mapiproxy/libmapistore/mapistore.h"
-#include "mapiproxy/libmapistore/mapistore_private.h"
-#include "mapiproxy/libmapistore/mapistore_errors.h"
-#include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
+#include <libmemcached/memcached.h>
 
-/* Define format strings used for key storage in memcached */
-#define	MSTORE_MEMC_FMT_SESSION	"session:%s"
-#define	MSTORE_MEMC_FMT_RESOLVER "resolver:%s"
-#define	MSTORE_MEMC_FMT_SUBSCRIPTION "subscription:%s"
-#define	MSTORE_MEMC_FMT_DELIVER "deliver:%s"
+#define MSTORE_MEMC_DFLT_HOST "127.0.0.1"
+#define MSTORE_MEMC_DFLT_PORT 11211
 
-#endif /* MAPISTORE_NOTIFICATION_H */
+
+memcached_st *oc_memcached_new_connection(const char *config_string, bool shared);
+void oc_memcached_release_connection(memcached_st *memc_ctx, bool shared);
+
+
+#endif /* __OC_MEMCACHED_H_ */

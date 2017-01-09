@@ -255,6 +255,10 @@ static bool openchange_newmail(struct openchange_user *user,
 		if (bret == false) {
 			i_fatal("unable to set resolver address '%s'", user->resolver);
 		}
+		bret = lpcfg_set_cmdline(lp_ctx, "mapistore:threading", "true");
+		if (bret == false) {
+			i_fatal("unable to set threading as enabled");
+		}
 	}
 	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
 	if (retval != MAPISTORE_SUCCESS) {

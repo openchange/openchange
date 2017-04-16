@@ -913,6 +913,7 @@ START_TEST(deliver_add) {
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
 	mstore_ctx.notification_ctx = NULL;
+	payload.length = strlen(gl_deliver_1) + 1;
 	retval = mapistore_notification_deliver_add(&mstore_ctx, gl_uuid, payload.data, payload.length);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
 

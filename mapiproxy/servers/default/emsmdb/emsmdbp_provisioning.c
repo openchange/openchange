@@ -662,7 +662,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 						goto error;
 					}
 				}
-				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
+				ret = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, -1);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error creating OpenChangeDB folder: %s", mapi_get_errstr(ret));
 					goto error;
@@ -681,7 +681,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 					OC_DEBUG(1, "Error setting new MAPIStore URI %s: %s", mapistore_url, mapi_get_errstr(ret));
 					goto error;
 				}
-				ret = openchangedb_set_system_idx(emsmdbp_ctx->oc_ctx, username, current_fid, i);
+				ret = openchangedb_set_system_idx(emsmdbp_ctx->oc_ctx, username, current_fid, -1);
 				if (ret != MAPI_E_SUCCESS) {
 					OC_DEBUG(1, "Error setting new system index %d: %s", i, mapi_get_errstr(ret));
 					goto error;

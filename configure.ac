@@ -682,7 +682,6 @@ if test x"$enable_libpopt" = x"yes"; then
 	openchangemapidump=1
 	schemaIDGUID=1
 	check_fasttransfer=1
-	test_asyncnotif=1
 fi
 AC_SUBST(MAPISTORE_TEST)
 OC_RULE_ADD(openchangeclient, TOOLS)
@@ -698,7 +697,6 @@ OC_RULE_ADD(openchangemapidump, TOOLS)
 OC_RULE_ADD(schemaIDGUID, TOOLS)
 
 OC_RULE_ADD(check_fasttransfer, TOOLS)
-OC_RULE_ADD(test_asyncnotif, TOOLS)
 
 
 dnl --------------------------------------------------------------------------

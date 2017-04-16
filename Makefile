@@ -1637,32 +1637,6 @@ bin/check_fasttransfer:	testprogs/check_fasttransfer.o				\
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt $(MEMCACHED_LIBS)
 
 ###################
-# test_asyncnotif test app.
-###################
-
-test_asyncnotif:		bin/test_asyncnotif
-
-test_asyncnotif-install:	test_asyncnotif
-	$(INSTALL) -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/test_asyncnotif $(DESTDIR)$(bindir)
-
-test_asyncnotif-uninstall:
-	rm -f $(DESTDIR)$(bindir)/test_asyncnotif
-
-test_asyncnotif-clean::
-	rm -f bin/test_asyncnotif
-	rm -f testprogs/test_asyncnotif.o
-	rm -f testprogs/test_asyncnotif.gcno
-	rm -f testprogs/test_asyncnotif.gcda
-
-clean:: test_asyncnotif-clean
-
-bin/test_asyncnotif:	testprogs/test_asyncnotif.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
-
-###################
 # python code
 ###################
 

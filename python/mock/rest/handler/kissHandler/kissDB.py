@@ -193,7 +193,10 @@ class kissDB(object):
         if self._db is None:
             # load DB
             from flask import current_app
-            filename = os.path.join(current_app.root_path, 'temp', self._user_id + '.kissdb')
+            folder = os.path.join(current_app.root_path, 'temp')
+            filename = os.path.join(folder, self._user_id + '.kissdb')
+            if not os.path.isdir(folder):
+                os.makedirs(folder)
             self._db = shelve.open(filename, protocol=HIGHEST_PROTOCOL, writeback=True)
             self._db.setdefault('kissdb', self._default_provisioning())
 

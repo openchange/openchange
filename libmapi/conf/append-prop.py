@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 ###################################################
 #
 # script that produces stub entries for missing properties passed as parameter in the form oldguid:olid

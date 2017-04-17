@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 # Indexing DB schema and its migrations

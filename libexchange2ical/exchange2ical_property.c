@@ -484,7 +484,6 @@ void ical_property_EXDATE(struct exchange2ical *exchange2ical)
 				icalproperty_add_parameter(prop, tzid);
 			} else {
 				/*Get time from dtstart*/
-				icaltime.is_utc = 1;
 				if (exchange2ical->apptEndWhole){
 					dttime = get_icaltime_from_FILETIME_UTC(exchange2ical->apptStartWhole);
 					icaltime.hour   = dttime.hour;

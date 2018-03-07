@@ -4,6 +4,8 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009-2010
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,7 +50,8 @@ struct emsmdbp_context {
 	char					*szUserDN;
 	char					*szDisplayName;
 	uint32_t				userLanguage;
-	char					*username;
+	const char				*auth_user;  /* From EcDoConnect(|Ex) */
+	const char				*logon_user; /* From Logon ROP */
 	char					*szDNPrefix;
 	struct loadparm_context			*lp_ctx;
 	struct openchangedb_context		*oc_ctx;
@@ -58,14 +61,7 @@ struct emsmdbp_context {
 
 	TALLOC_CTX				*mem_ctx;
 	struct GUID				session_uuid;
-};
-
-struct exchange_emsmdb_session {
-	uint32_t			pullTimeStamp;
-	struct mpm_session		*session;
-        struct GUID                     uuid;
-	struct exchange_emsmdb_session	*prev;
-	struct exchange_emsmdb_session	*next;
+	struct mapi_logon_context		*logon_ctx;
 };
 
 struct emsmdbp_stream {
@@ -309,6 +305,7 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context *, char *, struct mapi_SPropTagArray *, struct RecipientRow *);
 enum MAPISTATUS		emsmdbp_fetch_organizational_units(TALLOC_CTX *, struct emsmdbp_context *, char **, char **);
 enum MAPISTATUS		emsmdbp_get_org_dn(struct emsmdbp_context *, struct ldb_dn **);
+enum MAPISTATUS		emsmdbp_get_external_email(struct emsmdbp_context *, const char **);
 
 const struct GUID *const	MagicGUIDp;
 int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const char *username, const struct GUID *, uint16_t *);
@@ -338,6 +335,7 @@ enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, s
 enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, bool, struct emsmdbp_object **);
 enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
 enum MAPISTATUS       emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
+enum MAPISTATUS       emsmdbp_object_open_folder_by_child_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);

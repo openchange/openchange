@@ -645,7 +645,8 @@ class NTLMAuthHandler(object):
         else:
             cookie_name = "oc-ntlm-auth"
 
-        has_auth = "HTTP_AUTHORIZATION" in env
+        has_auth = ("HTTP_AUTHORIZATION" in env
+                    and not env['HTTP_AUTHORIZATION'].startswith('Bearer'))  # OAuth2
 
         return (work_dir, samba_host, cookie_name, has_auth)
 

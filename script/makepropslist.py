@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import difflib
+import re
 import string
 import subprocess
 import sys
 import tempfile
-import re
 
 knownpropsets = { "PSETID_PostRss" :           "{00062041-0000-0000-C000-000000000046}",
 		  "PSETID_Sharing" :           "{00062040-0000-0000-C000-000000000046}",
@@ -359,7 +360,7 @@ def make_properties_list(propsfilename):
 
 		if line.strip().startswith("Description:"):
 			description = line.strip().split(":")[1].strip()
-			while (1):
+			while True:
 				nextline = propsfile.next().strip()
 				if (nextline.isspace() or (len(nextline) == 0)):
 					break
@@ -368,7 +369,7 @@ def make_properties_list(propsfilename):
 
 		if line.strip().startswith("Alternate names:"):
 			altname = line.strip().partition(":")[2]
-			while (1):
+			while True:
 				nextline = propsfile.next().strip()
 				if (nextline.isspace() or (len(nextline) == 0)):
 					break
@@ -377,9 +378,18 @@ def make_properties_list(propsfilename):
 
 		if line.strip().startswith("Data type:"):
 			datatype = line.strip().split(":")[1].strip()
-			datatypename, datatypeval = datatype.split(",")
-			propertyinfo["DataTypeName"] = datatypename.strip()
-			propertyinfo["DataTypeValue"] = datatypeval.strip()
+			datatype_values = datatype.split(",")
+			if len(datatype_values) >= 2:
+				datatypename, datatypeval = datatype_values[:2]
+				propertyinfo["DataTypeName"] = datatypename.strip()
+				# There are three props which does not work very well. Examples:
+				# PtypString8, 0x001EPtypEmbeddedTable, 0x000D
+				# or
+				# PtypString8, 0x001E; PtypEmbeddedTable, 0x000D
+				propertyinfo["DataTypeValue"] = datatypeval.strip()[:6]
+			else:
+				sys.stderr.write("Too few types in %s\n" % line)
+				continue
 
 		if line.strip().startswith("Property set:"):
 			propset = line.strip().split(":")[1].strip()
@@ -543,11 +553,19 @@ def make_mapi_properties_file():
 	proplines = []
 	altnamelines = []
 	previous_propid_list = []
+
+	# Additional properties referenced on MSDN but not in MS-OXPROPS
+	properties.append({'CanonicalName': 'PidTagRoamingBinary',
+			   'DataTypeName': 'PtypBinary',
+			   'PropertyId': 0x7C09,
+			   'AlternateNames': 'PR_ROAMING_BINARYSTREAM',
+			   'Area': 'Configuration'})
+
 	for entry in properties:
-		if (entry.has_key("CanonicalName") == False):
+		if entry.has_key("CanonicalName") == False:
 			print "Section", entry["OXPROPS_Sect"], "has no canonical name entry"
 			continue
-		if (entry.has_key("DataTypeName") == False):
+		if entry.has_key("DataTypeName") == False:
 			print "Section", entry["OXPROPS_Sect"], "has no data type entry"
 			continue
 		if entry.has_key("PropertyId"):
@@ -818,7 +836,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	for propline in sortedproplines:
 		f.write(propline)
 
-	# Add additional properties, referenced on MSDN but not in MS-OXCPROPS
+	# Add additional properties, referenced on MSDN but not in MS-OXPROPS
 	f.write("\t" + string.ljust("PidTagAssociatedContentCount", 68) + " = 0x36170003,\n")
 	f.write("\t" + string.ljust("PidTagFolderChildCount", 68) + " = 0x66380003,\n")
 	f.write("\t" + string.ljust("PidTagIpmPublicFoldersEntryId", 68) + " = 0x66310102,\n")
@@ -827,8 +845,6 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	f.write("\t" + string.ljust("PidTagGenerateExchangeViews", 68) + " = 0x36e9000b,\n")
 	f.write("\t" + string.ljust("PidTagLatestDeliveryTime", 68) + " = 0x00190040,\n")
 	f.write("\t" + string.ljust("PidTagMailPermission", 68) + " = 0x3a0e000b,\n")
-        f.write("\t" + string.ljust("PidTagFolderFlags", 68) + " = 0x66a80003,\n")
-        f.write("\t" + string.ljust("PidTagHierRev", 68) + " = 0x40820040,\n")
 
 	f.write("\tMAPI_PROP_RESERVED                                                   = 0xFFFFFFFF\n")
 	f.write("} MAPITAGS;\n")
@@ -1217,7 +1233,17 @@ def make_mapi_named_properties_file():
 	increment = next_available_id(knownprops, 0x8000)
 
 	for line in sortednamedprops:
-		oleguid = knownpropsets[line[6]].strip('{}').lower()
+		propset = line[6]
+		if propset not in knownpropsets:
+			# Try to guess from the closest match
+			result = difflib.get_close_matches(propset, knownpropsets.keys(),
+							   1, 0.9)
+			if len(result) > 0:
+				propset = result[0]
+			else:
+				raise KeyError(propset)
+
+		oleguid = knownpropsets[propset].strip('{}').lower()
 		if line[5] == "MNID_STRING":
 			named_props_ldif = "dn: CN=%s,CN=MNID_STRING,CN=%s,CN=External,CN=Server\n"	\
 					   "objectClass: External\n"					\
@@ -1453,7 +1479,7 @@ def fix_problems(propsfilename):
 	with open(propsfilename) as f:
 		file_str = f.read()
 
-	file_str = file_str.replace("Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\n Property ID: 0x6842\n\n Data type: PtypBinary, 0x0102", "Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\n Property ID: 0x6842\n\n Data type: PtypGuid, 0x0048")
+	file_str = file_str.replace("Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\nProperty ID: 0x6842\n\nData type: PtypBinary, 0x0102", "Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\nProperty ID: 0x6842\n\nData type: PtypGuid, 0x0048")
 
 	with open(propsfilename, "w") as f:
 		f.write(file_str)

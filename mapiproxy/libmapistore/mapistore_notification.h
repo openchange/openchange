@@ -27,8 +27,6 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
 
-#define	MSTORE_MEMC_DFLT_HOST	"127.0.0.1"
-
 /* Define format strings used for key storage in memcached */
 #define	MSTORE_MEMC_FMT_SESSION	"session:%s"
 #define	MSTORE_MEMC_FMT_RESOLVER "resolver:%s"

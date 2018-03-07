@@ -6,7 +6,7 @@
    Copyright (C) Wolfgang Sourdeau 2010-2012
    Copyright (C) Julien Kerihuel 2009-2015
    Copyright (C) Jesús García 2014
-   Copyright (C) Enrique J. Hernández 2015
+   Copyright (C) Enrique J. Hernández 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -215,8 +215,7 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 	case PT_NULL:
 		break;
 	default:
-		OC_DEBUG(5, "unsupported property type: %.4x\n", prop_type);
-		abort();
+		OC_DEBUG(1, "Property type %#.4x not supported, value not pushed", prop_type);
 	}
 }
 
@@ -249,8 +248,8 @@ static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type)
 			min_value_buffer = 8;
 			break;
 		default:
-			OC_DEBUG(5, "unsupported property type: %.4x\n", prop_type);
-			abort();
+			OC_DEBUG(1, "Property type %#.4x not supported", prop_type);
+			min_value_buffer = 0;
 		}
 	}
 
@@ -342,8 +341,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					}
 					break;
 				default:
-					OC_DEBUG(5, "no handling for multi values of type %.4x\n", prop_type);
-					abort();
+					OC_DEBUG(1, "No handling for multivalues of type %#.4x", prop_type);
 				}
 			}
 			else {
@@ -468,12 +466,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 	parent_handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &parent_object_handle);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", parent_handle_id, mapi_req->handle_idx);
 		goto end;
 	}
 
-	/* Step 2. Check whether the parent object supports fetching properties */
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
+	/* Step 3. Check whether the parent object supports fetching properties */
 	mapi_handles_get_private_data(parent_object_handle, &data);
 	parent_object = (struct emsmdbp_object *) data;
 
@@ -757,16 +761,22 @@ static void oxcfxics_push_messageChange_attachments(struct emsmdbp_context *emsm
 	talloc_free(table_object);
 }
 
-static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, const char *owner, struct idset *cnset_seen)
+static enum MAPISTATUS oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, const char *owner, struct idset *cnset_seen)
 {
-	struct mapi_SRestriction cn_restriction;
-	struct idset *local_cnset;
-	uint16_t repl_id;
-	uint8_t state;
+	bool			     last;
+	struct globset_range	     *range;
+	struct idset		     *local_cnset;
+	int			     i;
+	struct mapi_SRestriction     *cn_restriction, *overall_restriction;
+	struct mapi_SRestriction_and *sub_restriction;
+	enum mapistore_error	     ret;
+	TALLOC_CTX		     *local_mem_ctx;
+	uint16_t		     repl_id;
+	uint8_t			     state;
 
 	if (!emsmdbp_is_mapistore(table_object)) {
 		OC_DEBUG(5, "table restrictions not supported by non-mapistore tables\n");
-		return;
+		return MAPI_E_NO_SUPPORT;
 	}
 
 	local_cnset = cnset_seen;
@@ -775,21 +785,66 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 	}
 
 	if (!local_cnset) {
-		OC_DEBUG(5, "no change set available -> no table restrictions\n");
-		return;
-	}
-	if (local_cnset->range_count != 1) {
-		OC_DEBUG(5, "no valid change set available (range_count = %d) -> no table restrictions\n", local_cnset->range_count);
-		return;
+		OC_DEBUG(5, "no change set available -> no table restrictions");
+		return MAPI_E_SUCCESS;
 	}
 
-	cn_restriction.rt = RES_PROPERTY;
-	cn_restriction.res.resProperty.relop = RELOP_GT;
-	cn_restriction.res.resProperty.ulPropTag = PidTagChangeNumber;
-	cn_restriction.res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
-	cn_restriction.res.resProperty.lpProp.value.d = (cnset_seen->ranges[0].high << 16) | repl_id;
+	if (local_cnset->range_count == 0) {
+		OC_DEBUG(5, "no ranges available -> no table restrictions");
+		return MAPI_E_SUCCESS;
+	}
 
-	mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, &cn_restriction, &state);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Set the restriction for change numbers based on the given idset:
+
+	   [cn_1:cn_2]		 x > cn_2 & x < cn_3
+	   [cn_3:cn_4]	 ===>  | x > cn_4 & x < cn_5
+	   [cn_5:cn_6]	       | x > cn_6
+	*/
+	overall_restriction = talloc_zero(local_mem_ctx, struct mapi_SRestriction);
+	OPENCHANGE_RETVAL_IF(!overall_restriction, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	overall_restriction->rt = RES_OR;
+	overall_restriction->res.resOr.cRes = cnset_seen->range_count;
+	overall_restriction->res.resOr.res = talloc_zero_array(local_mem_ctx, struct mapi_SRestriction_or,
+							       cnset_seen->range_count);
+	OPENCHANGE_RETVAL_IF(!overall_restriction->res.resOr.res, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	range = cnset_seen->ranges;
+	for (i = 0; i < cnset_seen->range_count; i++) {
+		last = (i + 1 >= cnset_seen->range_count);
+		/* Fill the "and" sub-restrictions */
+		sub_restriction = (struct mapi_SRestriction_and *)overall_restriction->res.resOr.res + i;
+		sub_restriction->rt = RES_AND;
+		sub_restriction->res.resAnd.cRes = last ? 1 : 2;
+		sub_restriction->res.resAnd.res = talloc_zero_array(local_mem_ctx, struct mapi_SRestriction_and,
+								    sub_restriction->res.resAnd.cRes);
+		OPENCHANGE_RETVAL_IF(!sub_restriction->res.resAnd.res, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		cn_restriction = (struct mapi_SRestriction *)sub_restriction->res.resAnd.res;
+		cn_restriction->rt = RES_PROPERTY;
+		cn_restriction->res.resProperty.relop = RELOP_GT;
+		cn_restriction->res.resProperty.ulPropTag = PidTagChangeNumber;
+		cn_restriction->res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
+		cn_restriction->res.resProperty.lpProp.value.d = (range->high << 16) | repl_id;
+		/* If there is a next range, then we have to set the minimum */
+		if (!last && range->next) {
+			range = range->next;
+			cn_restriction = (struct mapi_SRestriction *)sub_restriction->res.resAnd.res + 1;
+			cn_restriction->rt = RES_PROPERTY;
+			cn_restriction->res.resProperty.relop = RELOP_LT;
+			cn_restriction->res.resProperty.ulPropTag = PidTagChangeNumber;
+			cn_restriction->res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
+			cn_restriction->res.resProperty.lpProp.value.d = (range->low << 16) | repl_id;
+		}
+	}
+
+	ret = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, overall_restriction, &state);
+
+	talloc_free(local_mem_ctx);
+	return mapistore_error_to_mapi(ret);
 }
 
 static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
@@ -1350,9 +1405,10 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagIdsetGiven);
 		ndr_push_idset(sync_data->ndr, synccontext->idset_given);
 		if (synccontext->request.read_state) {
-			IDSET_dump (synccontext->cnset_read, "cnset_read");
+			/* Hack CNSetRead = CNSetSeen until [MS-OXCFXICS] Section 3.2.5.6 be
+			 * implemented */
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetRead);
-			ndr_push_idset(sync_data->ndr, synccontext->cnset_read);
+			ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
 		}
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateEnd);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
@@ -1906,12 +1962,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle_id, &object_handle);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle_id, mapi_req->handle_idx);
 		goto end;
 	}
 
-	/* Step 2. Check whether the parent object supports fetching properties */
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
+	/* Step 3. Check whether the parent object supports fetching properties */
 	mapi_handles_get_private_data(object_handle, &data);
 	object = (struct emsmdbp_object *) data;
 	if (!object) {
@@ -1928,7 +1990,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		request_buffer_size = request->MaximumBufferSize.MaximumBufferSize;
 	}
 
-	/* Step 3. Perform the read operation */
+	/* Step 4. Perform the read operation */
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FTCONTEXT:
 		oxcfxics_fill_ftcontext_fasttransfer_response(response, request_buffer_size, mem_ctx, object->object.ftcontext, emsmdbp_ctx);
@@ -2003,7 +2065,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, folder_handle, &folder_rec);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", folder_handle, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		goto end;
 	}
 
@@ -2012,6 +2074,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	if (!folder_object || folder_object->type != EMSMDBP_OBJECT_FOLDER) {
 		OC_DEBUG(5, "  object not found or not a folder\n");
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2123,8 +2191,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	if (!include_props && synccontext->request.contents_mode && synccontext->request.normal) {
 		table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
 		if (!table_object) {
-			OC_DEBUG(5, "could not open message table\n");
-			abort();
+			OC_DEBUG(1, "could not open message table");
+			talloc_free(synccontext_object);
+			talloc_free(properties_exclusion);
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			goto end;
 		}
 		if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
 			for (j = 0; j < available_properties->cValues; j++) {
@@ -2255,7 +2326,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &synccontext_object_handle);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle_id, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2283,7 +2360,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 
 	folderID = synccontext_object->parent_object->object.folder->folderID;
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 	if (oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, &request->PropertyValues.lpProps[0].value.bin, &messageID)) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
@@ -2391,7 +2473,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	synccontext_handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &synccontext_object_handle);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle_id, mapi_req->handle_idx);
 		goto end;
 	}
@@ -2404,11 +2486,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		goto end;
 	}
 
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	request = &mapi_req->u.mapi_SyncImportHierarchyChange;
 	response = &mapi_repl->u.mapi_SyncImportHierarchyChange;
 
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 
 	/* deduce the parent folder id (fixed position 0). */
 	if (oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, &request->HierarchyValues.lpProps[0].value.bin, &parentFolderID)) {
@@ -2448,7 +2541,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 
 	retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object);
 	if (retval != MAPI_E_SUCCESS) {
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, &cn);
 		if (retval) {
 			OC_DEBUG(5, "unable to obtain a change number\n");
 			folder_object = NULL;
@@ -2525,6 +2618,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS				retval;
 	struct mapi_handles			*synccontext_object_handle = NULL;
 	struct emsmdbp_object			*synccontext_object = NULL;
+	struct emsmdbp_object			*parent_folder = NULL;
 	uint32_t				synccontext_handle_id;
 	void					*data;
 	struct SyncImportDeletes_req		*request;
@@ -2538,6 +2632,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	uint8_t					delete_type;
 	uint32_t				i;
 	int						ret;
+	TALLOC_CTX				*local_mem_ctx = NULL;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCFXICS] SyncImportDeletes (0x74)\n");
 
@@ -2557,7 +2652,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &synccontext_object_handle);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle_id, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		goto end;
 	}
 
@@ -2566,6 +2661,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
 		OC_DEBUG(5, "  object not found or not a synccontext\n");
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2579,11 +2680,35 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	}
 
 	owner = emsmdbp_get_owner(synccontext_object);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
+	if (retval != MAPI_E_SUCCESS) {
+		OC_DEBUG(5, "Impossible to get %s mailbox replica guid", owner);
+		mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		goto end;
+	}
 
-	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+	/* Check PropertyValues is not NULL */
+	if (request->PropertyValues.cValues == 0) {
+		OC_DEBUG(1, "PropertyValues MUST be NOT null");
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
 
-	object_ids = talloc_zero_array(synccontext_object, uint64_t, object_array->cValues);
+	/* The object array is available at fixed 0 position */
+	object_array = (struct mapi_SBinaryArray *)get_mapi_SPropValue_data(&request->PropertyValues.lpProps[0]);
+	if (!object_array) {
+		OC_DEBUG(1, "The object array to delete must be in a MultipleBinary property");
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	local_mem_ctx = talloc_new(NULL);
+	if (!local_mem_ctx) {
+		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
+
+	object_ids = talloc_zero_array(local_mem_ctx, uint64_t, object_array->cValues);
 	if (!object_ids) {
 		mapi_repl->error_code = MAPI_E_NOT_ENOUGH_MEMORY;
 		goto end;
@@ -2593,8 +2718,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < object_array->cValues; i++) {
 			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
 			if (ret == MAPISTORE_SUCCESS) {
-				emsmdbp_folder_delete(emsmdbp_ctx, synccontext_object->parent_object, objectID, 0xff);
-				object_ids[i] = objectID;
+				retval = emsmdbp_object_open_folder_by_child_fid(local_mem_ctx, emsmdbp_ctx,
+										 synccontext_object->parent_object, objectID,
+										 &parent_folder);
+				if (retval == MAPI_E_SUCCESS) {
+					/* HARD-DELETE is not managed by emsmdbp layer yet */
+					ret = emsmdbp_folder_delete(emsmdbp_ctx, parent_folder, objectID, DEL_MESSAGES | DEL_FOLDERS);
+					if (ret == MAPISTORE_SUCCESS) {
+						object_ids[i] = objectID;
+					} else {
+						OC_DEBUG(5, "folder deletion failed for fid: 0x%.16"PRIx64" %s",
+							 objectID, mapistore_errstr(ret));
+					}
+				} else {
+					OC_DEBUG(5, "open parent folder for delete fid 0x%.16"PRIx64" : %s",
+						 objectID, mapi_get_errstr(retval));
+				}
 			}
 		}
 	}
@@ -2611,14 +2750,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
 			if (ret == MAPISTORE_SUCCESS) {
 				ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
-				if (ret == MAPISTORE_SUCCESS) {
+				if (ret == MAPISTORE_SUCCESS || ret == MAPISTORE_ERR_NOT_FOUND) {
 					object_ids[i] = objectID;
+					ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
+					if (ret != MAPISTORE_SUCCESS) {
+						OC_DEBUG(5, "message deletion of index record failed for fmid: 0x%.16"PRIx64": %s",
+							 objectID, mapistore_errstr(ret));
+					}
 				} else {
-					OC_DEBUG(5, "message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID);
-				}
-				ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
-				if (ret != MAPISTORE_SUCCESS) {
-					OC_DEBUG(5, "message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID);
+					OC_DEBUG(5, "message deletion failed for fmid: 0x%.16"PRIx64": %s", objectID,
+						 mapistore_errstr(ret));
 				}
 			}
 		}
@@ -2634,8 +2775,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	}
 
 end:
-	if (object_ids) {
-		talloc_free(object_ids);
+	if (local_mem_ctx) {
+		talloc_free(local_mem_ctx);
 	}
 
 	*size += libmapiserver_RopSyncImportDeletes_size(mapi_repl);
@@ -2687,7 +2828,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamBegin(TALLOC_CTX *mem_c
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		goto end;
 	}
 
@@ -2696,6 +2837,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamBegin(TALLOC_CTX *mem_c
 	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
 		OC_DEBUG(5, "  object not found or not a synccontext\n");
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2765,7 +2912,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamContinue(TALLOC_CTX *me
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2877,7 +3030,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -2903,10 +3062,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	synccontext = synccontext_object->object.synccontext;
 	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
-	retval = IDSET_check_ranges(parsed_idset);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_repl->error_code = retval;
-		goto reset;
+	if (parsed_idset) {
+		retval = IDSET_check_ranges(parsed_idset);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = retval;
+			goto reset;
+		}
 	}
 
 	switch (synccontext->state_property) {
@@ -2921,7 +3082,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, parsed_idset, "cnset_seen");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
 			goto reset;
@@ -2933,7 +3094,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_fai");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, parsed_idset, "cnset_seen_fai");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
 			goto reset;
@@ -2945,7 +3106,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_read");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, parsed_idset, "cnset_seen_read");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
 			goto reset;
@@ -3051,7 +3212,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	synccontext_handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx);
 		goto end;
 	}
@@ -3061,6 +3222,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
 		OC_DEBUG(5, "  object not found or not a synccontext\n");
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -3180,7 +3347,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncOpenCollector(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, folder_handle, &folder_rec);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", folder_handle, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		goto end;
 	}
 
@@ -3189,6 +3356,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncOpenCollector(TALLOC_CTX *mem_ctx,
 	if (!folder_object || folder_object->type != EMSMDBP_OBJECT_FOLDER) {
 		OC_DEBUG(5, "  object not found or not a folder\n");
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;	
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -3269,8 +3442,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 	handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle_id, &object_handle);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle_id, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -3300,46 +3479,6 @@ end:
 }
 
 /**
-   \details Retrieve a MessageReadState structure from a binary blob
-
-   \param mem_ctx pointer to the memory context
-   \param bin pointer to the Binary_r structure with raw MessageReadState data
-
-   \return Allocated MessageReadState structure on success, otherwise NULL
-
-   \note Developers must free the allocated MessageReadState when finished.
- */
-static struct MessageReadState *get_MessageReadState(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
-{
-	struct MessageReadState	*message_read_states = NULL;
-	struct ndr_pull			*ndr;
-	enum ndr_err_code		ndr_err_code;
-
-	/* Sanity checks */
-	if (!bin) return NULL;
-	if (!bin->cb) return NULL;
-	if (!bin->lpb) return NULL;
-
-	ndr = talloc_zero(mem_ctx, struct ndr_pull);
-	ndr->offset = 0;
-	ndr->data = bin->lpb;
-	ndr->data_size = bin->cb;
-
-	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	message_read_states = talloc_zero(mem_ctx, struct MessageReadState);
-	ndr_err_code = ndr_pull_MessageReadState(ndr, NDR_SCALARS, message_read_states);
-
-	/* talloc_free(ndr); */
-
-	if (ndr_err_code != NDR_ERR_SUCCESS) {
-		talloc_free(message_read_states);
-		return NULL;
-	}
-
-	return message_read_states;
-}
-
-/**
    \details EcDoRpc SyncImportReadStateChanges (0x80) Rop.
 
    \param mem_ctx pointer to the memory context
@@ -3364,13 +3503,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
 	enum MAPISTATUS				retval;
 	enum mapistore_error			ret;
-	struct MessageReadState			*read_states;
-	uint32_t				read_states_size;
-	struct Binary_r				*bin_data;
+	struct MessageReadState			*msg_read_state;
 	char					*owner;
 	uint64_t				mid, base;
 	uint16_t				replid;
-	int					i;
+	int					i, j;
 	struct mapistore_message		*msg;
 	struct GUID				guid, replica_guid;
 	DATA_BLOB				guid_blob = { .length = 16, .data = NULL };
@@ -3393,8 +3530,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	synccontext_handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+                mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx);
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -3430,17 +3573,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			goto end;
 		}
 		contextID = emsmdbp_get_contextID(folder_object);
-		bin_data = talloc_zero(mem_ctx, struct Binary_r);
-		bin_data->cb = request->MessageReadStates.length;
-		bin_data->lpb = request->MessageReadStates.data;
-		while (bin_data->cb) {
-			read_states = get_MessageReadState(mem_ctx, bin_data);
-			read_states_size = read_states->MessageIdSize + 3;
+		for (i = 0; i < request->MessageReadStates.cValues; i++) {
+			msg_read_state = request->MessageReadStates.lpMessageReadState + i;
 
-			bin_data->cb -= read_states_size;
-			bin_data->lpb += read_states_size;
-
-			guid_blob.data = read_states->MessageId;
+			guid_blob.data = msg_read_state->MessageId;
 			if (NT_STATUS_IS_ERR(GUID_from_data_blob(&guid_blob, &guid))) {
 				continue;
 			}
@@ -3451,14 +3587,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 
 			mid = 0;
 			base = 1;
-			for (i = 16; i < read_states->MessageIdSize; i++) {
-				mid |= (uint64_t) read_states->MessageId[i] * base;
+			for (j = 16; j < msg_read_state->MessageIdSize; j++) {
+				mid |= (uint64_t) msg_read_state->MessageId[j] * base;
 				base <<= 8;
 			}
 			mid <<= 16;
 			mid |= replid;
 
-			if (read_states->MarkAsRead) {
+			if (msg_read_state->MarkAsRead) {
 				flag = SUPPRESS_RECEIPT | CLEAR_RN_PENDING;
 			}
 			else {
@@ -3467,17 +3603,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 
 			ret = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, true, &message_object, &msg);
 			if (ret == MAPISTORE_SUCCESS) {
-				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
+				ret = mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 
-				/* Store the mid in the involved fmids
-				 * of the upload operations */
-				RAWIDSET_push_guid_glob(synccontext_object->object.synccontext->involved_fmids,
-							&replica_guid,
-							(message_object->object.message->messageID >> 16) & 0x0000ffffffffffff);
+				if (ret == MAPISTORE_SUCCESS) {
+					ret = mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID,
+								     message_object->backend_object, mem_ctx);
+					if (ret == MAPISTORE_SUCCESS) {
+						/* Store the mid in the involved fmids
+						 * of the upload operations */
+						RAWIDSET_push_guid_glob(synccontext_object->object.synccontext->involved_fmids,
+									&replica_guid,
+									(message_object->object.message->messageID >> 16) & 0x0000ffffffffffff);
 
+					} else {
+						OC_DEBUG(1, "[oxcfxics]: Failed to save 0x%"PRIx64" message: %s\n", mid, mapistore_errstr(ret));
+					}
+				} else {
+					OC_DEBUG(1, "[oxcfxics]: Failed to set read flag (%x) on 0x%"PRIx64": %s\n", flag, mid, mapistore_errstr(ret));
+				}
 				talloc_free(message_object);
 			} else {
-				OC_DEBUG(5, "[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret));
+				OC_DEBUG(1, "[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret));
 			}
 		}
 	}
@@ -3670,6 +3816,13 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 	sync_data->cnset_seen_fai = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
+	if (synccontext->request.is_collector) {
+		/* We ensure we are returning every Change Number separately
+		   to avoid missing elements in next contents download */
+		sync_data->cnset_seen->single = false;
+		sync_data->cnset_seen_fai->single = false;
+	}
+
 	OC_DEBUG(5, "Get transfer state for fid: 0x%.16"PRIx64,
 		 synccontext_object->parent_object->object.folder->folderID);
 
@@ -3700,16 +3853,13 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 		if (synccontext->cnset_seen) {
 			synccontext->cnset_seen->single = false;
 		}
-		if (new_idset) {
-			new_idset->single = false;
-		}
 	}
 	old_idset = synccontext->cnset_seen;
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
-	retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, synccontext->cnset_seen, "cnset_seen");
+	retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, synccontext->cnset_seen, "cnset_seen");
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
 	ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetSeen);
@@ -3720,16 +3870,13 @@ static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, co
 			if (synccontext->cnset_seen_fai) {
 				synccontext->cnset_seen_fai->single = false;
 			}
-			if (new_idset) {
-				new_idset->single = false;
-			}
 		}
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = IDSET_merge_idsets(synccontext, old_idset, new_idset);
 		talloc_free(old_idset);
 		talloc_free(new_idset);
 
-		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user,
 					      synccontext->cnset_seen_fai, "cnset_seen_fai");
 		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
@@ -3801,7 +3948,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &synccontext_handle);
 	if (retval) {
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", synccontext_handle_id, mapi_req->handle_idx);
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 

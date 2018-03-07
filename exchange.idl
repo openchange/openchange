@@ -56,9 +56,9 @@ cpp_quote("#include <gen_ndr/ndr_misc.h>")
 	/* Function 0x00 */
 	MAPISTATUS RfrGetNewDSA(
 		[in]                                    uint32  ulFlags,
-		[in,string,charset(DOS)]                uint8   *pUserDN,
-		[in,out,unique,string,charset(DOS)]     uint8   **ppszUnused,
-		[in,out,unique,string,charset(DOS)]     uint8   **ppszServer
+		[in,string]                uint8   *pUserDN,
+		[in,out,unique,string]     uint8   **ppszUnused,
+		[in,out,unique,string]     uint8   **ppszServer
 		);
 
 	/*****************/
@@ -66,8 +66,8 @@ cpp_quote("#include <gen_ndr/ndr_misc.h>")
 	MAPISTATUS RfrGetFQDNFromLegacyDN(
 		[in]							uint32	ulFlags,
 		[in,range(10,1024)]					uint32	cbMailboxServerDN,
-		[in,string,charset(DOS),size_is(cbMailboxServerDN)]	uint8	*szMailboxServerDN,
-		[out,ref,string,charset(DOS)]				uint8	**ppszServerFQDN
+		[in,string,size_is(cbMailboxServerDN)]	uint8	*szMailboxServerDN,
+		[out,ref,string]				uint8	**ppszServerFQDN
 		);
 }
 
@@ -271,12 +271,12 @@ System Attendant Private Interface
 
 	typedef struct {
 		[range(0,100000)] uint32			cValues;
-		[string,size_is(cValues),charset(DOS)] uint8	**lppszA;
+		[string,size_is(cValues)] uint8	**lppszA;
 	} StringArray_r;
 
-	typedef struct {
-		[range(0,100000)] uint32		       	Count;
-		[string,size_is(Count),charset(DOS)] uint8     	*Strings[];
+	typedef [public,noprint] struct {
+		[range(0,100000)] uint32		Count;
+		[string,size_is(Count)] uint8     	*Strings[];
 	} StringsArray_r;
 
 	typedef struct {
@@ -309,7 +309,7 @@ System Attendant Private Interface
 		[size_is(cValues)] uint16	*lpi;
 	} ShortArray_r;
 
-	typedef struct {
+	typedef [public] struct {
 		[range(0,100000)] uint32	cValues;
 		[size_is(cValues)] uint32	*lpl;
 	} LongArray_r;
@@ -333,7 +333,7 @@ System Attendant Private Interface
 		[case(PT_I2)]			uint16			i;
 		[case(PT_LONG)]			uint32			l;
 		[case(PT_BOOLEAN)]		uint8			b;
-		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
+		[case(PT_STRING8)][unique][string] uint8	*lpszA;
 		[case(PT_UNICODE)][string,charset(UTF16)] uint16	*lpszW;
 		[case(PT_BINARY)]		Binary_r       		bin;
 		[case(PT_SVREID)]		Binary_r		bin;
@@ -476,7 +476,7 @@ System Attendant Private Interface
 		[case(PT_DOUBLE)]		double			dbl;
 		[case(PT_BOOLEAN)]		uint8			b;
 		[case(PT_I8)]			dlong			d;
-		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
+		[case(PT_STRING8)][unique][string] uint8	*lpszA;
 		[case(PT_BINARY)]		Binary_r       		bin;
 		[case(PT_SVREID)]		Binary_r		bin;
 		[case(PT_UNICODE)][string,charset(UTF16)] uint16	*lpszW;
@@ -677,7 +677,7 @@ System Attendant Private Interface
 		[in] policy_handle			*handle,
 		[in] TI_dwFlags				dwFlags,
 		[in] uint32				ulType,
-		[in,unique,string,charset(DOS)] uint8	*pDN,
+		[in,unique,string] uint8	*pDN,
 		[in] uint32				dwCodePage,
 		[in] uint32				dwLocaleID,
 		[out] PropertyRow_r			**ppData
@@ -777,7 +777,7 @@ System Attendant Private Interface
 
 	MAPISTATUS EcDoConnect(
  		[out]				policy_handle	*handle,
-                [in,string,charset(DOS)]	uint8		szUserDN[],
+                [in,string]	uint8		szUserDN[],
 		[in]				uint32		ulFlags,
 		[in]				uint32		ulConMod,
 		[in]				uint32		cbLimit,
@@ -790,8 +790,8 @@ System Attendant Private Interface
 		[out]				uint32		*pcRetry,
 		[out]				uint32		*pcmsRetryDelay,
 		[out]				uint32		*picxr,
-                [out,ref,string,charset(DOS)]uint8		**szDNPrefix,
-                [out,ref,string,charset(DOS)]uint8		**szDisplayName,
+                [out,ref,string]uint8		**szDNPrefix,
+                [out,ref,string]uint8		**szDisplayName,
                 [out]				uint16          rgwServerVersion[3],
 		[in,out]       			uint16          rgwClientVersion[3],
                 [in,out]			uint32		*pullTimeStamp
@@ -3618,14 +3618,20 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x80 */
-	typedef [public,flag(NDR_NOALIGN)] struct {
+	typedef [public, noprint, flag(NDR_NOALIGN)] struct {
 		uint16		MessageIdSize;
 		uint8		MessageId[MessageIdSize];
 		boolean8	MarkAsRead;
 	} MessageReadState;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB MessageReadStates;
+	typedef [nopull, nopush, noprint, flag(NDR_NOALIGN)] struct {
+		[range(0,4000)] uint32	  cValues;
+		[size_is(cValues)] MessageReadState *lpMessageReadState;
+	} MessageReadStateArray;
+
+	typedef [public, noprint, flag(NDR_NOALIGN)] struct {
+		uint16									     MessageReadStateSize;
+		[subcontext(0), subcontext_size(MessageReadStateSize)] MessageReadStateArray MessageReadStates;
 	} SyncImportReadStateChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -4638,7 +4644,7 @@ System Attendant Private Interface
 
 	[public,nopull,nopush,noprint] MAPISTATUS EcDoConnectEx(
 		[out]				policy_handle				*handle,
-		[in,string,charset(DOS)]	uint8					szUserDN[],
+		[in,string]	uint8					szUserDN[],
 		[in]				uint32					ulFlags,
 		[in]				uint32					ulConMod,
 		[in]				uint32					cbLimit,
@@ -4651,8 +4657,8 @@ System Attendant Private Interface
 		[out]				uint32					*pcRetry,
 		[out]				uint32					*pcmsRetryDelay,
 		[out]				uint32					*picxr,
-		[out,ref,string,charset(DOS)]uint8					**szDNPrefix,
-		[out,ref,string,charset(DOS)]uint8					**szDisplayName,
+		[out,ref,string]	uint8					**szDNPrefix,
+		[out,ref,string]	uint8					**szDisplayName,
 		[in]				uint16					rgwClientVersion[3],
 		[out]				uint16					rgwServerVersion[3],
 		[out]				uint16					rgwBestVersion[3],
@@ -4720,4 +4726,3 @@ System Attendant Private Interface
 {
 	void unknown_dummy();
 }
-

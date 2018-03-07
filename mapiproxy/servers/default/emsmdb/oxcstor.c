@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +26,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/util/samdb.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
@@ -65,26 +66,30 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!request->EssDN, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Retrieve user record */
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE, attrs, "legacyExchangeDN=%s", request->EssDN);
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE, attrs, "legacyExchangeDN=%s", request->EssDN);
 	OPENCHANGE_RETVAL_IF((ret || res->count != 1), ecUnknownUser, NULL);
 
 	/* Step 1. Retrieve username from record */
 	username = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
-	/* Step 2. Init and or update the user mailbox (auto-provisioning) */
+	/* Step 2. Set the logon map */
+	ret = mapi_logon_set(emsmdbp_ctx->logon_ctx, mapi_req->logon_id, username);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
+
+	/* Step 3. Init and or update the user mailbox (auto-provisioning) */
 	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
-	if (strncmp(username, emsmdbp_ctx->username, strlen(username)) == 0) {
+	if (strncmp(username, emsmdbp_ctx->auth_user, strlen(username)) == 0) {
 		ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	}
 
-	/* Step 3. Set LogonFlags */
+	/* Step 4. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;
 
-	/* Step 4. Build FolderIds list */
+	/* Step 5. Build FolderIds list */
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.Root);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTION, &response->LogonType.store_mailbox.DeferredAction);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.SpoolerQueue);
@@ -99,21 +104,21 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_VIEWS, &response->LogonType.store_mailbox.Views);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.Shortcuts);
 
-	/* Step 5. Set ResponseFlags */
+	/* Step 6. Set ResponseFlags */
 	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved;
-	if (username && emsmdbp_ctx->username && strcmp(username, emsmdbp_ctx->username) == 0) {
+	if (username && emsmdbp_ctx->auth_user && strcmp(username, emsmdbp_ctx->auth_user) == 0) {
 		response->LogonType.store_mailbox.ResponseFlags |= ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
 	}
 
-	/* Step 6. Retrieve MailboxGuid */
+	/* Step 7. Retrieve MailboxGuid */
 	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, username, &response->LogonType.store_mailbox.MailboxGuid);
 
-	/* Step 7. Retrieve mailbox replication information */
+	/* Step 8. Retrieve mailbox replication information */
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username,
 					&response->LogonType.store_mailbox.ReplId,
 					&response->LogonType.store_mailbox.ReplGUID);
 
-	/* Step 8. Set LogonTime both in openchange dispatcher database and reply */
+	/* Step 9. Set LogonTime both in openchange dispatcher database and reply */
 	t = time(NULL);
 	LogonTime = localtime(&t);
 	response->LogonType.store_mailbox.LogonTime.Seconds = LogonTime->tm_sec;
@@ -124,11 +129,11 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response->LogonType.store_mailbox.LogonTime.Month = LogonTime->tm_mon + 1;
 	response->LogonType.store_mailbox.LogonTime.Year = LogonTime->tm_year + 1900;
 
-	/* Step 9. Retrieve GwartTime */
+	/* Step 10. Retrieve GwartTime */
 	unix_to_nt_time(&nttime, t);
 	response->LogonType.store_mailbox.GwartTime = nttime - 1000000;
 
-	/* Step 10. Set StoreState */
+	/* Step 11. Set StoreState */
 	response->LogonType.store_mailbox.StoreState = 0x0;
 
 	return MAPI_E_SUCCESS;
@@ -158,20 +163,21 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 
 	response->LogonFlags = request->LogonFlags;
 
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
+        /* FIXME we are getting the user from EcDoConnect(|Ex) instead of Logon ROP */
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
 	response->LogonType.store_pf.LocalizedEFormsRegistry = 0;
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
 	response->LogonType.store_pf.NNTPIndex = 0;
 	memset(response->LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
-					     emsmdbp_ctx->username,
+					     emsmdbp_ctx->logon_user,
 					     &response->LogonType.store_pf.ReplId,
 					     &response->LogonType.store_pf.Guid);
 	memset(&response->LogonType.store_pf.PerUserGuid, 0, sizeof(struct GUID));
@@ -282,6 +288,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	   struct mapistore_subscription_list	*el;*/
 	enum MAPISTATUS				retval;
 	uint32_t				handle;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->logon_user, MAPI_E_LOGON_FAILED, NULL);
 
 	handle = handles[request->handle_idx];
 #if 0
@@ -526,7 +534,7 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
 
 	if (mapi_repl->u.mapi_GetReceiveFolder.MessageClass == NULL) {
-		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_INBOX,
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->logon_user, EMSMDBP_INBOX,
 						&mapi_repl->u.mapi_GetReceiveFolder.folder_id);
 		mapi_repl->u.mapi_GetReceiveFolder.MessageClass = "";
 	}
@@ -726,10 +734,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
@@ -830,10 +845,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		mapi_repl->error_code = ecNullObject;
 		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;

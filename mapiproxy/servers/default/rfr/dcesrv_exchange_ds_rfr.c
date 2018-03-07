@@ -73,8 +73,8 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 
 	fqdn = talloc_asprintf(mem_ctx, "%s.%s", netbiosname, realm);
 	r->out.ppszUnused = NULL;
-	r->out.ppszServer = talloc_array(mem_ctx, const char *, 2);
-	r->out.ppszServer[0] = strlower_talloc(mem_ctx, fqdn);
+	r->out.ppszServer = talloc_array(mem_ctx, uint8_t *, 2);
+	r->out.ppszServer[0] = (uint8_t *) strlower_talloc(mem_ctx, fqdn);
 	r->out.ppszServer[1] = NULL;
 	r->out.result = MAPI_E_SUCCESS;
 
@@ -105,7 +105,7 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 
 	failure:
-		r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
+		r->out.ppszServerFQDN = talloc_array(mem_ctx, uint8_t *, 2);
 		r->out.ppszServerFQDN[0] = NULL;
 		r->out.result = MAPI_E_LOGON_FAILED;
 		return MAPI_E_LOGON_FAILED;
@@ -118,8 +118,8 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 	}
 
 	fqdn = talloc_asprintf(mem_ctx, "%s.%s", netbiosname, realm);
-	r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
-	r->out.ppszServerFQDN[0] = strlower_talloc(mem_ctx, fqdn);
+	r->out.ppszServerFQDN = talloc_array(mem_ctx, uint8_t *, 2);
+	r->out.ppszServerFQDN[0] = (uint8_t *) strlower_talloc(mem_ctx, fqdn);
 	talloc_free(fqdn);
 	r->out.result = MAPI_E_SUCCESS;
 

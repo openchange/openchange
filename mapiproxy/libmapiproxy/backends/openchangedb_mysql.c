@@ -1098,8 +1098,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 		data = (void *)long_array;
 		break;
 	default:
-		OC_DEBUG(0, "Property Type 0x%.4x not supported\n", (proptag & 0xFFFF));
-		abort();
+		OC_DEBUG(1, "Property Type %#.4x not supported", proptag & 0xFFFF);
 		return NULL;
 	}
 
@@ -1192,6 +1191,7 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	// Transform string into the expected data type
 	*data = get_property_data(parent_ctx, proptag, value);
+	OPENCHANGE_RETVAL_IF(*data == NULL, MAPI_E_NOT_FOUND, mem_ctx);
 end:
 	talloc_free(mem_ctx);
 	return retval;
@@ -2285,6 +2285,131 @@ static const char **get_folders_names(TALLOC_CTX *parent_ctx,
 }
 // ^ openchangedb -------------------------------------------------------------
 
+// v replica mapping
+
+static enum MAPISTATUS replica_mapping_guid_to_replid(struct openchangedb_context *self, const char *username, const struct GUID *guid, uint16_t *replid_p)
+{
+	const char	       *repl_guid_str, *sql, *max_replid;
+	enum MAPISTATUS	       retval;
+	MYSQL		       *conn;
+	TALLOC_CTX	       *local_mem_ctx;
+	uint64_t	       new_replid = 0;
+
+	conn = self->data;
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_NOT_INITIALIZED, NULL);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	repl_guid_str = GUID_string(local_mem_ctx, guid);
+	OPENCHANGE_RETVAL_IF(!repl_guid_str, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/* 1. Search for the replica guid */
+	sql = talloc_asprintf(local_mem_ctx,
+			      "SELECT replica_id "
+			      "FROM replica_mapping rm "
+			      "JOIN mailboxes m on m.id = rm.mailbox_id "
+			      "WHERE m.name = '%s' AND rm.replica_guid = '%s'",
+			      _sql(local_mem_ctx, username),
+			      _sql(local_mem_ctx, repl_guid_str));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	retval = status(select_first_uint(conn, sql, &new_replid));
+	if (retval != MAPI_E_SUCCESS && retval != MAPI_E_NOT_FOUND) {
+		talloc_free(local_mem_ctx);
+		return retval;
+	}
+	if (retval == MAPI_E_SUCCESS) {
+		*replid_p = (uint16_t) new_replid;
+		talloc_free(local_mem_ctx);
+		return retval;
+	}
+
+	/* 2. Set a new replid if not found */
+	retval = transaction_start(self);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
+
+	sql = talloc_asprintf(local_mem_ctx,
+			      "SELECT MAX(replica_id) "
+			      "FROM replica_mapping rm JOIN mailboxes m ON m.id = rm.mailbox_id "
+			      "WHERE m.name = '%s'",
+			      _sql(local_mem_ctx, username));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	retval = status(select_first_string(local_mem_ctx, conn, sql, &max_replid));
+	if (retval != MAPI_E_SUCCESS && retval != MAPI_E_NOT_FOUND) {
+		goto end;
+	}
+
+	if (retval == MAPI_E_NOT_FOUND || max_replid == NULL) {
+		new_replid = FIRST_REPL_ID;
+	} else {
+		if (convert_string_to_ull(max_replid, &new_replid) == false) {
+			OC_DEBUG(1, "Failed to convert %s to uint", max_replid);
+			retval = MAPI_E_BAD_VALUE;
+			goto end;
+		}
+		new_replid++;
+	}
+
+	sql = talloc_asprintf(local_mem_ctx,
+			      "INSERT INTO replica_mapping (mailbox_id, replica_id, replica_guid) "
+			      "SELECT m.id, %"PRIu64", '%s' "
+			      "FROM mailboxes m "
+			      "WHERE m.name = '%s'",
+			      new_replid, _sql(local_mem_ctx, repl_guid_str), _sql(local_mem_ctx, username));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	retval = status(execute_query(conn, sql));
+	if (retval == MAPI_E_SUCCESS && mysql_affected_rows(conn) == 0) {
+		OC_DEBUG(5, "The insert into replica mapping does not affect rows");
+		retval = MAPI_E_CALL_FAILED;
+		goto end;
+	}
+
+end:
+	if (retval == MAPI_E_SUCCESS) {
+		transaction_commit(self);
+		*replid_p = new_replid;
+	} else {
+		transaction_rollback(self);
+	}
+
+	talloc_free(local_mem_ctx);
+	return retval;
+}
+
+static enum MAPISTATUS replica_mapping_replid_to_guid(struct openchangedb_context *self, const char *username, uint16_t replid, struct GUID *guid)
+{
+	const char	   *repl_guid_str, *sql;
+	enum MAPISTATUS	   retval;
+	MYSQL		   *conn;
+	NTSTATUS	   ret;
+	TALLOC_CTX	   *local_mem_ctx;
+
+	conn = self->data;
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_NOT_INITIALIZED, NULL);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	sql = talloc_asprintf(local_mem_ctx,
+			      "SELECT replica_guid "
+			      "FROM replica_mapping rm "
+			      "JOIN mailboxes m on m.id = rm.mailbox_id "
+			      "WHERE m.name = '%s' AND rm.replica_id = %d",
+			      _sql(local_mem_ctx, username), replid);
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	retval = status(select_first_string(local_mem_ctx, conn, sql, &repl_guid_str));
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
+
+	ret = GUID_from_string(repl_guid_str, guid);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(ret), MAPI_E_BAD_VALUE, local_mem_ctx);
+
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+// ^ replica mapping
+
 // v openchangedb table -------------------------------------------------------
 
 struct openchangedb_table_message_row {
@@ -2497,7 +2622,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND f.folder_id = %"PRIu64
 			"  AND f.ou_id = %"PRIu64
 			"  AND f.folder_class = '"PUBLIC_FOLDER"' "
-			"WHERE m2.message_type = '%s' ",
+			"WHERE m.message_type = '%s' ",
 			table->folder_id, table->username, msg_type,
 			table->folder_id, table->username, msg_type,
 			table->folder_id, table->ou_id, msg_type);
@@ -2861,12 +2986,12 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 		"  AND f.folder_id = %"PRIu64
 		"  AND f.ou_id = %"PRIu64
 		"  AND f.folder_class = '"PUBLIC_FOLDER"' "
-		"WHERE m2.message_type = '%s'"
+		"WHERE m.message_type = '%s'"
 		"  AND EXISTS ("
 		"     SELECT mp.message_id FROM messages_properties mp "
-		"     WHERE mp.message_id = m2.id "
+		"     WHERE mp.message_id = m.id "
 		"       AND mp.name = '%s' AND mp.value = '%s') "
-		"  AND m2.id = %"PRIu64,
+		"  AND m.id = %"PRIu64,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
 		table->folder_id, table->ou_id, msg_type, attr, value, row->id);
@@ -3633,6 +3758,7 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 	if (value != NULL) {
 		// Transform string into the expected data type
 		*data = get_property_data(parent_ctx, proptag, value);
+		OPENCHANGE_RETVAL_IF(*data == NULL, MAPI_E_NOT_FOUND, mem_ctx);
 		retval = MAPI_E_SUCCESS;
 	}
 
@@ -3712,11 +3838,6 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 }
 
 // ^ openchangedb message -----------------------------------------------------
-
-static const char *openchangedb_data_dir(void)
-{
-	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
-}
 
 static int openchangedb_mysql_destructor(struct openchangedb_context *self)
 {
@@ -3799,6 +3920,9 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_indexing_url = get_indexing_url;
 	oc_ctx->set_locale = set_locale;
 	oc_ctx->get_folders_names = get_folders_names;
+
+	oc_ctx->replica_mapping_guid_to_replid = replica_mapping_guid_to_replid;
+	oc_ctx->replica_mapping_replid_to_guid = replica_mapping_replid_to_guid;
 
 	connection_string = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
 	if (!connection_string) {

@@ -64,7 +64,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	private_dir = lpcfg_private_dir(lp_ctx);
 	if (!private_dir) {
-		OC_DEBUG(5, "private directory was not returned from configuration");
+		OC_DEBUG(0, "private directory was not returned from configuration");
 		return NULL;
 	}
 
@@ -150,8 +150,9 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \details Set connection info for current mapistore context
 
    \param mstore_ctx pointer to the mapistore context
-   \param oc_ctx pointer to the openchange ldb database
-   \param username pointer to the current username
+   \param sam_ctx pointer to the samba (LDAP) directory
+   \param oc_ctx pointer to the openchange database
+   \param username pointer to the current connected username
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -169,6 +170,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 	mstore_ctx->conn_info->sam_ctx = sam_ctx;
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	(void) talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
+	(void) talloc_reference(mstore_ctx->conn_info, sam_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
 
 	return MAPISTORE_SUCCESS;
@@ -179,10 +181,15 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context
+   \param owner the username of the owner of the resource from that URI
    \param uri the connection context URI
+   \param fid the folder identifier related with that URI
    \param context_id pointer to the context identifier the function returns
+   \param backend_object pointer to the recently created backend object
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+
+   \note it is responsability of the caller to free the returned data.
  */
 _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
 						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
@@ -1849,10 +1856,12 @@ _PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_
 		mapi_err = MAPI_E_COLLISION;
 		break;
 	case MAPISTORE_ERR_INVALID_DATA:
-	case MAPISTORE_ERR_MSG_SEND:
 	case MAPISTORE_ERR_MSG_RCV:
 		mapi_err = MAPI_E_DISK_ERROR;
 		break;
+	case MAPISTORE_ERR_MSG_SEND:
+                mapi_err = ecRpcFailed;  /* MAPI_E_NETWORK_ERROR */
+                break;
 	case MAPISTORE_ERR_DENIED:
 		mapi_err = MAPI_E_NO_ACCESS;
 		break;

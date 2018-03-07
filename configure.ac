@@ -867,6 +867,14 @@ if test x$ansi_color = xyes; then
 fi
 AC_SUBST(NDR_COLOR)
 
+AC_ARG_ENABLE(timers, AC_HELP_STRING([--enable-timers], [Use timers for RoP]),
+                                     timers=yes, timers=no)
+OC_TIMERS=
+if test x$timers = xyes; then
+   OC_TIMERS=-DOC_TIMERS
+fi
+AC_SUBST(OC_TIMERS)
+
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
@@ -950,6 +958,7 @@ OpenChange Configuration (Please review)
 
 	   * Options:
 	     - Use ANSI colors:		$ansi_color
+	     - Use oc timers:		$timers
 
 ===============================================================
 

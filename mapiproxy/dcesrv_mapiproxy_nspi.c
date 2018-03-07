@@ -101,10 +101,10 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 
 	/* Step 3. Modify Exchange binding strings and only return ncacn_ip_tcp */
 	slpstr->cValues = 1;
-	slpstr->lppszA[0] = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s.%s", 
+	slpstr->lppszA[0] = (uint8_t *) talloc_asprintf(dce_call, "ncacn_ip_tcp:%s.%s", 
 					    lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
 					    lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx));
-	slpstr->lppszA[0] = strlower_talloc(dce_call, slpstr->lppszA[0]);
+	slpstr->lppszA[0] = (uint8_t *) strlower_talloc(dce_call, (const char *) slpstr->lppszA[0]);
 
 	return true;
 }
@@ -158,15 +158,15 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	if (lpProp->ulPropTag != PR_EMS_AB_HOME_MDB) return false;
 
 	if (private->exchname) {
-		if (strstr(lpProp->value.lpszA, private->exchname)) {
-			lpProp->value.lpszA = string_sub_talloc((TALLOC_CTX *) dce_call, lpProp->value.lpszA, private->exchname, 
+		if (strstr((const char *) lpProp->value.lpszA, private->exchname)) {
+			lpProp->value.lpszA = (uint8_t *) string_sub_talloc((TALLOC_CTX *) dce_call, (const char *) lpProp->value.lpszA, private->exchname, 
 								lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx));	
 		}
 	} else {
-		lpszA = talloc_strdup(dce_call, lpProp->value.lpszA);
+		lpszA = talloc_strdup(dce_call, (const char *) lpProp->value.lpszA);
 		if ((exchname = x500_get_servername(lpszA))) {
 			private->exchname = talloc_strdup(NULL, exchname);
-			lpProp->value.lpszA = string_sub_talloc((TALLOC_CTX *) dce_call, lpProp->value.lpszA, exchname, 
+			lpProp->value.lpszA = (uint8_t *) string_sub_talloc((TALLOC_CTX *) dce_call, (const char *) lpProp->value.lpszA, exchname, 
 								lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx));
 			talloc_free(exchname);
 		}
@@ -200,8 +200,8 @@ bool mapiproxy_NspiDNToMId(struct dcesrv_call_state *dce_call, struct NspiDNToMI
 	if (!private->exchname) return false;
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
-		if (strstr(r->in.pNames->Strings[i], proxyname)) {
-			r->in.pNames->Strings[i] = string_sub_talloc((TALLOC_CTX *) dce_call, r->in.pNames->Strings[i], proxyname, private->exchname);
+		if (strstr((const char *) r->in.pNames->Strings[i], proxyname)) {
+			r->in.pNames->Strings[i] = (uint8_t *) string_sub_talloc((TALLOC_CTX *) dce_call, (const char *) r->in.pNames->Strings[i], proxyname, private->exchname);
 			return true;
 		}
 	}

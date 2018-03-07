@@ -313,26 +313,26 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 		referenceRowSet.aRow[rowNum].lpProps[1].ulPropTag = PR_BODY;
 		referenceRowSet.aRow[rowNum].lpProps[1].dwAlignPad = 0;
 	}
-	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[0].lpProps[1].value.lpszA = "Body of message 8";
-	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[1].lpProps[1].value.lpszA = "Body of message 9";
-	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[2].lpProps[1].value.lpszA = "Body of message 7";
-	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[3].lpProps[1].value.lpszA = "Body of message 6";
-	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "MT Dummy4";
-	referenceRowSet.aRow[4].lpProps[1].value.lpszA = "Body of message 4";
-	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[5].lpProps[1].value.lpszA = "Body of message 5";
-	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "MT Dummy3";
-	referenceRowSet.aRow[6].lpProps[1].value.lpszA = "Body of message 3";
-	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "MT Dummy1";
-	referenceRowSet.aRow[7].lpProps[1].value.lpszA = "Body of message 1";
-	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "MT Dummy2";
-	referenceRowSet.aRow[8].lpProps[1].value.lpszA = "Body of message 2";
-	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "MT Dummy0";
-	referenceRowSet.aRow[9].lpProps[1].value.lpszA = "Body of message 0";
+	referenceRowSet.aRow[0].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[0].lpProps[1].value.lpszA = (uint8_t *) "Body of message 8";
+	referenceRowSet.aRow[1].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[1].lpProps[1].value.lpszA = (uint8_t *) "Body of message 9";
+	referenceRowSet.aRow[2].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[2].lpProps[1].value.lpszA = (uint8_t *) "Body of message 7";
+	referenceRowSet.aRow[3].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[3].lpProps[1].value.lpszA = (uint8_t *) "Body of message 6";
+	referenceRowSet.aRow[4].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy4";
+	referenceRowSet.aRow[4].lpProps[1].value.lpszA = (uint8_t *) "Body of message 4";
+	referenceRowSet.aRow[5].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[5].lpProps[1].value.lpszA = (uint8_t *) "Body of message 5";
+	referenceRowSet.aRow[6].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy3";
+	referenceRowSet.aRow[6].lpProps[1].value.lpszA = (uint8_t *) "Body of message 3";
+	referenceRowSet.aRow[7].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy1";
+	referenceRowSet.aRow[7].lpProps[1].value.lpszA = (uint8_t *) "Body of message 1";
+	referenceRowSet.aRow[8].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy2";
+	referenceRowSet.aRow[8].lpProps[1].value.lpszA = (uint8_t *) "Body of message 2";
+	referenceRowSet.aRow[9].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy0";
+	referenceRowSet.aRow[9].lpProps[1].value.lpszA = (uint8_t *) "Body of message 0";
 
 
 	/* compare result with reference rowset */
@@ -350,7 +350,7 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 				return false;
 			}
 			/* check property values are as expected */
-			if (strcmp(rowSet.aRow[rowNum].lpProps[i].value.lpszA, referenceRowSet.aRow[rowNum].lpProps[i].value.lpszA) != 0) {
+			if (strcmp((const char *) rowSet.aRow[rowNum].lpProps[i].value.lpszA, (const char *) referenceRowSet.aRow[rowNum].lpProps[i].value.lpszA) != 0) {
 				mapitest_print(mt, "* %-40s: unexpected property value (%i/%i): %s\n", "SRowSet", rowNum, i, rowSet.aRow[rowNum].lpProps[i].value.lpszA);
 				return false;
 			}
@@ -408,44 +408,44 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 		referenceRowSet.aRow[rowNum].lpProps[1].ulPropTag = PR_BODY;
 		referenceRowSet.aRow[rowNum].lpProps[1].dwAlignPad = 0;
 	}
-	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "MT Dummy From";
+	referenceRowSet.aRow[0].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
 	referenceRowSet.aRow[0].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[0].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[1].lpProps[1].value.lpszA = "Body of message 5";
-	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[2].lpProps[1].value.lpszA = "Body of message 6";
-	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[3].lpProps[1].value.lpszA = "Body of message 7";
-	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[4].lpProps[1].value.lpszA = "Body of message 8";
-	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "MT Dummy From";
-	referenceRowSet.aRow[5].lpProps[1].value.lpszA = "Body of message 9";
-	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "MT Dummy0";
+	referenceRowSet.aRow[1].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[1].lpProps[1].value.lpszA = (uint8_t *) "Body of message 5";
+	referenceRowSet.aRow[2].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[2].lpProps[1].value.lpszA = (uint8_t *) "Body of message 6";
+	referenceRowSet.aRow[3].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[3].lpProps[1].value.lpszA = (uint8_t *) "Body of message 7";
+	referenceRowSet.aRow[4].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[4].lpProps[1].value.lpszA = (uint8_t *) "Body of message 8";
+	referenceRowSet.aRow[5].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy From";
+	referenceRowSet.aRow[5].lpProps[1].value.lpszA = (uint8_t *) "Body of message 9";
+	referenceRowSet.aRow[6].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy0";
 	referenceRowSet.aRow[6].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[6].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "MT Dummy0";
-	referenceRowSet.aRow[7].lpProps[1].value.lpszA = "Body of message 0";
-	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "MT Dummy1";
+	referenceRowSet.aRow[7].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy0";
+	referenceRowSet.aRow[7].lpProps[1].value.lpszA = (uint8_t *) "Body of message 0";
+	referenceRowSet.aRow[8].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy1";
 	referenceRowSet.aRow[8].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[8].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "MT Dummy1";
-	referenceRowSet.aRow[9].lpProps[1].value.lpszA = "Body of message 1";
-	referenceRowSet.aRow[10].lpProps[0].value.lpszA = "MT Dummy2";
+	referenceRowSet.aRow[9].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy1";
+	referenceRowSet.aRow[9].lpProps[1].value.lpszA = (uint8_t *) "Body of message 1";
+	referenceRowSet.aRow[10].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy2";
 	referenceRowSet.aRow[10].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[10].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[11].lpProps[0].value.lpszA = "MT Dummy2";
-	referenceRowSet.aRow[11].lpProps[1].value.lpszA = "Body of message 2";
-	referenceRowSet.aRow[12].lpProps[0].value.lpszA = "MT Dummy3";
+	referenceRowSet.aRow[11].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy2";
+	referenceRowSet.aRow[11].lpProps[1].value.lpszA = (uint8_t *) "Body of message 2";
+	referenceRowSet.aRow[12].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy3";
 	referenceRowSet.aRow[12].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[12].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[13].lpProps[0].value.lpszA = "MT Dummy3";
-	referenceRowSet.aRow[13].lpProps[1].value.lpszA = "Body of message 3";
-	referenceRowSet.aRow[14].lpProps[0].value.lpszA = "MT Dummy4";
+	referenceRowSet.aRow[13].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy3";
+	referenceRowSet.aRow[13].lpProps[1].value.lpszA = (uint8_t *) "Body of message 3";
+	referenceRowSet.aRow[14].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy4";
 	referenceRowSet.aRow[14].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[14].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[15].lpProps[0].value.lpszA = "MT Dummy4";
-	referenceRowSet.aRow[15].lpProps[1].value.lpszA = "Body of message 4";
+	referenceRowSet.aRow[15].lpProps[0].value.lpszA = (uint8_t *) "MT Dummy4";
+	referenceRowSet.aRow[15].lpProps[1].value.lpszA = (uint8_t *) "Body of message 4";
 
 	/* compare result with reference rowset */
 	for (rowNum = 0; rowNum < rowSet.cRows; ++rowNum) {
@@ -468,7 +468,7 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 					return false;
 				}
 			} else {
-				if (strcmp(rowSet.aRow[rowNum].lpProps[i].value.lpszA, referenceRowSet.aRow[rowNum].lpProps[i].value.lpszA) != 0) {
+				if (strcmp((const char *) rowSet.aRow[rowNum].lpProps[i].value.lpszA, (const char *) referenceRowSet.aRow[rowNum].lpProps[i].value.lpszA) != 0) {
 					mapitest_print(mt, "* %-40s: unexpected property value (%i/%i): %s\n", "SRowSet", rowNum, i, rowSet.aRow[rowNum].lpProps[i].value.lpszA);
 					return false;
 				}
@@ -884,11 +884,11 @@ static bool mapitest_no_server_props_mv_string8(struct mapitest *mt)
 
 	// create and initialise stringarray
 	stringarray.cValues = 4;
-	stringarray.lppszA = talloc_array(mt->mem_ctx, const char*, stringarray.cValues);
-	stringarray.lppszA[0] = "Fedora";
-	stringarray.lppszA[1] = "FreeBSD";
-	stringarray.lppszA[2] = "OpenSolaris";
-	stringarray.lppszA[3] = "Debian";
+	stringarray.lppszA = talloc_array(mt->mem_ctx, uint8_t *, stringarray.cValues);
+	stringarray.lppszA[0] = (uint8_t *) "Fedora";
+	stringarray.lppszA[1] = (uint8_t *) "FreeBSD";
+	stringarray.lppszA[2] = (uint8_t *) "OpenSolaris";
+	stringarray.lppszA[3] = (uint8_t *) "Debian";
 
 	res = set_SPropValue_proptag(&propvalue, PT_MV_STRING8, &stringarray);
 	if (res == false) {

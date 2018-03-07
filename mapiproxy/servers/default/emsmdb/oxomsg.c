@@ -4,17 +4,18 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Brad Hards <bradh@openchange.org> 2010
+                 Enrique J. Hernandez 2015-2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +27,7 @@
  */
 
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "mapiproxy/util/samdb.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
@@ -43,11 +45,12 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 	uint64_t			folderID;
 	uint64_t			messageID;
 	uint16_t			replID;
-	int				ret, i;
+	int				i;
 	char				*owner;
 	struct emsmdbp_object		*folder_object;
 	struct emsmdbp_object		*message_object;
 	enum MAPISTATUS			retval;
+	enum mapistore_error ret;
 
 	mem_ctx = talloc_new(NULL);
 
@@ -75,16 +78,16 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 				continue;
 			}
 
-			ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->FolderDatabaseGuid, &replID);
-			if (ret) {
+			retval = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->FolderDatabaseGuid, &replID);
+			if (retval != MAPI_E_SUCCESS) {
 				OC_DEBUG(5, "unable to deduce folder replID\n");
 				continue;
 			}
 			folderID = (entryID->FolderGlobalCounter.value << 16) | replID;
 			/* OC_DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 
-			ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->MessageDatabaseGuid, &replID);
-			if (ret) {
+			retval = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->MessageDatabaseGuid, &replID);
+			if (retval != MAPI_E_SUCCESS) {
 				OC_DEBUG(5, "unable to deduce message replID\n");
 				continue;
 			}
@@ -99,7 +102,14 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			}
 
 			folderID = folderSvrID->FolderId;
-			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+			ret = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx,
+									  emsmdbp_ctx->logon_user,
+									  &messageID);
+			if (ret != MAPISTORE_SUCCESS) {
+				OC_DEBUG(1, "Impossible to get new message id: %s",
+					 mapistore_errstr(ret));
+				continue;
+			}
 
 			/* OC_DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 			break;
@@ -134,8 +144,8 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 }
 
 /**
-   \details EcDoRpc SubmitMessage (0x32) Rop. This operation marks a message
-   as being ready to send (subject to some flags).
+   \details EcDoRpc SubmitMessage (0x32) Rop. This operation sends a message
+   to its designated recipients. It is usually performed in online mode.
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
@@ -155,13 +165,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	char			*owner;
-	uint64_t		messageID;
 	uint32_t		contextID;
 	uint8_t			flags;
 
@@ -182,6 +191,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
 		goto end;
 	}
 
@@ -221,13 +236,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		messageID = object->object.message->messageID;
+		retval = emsmdbp_object_attach_sharing_metadata_XML_file(emsmdbp_ctx, object);
+		if (retval != MAPI_E_SUCCESS) {
+			OC_DEBUG(1, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
+		}
+
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
-		owner = emsmdbp_get_owner(object);
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, contextID,
+					       object->backend_object, flags);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
+
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 
@@ -318,8 +342,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESSING");
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESS-TEMPLATES");
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
-                         LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
+			      LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
 	talloc_free(basedn);
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {
@@ -362,7 +386,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 }
 
 /**
-   \details EcDoRpc TransportSend (0x4a) Rop. This operation sends a message.
+   \details EcDoRpc TransportSend (0x4a) Rop. This operation requests
+   to the server to send a message to recipients. It is usually
+   performed in cached mode.
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
@@ -383,6 +409,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 {
 	struct TransportSend_repl	*response;
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
@@ -409,6 +436,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *)private_data;
 	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
@@ -426,12 +459,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	case true:
 		retval = emsmdbp_object_attach_sharing_metadata_XML_file(emsmdbp_ctx, object);
 		if (retval != MAPI_E_SUCCESS) {
-			OC_DEBUG(0, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
+			OC_DEBUG(1, "Failing to create sharing metadata for a sharing object: %s\n", mapi_get_errstr(retval));
 		}
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+
+		ret = mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+		if (ret != MAPISTORE_SUCCESS) {
+			OC_DEBUG(1, "Failing to submit the message: %s", mapistore_errstr(ret));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
 
 		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
-		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}
 
@@ -542,7 +580,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	/* Step 2. Search for the specified MessageClass substring within user mailbox */
+	/* Step 2. Check we have a logon user */
+	if (!emsmdbp_ctx->logon_user) {
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		goto end;
+	}
+
+	/* Step 3. Search for the specified MessageClass substring within user mailbox */
 	retval = openchangedb_get_TransportFolder(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
 						  &mapi_repl->u.mapi_GetTransportFolder.FolderId);
 	if (retval) {

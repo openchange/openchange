@@ -106,9 +106,9 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	ret->info.szDisplayName = NULL;
 	ret->info.szDNPrefix = NULL;
 
-	r.in.szUserDN = session->profile->mailbox;
+	r.in.szUserDN = (uint8_t *) session->profile->mailbox;
 	r.in.ulFlags = 0x00000000;
-	r.in.ulConMod = emsmdb_hash(r.in.szUserDN);
+	r.in.ulConMod = emsmdb_hash((char *) r.in.szUserDN);
 	r.in.cbLimit = 0x00000000;
 	r.in.ulCpid = session->profile->codepage;
 	r.in.ulLcidString = session->profile->language;
@@ -120,8 +120,8 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	r.in.rgwClientVersion[2] = 0x03e8;
 	r.in.pullTimeStamp = &pullTimeStamp;
 
-	r.out.szDNPrefix = (const char **)&ret->info.szDNPrefix;
-	r.out.szDisplayName = (const char **)&ret->info.szDisplayName;
+	r.out.szDNPrefix = (uint8_t **)&ret->info.szDNPrefix;
+	r.out.szDisplayName = (uint8_t **)&ret->info.szDisplayName;
 	r.out.handle = &ret->handle;
 	r.out.pcmsPollsMax = &ret->info.pcmsPollsMax;
 	r.out.pcRetry = &ret->info.pcRetry;
@@ -200,9 +200,9 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	
 	r.out.handle = &ctx->handle;
 
-	r.in.szUserDN = session->profile->mailbox;
+	r.in.szUserDN = (uint8_t *) session->profile->mailbox;
 	r.in.ulFlags = 0x00000000;
-	r.in.ulConMod = emsmdb_hash(r.in.szUserDN);
+	r.in.ulConMod = emsmdb_hash((char *) r.in.szUserDN);
 	r.in.cbLimit = 0x00000000;
 	r.in.ulCpid = session->profile->codepage;
 	r.in.ulLcidString = session->profile->language;
@@ -210,8 +210,8 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	r.in.ulIcxrLink = 0xFFFFFFFF;
 	r.in.usFCanConvertCodePages = 0x1;
 
-	r.out.szDNPrefix = (const char **) &ctx->info.szDNPrefix;
-	r.out.szDisplayName = (const char **) &ctx->info.szDisplayName;
+	r.out.szDNPrefix = (uint8_t **) &ctx->info.szDNPrefix;
+	r.out.szDisplayName = (uint8_t **) &ctx->info.szDisplayName;
 	r.out.pcmsPollsMax = &ctx->info.pcmsPollsMax;
 	r.out.pcRetry = &ctx->info.pcRetry;
 	r.out.pcmsRetryDelay = &ctx->info.pcmsRetryDelay;
@@ -915,9 +915,9 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		*offset = ndr->offset;
 		slpstr = talloc_zero(mem_ctx, struct StringArray_r);
 		slpstr->cValues = pt_slpstr.cValues;
-		slpstr->lppszA = talloc_array(mem_ctx, const char *, pt_slpstr.cValues);
+		slpstr->lppszA = talloc_array(mem_ctx, uint8_t *, pt_slpstr.cValues);
 		for (i = 0; i < slpstr->cValues; i++) {
-			slpstr->lppszA[i] = talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
+			slpstr->lppszA[i] = (uint8_t *) talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
 		}
 		talloc_free(ndr);
 		return (const void *) slpstr;

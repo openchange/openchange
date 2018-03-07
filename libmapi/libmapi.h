@@ -105,8 +105,8 @@ enum MAPISTATUS		nspi_ModLinkAtt(struct nspi_context *, bool, uint32_t, uint32_t
 enum MAPISTATUS		nspi_QueryColumns(struct nspi_context *, TALLOC_CTX *, bool, struct SPropTagArray **);
 enum MAPISTATUS		nspi_GetNamesFromIDs(struct nspi_context *, TALLOC_CTX *, struct FlatUID_r *, struct SPropTagArray *, struct SPropTagArray **, struct PropertyNameSet_r **);
 enum MAPISTATUS		nspi_GetIDsFromNames(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct PropertyName_r *, struct SPropTagArray **);
-enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
-enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, uint32_t, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, uint32_t, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
 void			nspi_dump_STAT(const char *, struct STAT *);
 
 /* The following public definitions come from libmapi/emsmdb.c */
@@ -281,6 +281,7 @@ struct Binary_r *set_RecurrencePattern(TALLOC_CTX *, const struct RecurrencePatt
 struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct Binary_r		*set_TimeZoneStruct(TALLOC_CTX *, const struct TimeZoneStruct *);
+struct TimeZoneDefinition *get_TimeZoneDefinition(TALLOC_CTX *, struct Binary_r *);
 struct Binary_r		*set_TimeZoneDefinition(TALLOC_CTX *, const struct TimeZoneDefinition *);
 struct PtypServerId	*get_PtypServerId(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
@@ -494,6 +495,8 @@ enum MAPISTATUS		ICSSyncUploadStateEnd(mapi_object_t *);
 enum MAPISTATUS		SetLocalReplicaMidsetDeleted(mapi_object_t *, const struct GUID, const uint8_t GlobalCountLow[6], const uint8_t GlobalCountHigh[6]);
 enum MAPISTATUS		ICSSyncOpenCollector(mapi_object_t *, bool, mapi_object_t *);
 enum MAPISTATUS		ICSSyncGetTransferState(mapi_object_t *, mapi_object_t *);
+enum MAPISTATUS		SyncImportReadStateChanges(mapi_object_t *, struct Binary_r *, bool *, uint16_t);
+enum MAPISTATUS		SyncImportDeletes(mapi_object_t *, uint8_t, struct BinaryArray_r *);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

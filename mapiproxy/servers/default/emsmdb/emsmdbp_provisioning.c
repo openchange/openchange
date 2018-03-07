@@ -71,7 +71,7 @@ static enum MAPISTATUS get_new_public_folder_id(struct emsmdbp_context *emsmdbp_
 	enum mapistore_error	ret;
 
 	if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
-		retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+		retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, fid);
 	} else {
 		ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, fid);
 		if (ret != MAPISTORE_SUCCESS) {
@@ -134,44 +134,44 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		dn_user[i] = toupper(dn_user[i]);
 	}
 
-	retval = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
+	retval = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
 	if (retval != MAPI_E_SUCCESS) {
 		OC_DEBUG(5, "provisioning: freebusy root folder not found in OpenChange database.\n");
 		goto end;
 	}
 
-	retval = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, dn_root, &group_fid);
+	retval = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, public_fb_fid, dn_root, &group_fid);
 	if (retval != MAPI_E_SUCCESS) {
 		retval = get_new_public_folder_id(emsmdbp_ctx, public_fb_fid, &group_fid);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot get new public folder id\n");
 			goto end;
 		}
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &change_num);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, &change_num);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot get new change number\n");
 			goto end;
 		}
-		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, group_fid, change_num, NULL, -1);
+		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, public_fb_fid, group_fid, change_num, NULL, -1);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot create new folder\n");
 			goto end;
 		}
 	}
 
-	retval = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
+	retval = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, group_fid, dn_user, false, &fb_mid);
 	if (retval != MAPI_E_SUCCESS) {
 		retval = get_new_public_folder_id(emsmdbp_ctx, group_fid, &fb_mid);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot get new public folder id\n");
 			goto end;
 		}
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &change_num);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, &change_num);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot get new change number\n");
 			goto end;
 		}
-		retval = openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
+		retval = openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, fb_mid, group_fid, false, &message_object);
 		if (retval != MAPI_E_SUCCESS) {
 			OC_DEBUG(0, "Cannot create new message\n");
 			goto end;
@@ -362,9 +362,15 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				current_entry = current_entry->next;
 			}
 			if (!exists) {
-				OC_DEBUG(5, "  removing entry '%s'\n", mapistore_url);
 				openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid);
-				openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, username, found_fid);
+				if (!oxosfld_is_special_folder(emsmdbp_ctx, found_fid)) {
+					OC_DEBUG(5, "Removing entry '%s'", mapistore_url);
+					openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, username, found_fid);
+				} else {
+					/* Do not delete a special folder */
+					OC_DEBUG(5, "Special folder %s (%"PRIx64") is missing but not deleting...",
+						 mapistore_url, found_fid);
+				}
 			}
 		}
 	}
@@ -785,7 +791,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	/** create root/Freebusy Data folder + "LocalFreebusy" message (OXODLGT) */
 	/* FIXME: the problem here is that only the owner of a mailbox can create the delegation message and its container, meaning that when sharing an object, a delegate must at least login once to OpenChange before any one subscribes to his resources */
-	if (strcmp(emsmdbp_ctx->username, username) == 0) {
+	if (strcmp(emsmdbp_ctx->auth_user, username) == 0) {
 		struct mapi_SRestriction restriction;
 		uint8_t status;
 

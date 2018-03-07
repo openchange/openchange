@@ -1,0 +1,50 @@
+#!/bin/bash
+
+LOG_FILE=/var/log/samba/log.samba
+if [[ -f "$1" ]]; then
+  LOG_FILE=$1
+fi
+if [[ ! -r $LOG_FILE ]]; then
+  echo "Cannot read log file $LOG_FILE"
+  exit
+fi
+
+# ----------------------------------------------------------------------------
+
+function report {
+  grep oc_timer $LOG_FILE | grep $1| awk '{print $7$8}' | awk '
+    BEGIN {
+      FS=":";
+      print "RoP      Amount  Total time   Average time"
+    } {
+      total++;
+      total_time+=$2;
+      a[$1]++;
+      b[$1] = b[$1]+$2
+    } END {
+      PROCINFO["sorted_in"] = "@ind_num_asc";
+      for (i in a) {
+        average = b[i] / a[i]
+        if (average > 1.0)
+          printf("\033[1m%s %10.0f %10.2f %10.2f\033[0m\n",
+                 i, a[i], b[i], average);
+        else
+          printf("%s %10.0f %10.2f %10.2f\n", i, a[i], b[i], average);
+      }
+      printf("\nTotal: %d (time %.2f)\n", total, total_time)
+    }'
+}
+
+# ----------------------------------------------------------------------------
+
+echo "================== NSPI =================="
+report NSPI
+echo
+echo "================= EMSMDB ================="
+report EMSMDB
+
+if [[ "`grep oc_timer $LOG_FILE | grep threshold | wc -l`" != "0" ]]; then
+  echo
+  echo "================ Threshold ==============="
+  grep oc_timer $LOG_FILE | grep threshold | sort
+fi

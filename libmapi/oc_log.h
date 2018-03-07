@@ -23,6 +23,8 @@
 #define _OC_LOG_H_
 
 #include <stdarg.h>
+#include <stdbool.h>
+#include <talloc.h>
 #include <param.h>
 
 #define OC_LOG_MAX_LINE 1024
@@ -56,7 +58,7 @@ enum oc_log_level {
  * This macro is a simple wrapper around oc_log() that adds the
  * source file name and line number to the message. */
 #define OC_DEBUG(priority, format, ...) \
-	oc_log (OC_LOG_DEBUG+(priority), __location__ "(%s): " format, __PRETTY_FUNCTION__, ## __VA_ARGS__)
+	oc_log (OC_LOG_INFO+(priority), __location__ "(%s): " format, __PRETTY_FUNCTION__, ## __VA_ARGS__)
 
 /* Write a log message.
  * Like in syslog, a trailing newline is *not* required. The library will add it

@@ -867,7 +867,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = dwFlags;
 	r.in.ulType = ulType;
-	r.in.pDN = pDN;
+	r.in.pDN = (uint8_t *) pDN;
 	r.in.dwCodePage = nspi_ctx->pStat->CodePage;
 	r.in.dwLocaleID = nspi_ctx->pStat->TemplateLocale;
 	
@@ -1086,6 +1086,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
    \param mem_ctx pointer to the memory context
    \param usernames pointer on pointer to the list of values we want
    to perform ANR on
+   \param usernames_count the number of values within usernames list
    \param pPropTags pointer on the property tags list we want for each
    row returned
    \param pppRows pointer on pointer on pointer to the rows returned
@@ -1097,7 +1098,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
  */
 _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx, 
 					   TALLOC_CTX *mem_ctx,
-					   const char **usernames, 
+					   const char **usernames,
+					   uint32_t usernames_count,
 					   struct SPropTagArray *pPropTags, 
 					   struct PropertyRowSet_r ***pppRows,
 					   struct PropertyTagArray_r ***pppMIds)
@@ -1106,7 +1108,6 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	struct StringsArray_r	*paStr;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
-	uint32_t		count;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1114,12 +1115,10 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(!nspi_ctx->rpc_connection->binding_handle, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames_count, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
-
-	for (count = 0; usernames[count]; count++);
-	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 
@@ -1128,8 +1127,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	r.in.pPropTags = pPropTags;
 	
 	paStr = talloc(mem_ctx, struct StringsArray_r);
-	paStr->Count = count;
-	paStr->Strings = usernames;
+	paStr->Count = usernames_count;
+	paStr->Strings = (uint8_t **) usernames;
 	r.in.paStr = paStr;
 
 	r.out.ppMIds = *pppMIds;
@@ -1152,6 +1151,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
    \param mem_ctx pointer to the memory context
    \param usernames pointer on pointer to the list of values we want
    to perform ANR on
+   \param usernames_count the number of values within usernames list
    \param pPropTags pointer on the property tags list we want for each
    row returned
    \param pppRows pointer on pointer on pointer to the rows returned
@@ -1164,6 +1164,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx, 
 					    TALLOC_CTX *mem_ctx,
 					    const char **usernames, 
+					    uint32_t usernames_count,
 					    struct SPropTagArray *pPropTags, 
 					    struct PropertyRowSet_r ***pppRows,
 					    struct PropertyTagArray_r ***pppMIds)
@@ -1172,16 +1173,13 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	struct StringsArrayW_r		*paWStr;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
-	uint32_t			count;
 
 	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames_count, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
-
-	for (count = 0; usernames[count]; count++);
-	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 
@@ -1190,7 +1188,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	r.in.pPropTags = pPropTags;
 
 	paWStr = talloc(mem_ctx, struct StringsArrayW_r);
-	paWStr->Count = count;
+	paWStr->Count = usernames_count;
 	paWStr->Strings = usernames;
 	r.in.paWStr = paWStr;
 

@@ -241,7 +241,6 @@ struct icaltimetype get_icaltimetype_from_tm(struct tm *tm)
 	tt.minute = tm->tm_min;
 	tt.second = tm->tm_sec;
 
-	tt.is_utc      = 0;
 	tt.is_date     = 0;
 	tt.is_daylight = 0;
 	tt.zone        = 0;
@@ -254,7 +253,6 @@ struct icaltimetype get_icaltimetype_from_tm_UTC(struct tm *tm)
 	struct icaltimetype tt;
 	
 	tt = get_icaltimetype_from_tm(tm);
-	tt.is_utc      = 1;
 	
 	return tt;
 }
@@ -270,7 +268,6 @@ struct icaltimetype get_icaldate_from_tm(struct tm *tm)
 	tt.minute = 0;
 	tt.second = 0;
 
-	tt.is_utc      = 1;
 	tt.is_date     = 1;
 	tt.is_daylight = 0;
 	tt.zone        = NULL;
@@ -313,7 +310,6 @@ struct icaltimetype get_icaltime_from_FILETIME(const struct FILETIME *ft)
 	tt.minute = tm->tm_min;                                                
 	tt.second = tm->tm_sec;
 	tt.is_date = 0;
-	tt.is_utc = 0;
 	tt.is_daylight = 0;
 	tt.zone = NULL;
 
@@ -339,7 +335,6 @@ struct icaltimetype get_icaltime_from_FILETIME_UTC(const struct FILETIME *ft)
 	tt.minute = tm->tm_min;                                                
 	tt.second = tm->tm_sec;
 	tt.is_date = 0;
-	tt.is_utc = 1;
 	tt.is_daylight = 0;
 	tt.zone = NULL;
 
@@ -371,7 +366,6 @@ struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *ft)
 	tt.minute = 0;                                                
 	tt.second = 0;
 	tt.is_date = 1;
-	tt.is_utc = 1;
 	tt.is_daylight = 0;
 	tt.zone = NULL;
 
@@ -390,7 +384,6 @@ struct icaltimetype get_icaldate_from_GlobalObjectId(struct GlobalObjectId *Glob
 	tt.minute = 0;
 	tt.second = 0;
 
-	tt.is_utc      = 1;
 	tt.is_date     = 1;
 	tt.is_daylight = 0;
 	tt.zone        = NULL;

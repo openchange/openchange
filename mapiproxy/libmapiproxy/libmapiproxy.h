@@ -4,17 +4,20 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008-2011
+   Copyright (C) Jesus Garcia 2013-2015
+   Copyright (C) Carlos Perez-Aradros 2015
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -31,7 +34,7 @@
 #include <ldb_errors.h>
 #include <fcntl.h>
 #include <errno.h>
-
+#include <samba/version.h>
 #include <gen_ndr/server_id.h>
 #include <gen_ndr/exchange.h>
 
@@ -71,9 +74,12 @@ struct mapiproxy_module_list {
 struct mpm_session {
 	struct server_id		server_id;
 	uint32_t			context_id;
-	uint32_t			ref_count;
 	bool				(*destructor)(void *);
 	void				*private_data;
+	char				*username;
+	struct GUID			uuid;
+	bool				released;
+	struct mpm_session		*next, *prev;
 };
 
 
@@ -134,6 +140,17 @@ struct mapi_handles_context {
 #define	MAPI_HANDLES_ROOT	"root"
 #define	MAPI_HANDLES_NULL	"null"
 
+/**
+   Logon map
+*/
+struct mapi_logon_context {
+        struct htable           *logon_table;
+};
+
+struct logon_table_value {
+        const char              *username;
+        uint8_t                 logon_id;
+};
 
 /**
    EMSABP server defines
@@ -159,6 +176,12 @@ static const uint8_t GUID_NSPI[] = {
 #endif
 
 __BEGIN_DECLS
+
+#if SAMBA_VERSION_MAJOR == 4 && SAMBA_VERSION_MINOR < 2
+/* Compatibility with samba 4.1 */
+struct server_id_buf { char buf[48]; };
+char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
+#endif
 
 /* definitions from dcesrv_mapiproxy_module.c */
 NTSTATUS mapiproxy_module_register(const void *);
@@ -186,14 +209,22 @@ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
 void *mapiproxy_server_openchangedb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
-struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
-struct mpm_session *mpm_session_init(TALLOC_CTX *, struct dcesrv_call_state *);
-bool mpm_session_increment_ref_count(struct mpm_session *);
+struct mpm_session *mpm_session_init(struct dcesrv_call_state *, struct GUID *);
 bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
-bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);
+bool mpm_session_set_private_data(struct mpm_session *, void *);
+bool mpm_session_unbind(struct server_id *, uint32_t);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
+struct mpm_session *mpm_session_find_by_uuid(struct GUID *);
+
+
+/* definition from util/samdb.c */
+int safe_ldb_search(struct ldb_context **ldb, TALLOC_CTX *mem_ctx,
+		    struct ldb_result **result, struct ldb_dn *base,
+		    enum ldb_scope scope, const char * const *attrs,
+		    const char *exp_fmt, ...) PRINTF_ATTRIBUTE(7,8);
+
 
 struct openchangedb_context;
 
@@ -244,6 +275,10 @@ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *, con
 bool 		openchangedb_set_locale(struct openchangedb_context*, const char *, uint32_t);
 const char **	openchangedb_get_folders_names(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
 
+/* replica mapping management in openchangedb.c */
+enum MAPISTATUS openchangedb_replica_mapping_guid_to_replid(struct openchangedb_context *, const char *, const struct GUID *, uint16_t *);
+enum MAPISTATUS openchangedb_replica_mapping_replid_to_guid(struct openchangedb_context *, const char *, uint16_t, struct GUID *);
+
 /* definitions from openchangedb_table.c */
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(struct openchangedb_context *, void *, struct SSortOrderSet *);
@@ -270,6 +305,45 @@ enum MAPISTATUS mapi_handles_get_private_data(struct mapi_handles *, void **);
 enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *, void *);
 enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *, int *);
 enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
+
+/* definitions from mapi_logon.c */
+
+/**
+   \details Initialise MAPI logon context
+
+   \param mem_ctx pointer to the memory context
+
+   \return Allocated MAPI logon context on success, otherwise NULL
+*/
+struct mapi_logon_context *mapi_logon_init(TALLOC_CTX *mem_ctx);
+/**
+   \details Release MAPI handles context
+
+   \param logon_ctx pointer to the MAPI logon context
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_release(struct mapi_logon_context *logon_ctx);
+/**
+   \details Search for the logon_id in Logon Table
+
+   \param logon_ctx pointer to the MAPI logon context
+   \param logon_id the logon identifier
+   \param username pointer to the username associated with that logon_id if success
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_search(struct mapi_logon_context *logon_ctx, uint8_t logon_id, const char **username_p);
+/**
+   \details Set the map between a logon_id and a username
+
+   \param logon_ctx pointer to the MAPI logon context
+   \param logon_id the logon id to set
+   \param username the associated username with that logon
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+enum MAPISTATUS mapi_logon_set(struct mapi_logon_context *logon_ctx, uint8_t logon_id, const char *username);
 
 /* definitions from entryid.c */
 enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);

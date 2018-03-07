@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Carlos Pérez-Aradros Herce 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,13 +50,6 @@ struct emsabp_context {
 	TDB_CONTEXT		*tdb_ctx;
 	TDB_CONTEXT		*ttdb_ctx;
 	TALLOC_CTX		*mem_ctx;
-};
-
-struct exchange_nsp_session {
-	struct mpm_session		*session;
-	struct GUID			uuid;
-	struct exchange_nsp_session	*prev;
-	struct exchange_nsp_session	*next;
 };
 
 struct emsabp_MId {
@@ -175,6 +169,20 @@ const char		*emsabp_property_get_attribute(uint32_t);
 uint32_t		emsabp_property_get_ulPropTag(const char *);
 int			emsabp_property_is_ref(uint32_t);
 const char		*emsabp_property_get_ref_attr(uint32_t);
+
+
+/**
+   \details Derive data for prop_tag from the given data
+   It returns the same pointer if the data is not derived
+
+   \param mem_ctx pointer to the memory context if requires new dynamic memory
+   \param prop_tag property tag to update
+   \param data pointer to the pointer from where the data is derived
+
+   \return pointer to a valid derived data
+
+ */
+void                    *emsabp_property_derive(TALLOC_CTX *mem_ctx, uint32_t prop_tag, void *data);
 
 __END_DECLS
 

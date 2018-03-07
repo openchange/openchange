@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Wolfgang Sourdeau 2011
+                 Enrique J. Hernandez 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,17 +57,20 @@ _PUBLIC_ uint64_t exchange_globcnt(uint64_t globcnt)
 		| (globcnt & 0x0000ff0000000000LL)	>> 40);
 }
 
-static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);
-static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser);
+static inline bool GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);
+static inline bool GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser);
 static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser);
-static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser);
+static bool GLOBSET_parser_do_range(struct GLOBSET_parser *parser);
 
-static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count)
+/* Returns true on an error on parsing */
+static inline bool GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count)
 {
+	bool	   parsing_error = false;
 	DATA_BLOB *push_buffer;
 
 	if (count == 0 || count > 6 || parser->next_stack_item > 5 || parser->total_stack_size > 6) {
-		abort();
+		OC_DEBUG(3, "Bad idset parsing on PUSH. Count: %d Next stack item: %d Total stack size: %d", count, parser->next_stack_item, parser->total_stack_size);
+		return true;
 	}
 
 	push_buffer = parser->stack + parser->next_stack_item;
@@ -76,9 +80,12 @@ static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t
 	parser->buffer_position += count;
 	parser->total_stack_size += count;
 	if (parser->total_stack_size == 6) {
-		GLOBSET_parser_do_range(parser);
-		GLOBSET_parser_do_pop(parser);
+		parsing_error = GLOBSET_parser_do_range(parser);
+		if (!parsing_error) {
+			GLOBSET_parser_do_pop(parser);
+		}
 	}
+	return parsing_error;
 }
 
 static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser)
@@ -91,6 +98,7 @@ static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser)
 	parser->total_stack_size -= push_buffer->length;
 }
 
+/* Return NULL on error */
 static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBSET_parser *parser, DATA_BLOB *additional)
 {
 	DATA_BLOB *combined, *current;
@@ -98,6 +106,10 @@ static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBS
 	uint8_t *current_ptr;
 
 	combined = talloc_zero(mem_ctx, DATA_BLOB);
+	if (!combined) {
+		OC_DEBUG(3, "Impossible to allocate DATA_BLOB");
+		return NULL;
+	}
 	if (additional != NULL) {
 		combined->length = additional->length;
 	}
@@ -107,6 +119,10 @@ static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBS
 		combined->length += current->length;
 	}
 	combined->data = talloc_array(combined, uint8_t, combined->length);
+	if (!combined->data) {
+		OC_DEBUG(3, "Impossible to allocate combined content");
+		return NULL;
+	}
 
 	current_ptr = combined->data;
 	for (i = 0; i < parser->next_stack_item; i++) {
@@ -135,22 +151,41 @@ static uint64_t GLOBSET_parser_range_value(DATA_BLOB *combined)
 	return value;
 }
 
-static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
+static bool GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 {
 	uint8_t count;
 	struct globset_range *range;
 	DATA_BLOB *combined, *additional;
 	void *mem_ctx;
 
-	mem_ctx = talloc_zero(NULL, void);
-
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		OC_DEBUG(3, "Impossible to allocate memory context");
+		return true;
+	}
 	range = talloc_zero(parser, struct globset_range);
+	if (!range) {
+		OC_DEBUG(3, "Impossible to allocate a range");
+		talloc_free(mem_ctx);
+		return true;
+	}
+
 	count = 6 - parser->total_stack_size;
 
 	if (count > 0) {
 		additional = talloc_zero(mem_ctx, DATA_BLOB);
+		if (!additional) {
+			OC_DEBUG(3, "Impossible to allocate additional DATA_BLOB");
+			talloc_free(mem_ctx);
+			return true;
+		}
 		additional->length = count;
 		additional->data = talloc_array(additional, uint8_t, count);
+		if (!additional->data) {
+			OC_DEBUG(3, "Impossible to allocate additional DATA_BLOB data");
+			talloc_free(mem_ctx);
+			return true;
+		}
 		memcpy(additional->data, parser->buffer.data + parser->buffer_position, count);
 	}
 	else {
@@ -158,6 +193,10 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	}
 	parser->buffer_position += count;
 	combined = GLOBSET_parser_stack_combine(mem_ctx, parser, additional);
+	if (combined == NULL) {
+		talloc_free(mem_ctx);
+		return true;
+	}
 	range->low = GLOBSET_parser_range_value(combined);
 
 	if (count == 0) {
@@ -167,6 +206,10 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 		memcpy(additional->data, parser->buffer.data + parser->buffer_position, count);
 		parser->buffer_position += count;
 		combined = GLOBSET_parser_stack_combine(mem_ctx, parser, additional);
+		if (combined == NULL) {
+			talloc_free(mem_ctx);
+			return true;
+		}
 		range->high = GLOBSET_parser_range_value(combined);
 	}
 
@@ -174,14 +217,13 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	/* OC_DEBUG(5, "  added range: [%.16"PRIx64":%.16"PRIx64"] %p  %p %p", range->low, range->high, range, range->prev, range->next); */
 	parser->range_count++;
 
-	if (!parser->ranges) {
-		abort();
-	}
-
 	talloc_free(mem_ctx);
+
+	return false;
 }
 
-static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
+/* Return true if there was a parsing error */
+static inline bool GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 {
 	uint8_t mask, bit, i;
 	DATA_BLOB *combined, additional;
@@ -190,12 +232,15 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 	bool blank = false;
 
 	mask = parser->buffer.data[parser->buffer_position+1];
-	parser->buffer_position += 2;
 
 	additional.length = 1;
 	additional.data = parser->buffer.data + parser->buffer_position;
+	parser->buffer_position += 2;
 
 	combined = GLOBSET_parser_stack_combine(NULL, parser, &additional);
+	if (combined == NULL) {
+		return true;
+	}
 	baseValue = GLOBSET_parser_range_value(combined);
 	talloc_free(combined);
 
@@ -207,32 +252,40 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 		if (blank) {
 			if ((mask & bit)) {
 				blank = false;
-				lowValue = baseValue + ((uint64_t) (bit + 1) << 40);
+				lowValue = baseValue + ((uint64_t) (i + 1) << 40);
 				highValue = lowValue;
 			}
-		}
-		else {
+		} else {
 			if ((mask & bit) == 0) {
 				range = talloc_zero(parser, struct globset_range);
+				if (!range) {
+					OC_DEBUG(3, "Impossible to allocate range");
+					return true;
+				}
 				range->low = lowValue;
 				range->high = highValue;
 				DLIST_ADD_END(parser->ranges, range, void);
 				parser->range_count++;
 				blank = true;
-			}
-			else {
-				highValue = baseValue + ((uint64_t) (bit + 1) << 40);
+			} else {
+				highValue = baseValue + ((uint64_t) (i + 1) << 40);
 			}
 		}
 	}
 
 	if (!blank) {
 		range = talloc_zero(parser, struct globset_range);
+		if (!range) {
+			OC_DEBUG(3, "Impossible to allocate range");
+			return true;
+		}
 		range->low = lowValue;
 		range->high = highValue;
 		DLIST_ADD_END(parser->ranges, range, void);
 		parser->range_count++;
 	}
+
+	return false;
 }
 
 /**
@@ -255,6 +308,10 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 
 
 	parser = talloc_zero(NULL, struct GLOBSET_parser);
+	if (!parser) {
+		OC_DEBUG(3, "Impossible to allocate a GLOBSET parser");
+		return NULL;
+	}
 	parser->buffer = buffer;
 
 	while (!end && !parser->error) {
@@ -276,21 +333,20 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 			case 0x04: /* push 4 */
 			case 0x05: /* push 5 */
 			case 0x06: /* push 6 */
-				GLOBSET_parser_do_push(parser, command);
+				parser->error = GLOBSET_parser_do_push(parser, command);
 				break;
 			case 0x42: /* bitmask */
-				GLOBSET_parser_do_bitmask(parser);
+				parser->error = GLOBSET_parser_do_bitmask(parser);
 				break;
 			case 0x50: /* pop */
 				GLOBSET_parser_do_pop(parser);
 				break;
 			case 0x52: /* range */
-				GLOBSET_parser_do_range(parser);
+				parser->error = GLOBSET_parser_do_range(parser);
 				break;
 			default:
 				parser->error = true;
 				OC_DEBUG(4, "invalid command in blockset: %.2x", command);
-				abort();
 			}
 		}
 	}
@@ -298,8 +354,7 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 	if (parser->error) {
 		ranges = NULL;
 		/* abort(); */
-	}
-	else {
+	} else {
 		ranges = parser->ranges;
 		if (countP) {
 			*countP = parser->range_count;
@@ -365,9 +420,12 @@ static void check_idset(const struct idset *idset)
 
 /**
   \details deserialize an IDSET following the format described in [OXCFXICS - 2.2.2.4]
+
+  \return the parsed IDSET or NULL if the parsing does not succeeded
 */
 _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool idbased)
 {
+	bool			parsing_error = false;
 	struct idset		*idset = NULL, *prev_idset = NULL;
 	DATA_BLOB		guid_blob, globset;
 	uint32_t		total_bytes, byte_count, id_length;
@@ -377,7 +435,7 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
 	if (buffer.length < id_length) return NULL;
 
 	total_bytes = 0;
-	while (total_bytes < buffer.length) {
+	while (total_bytes < buffer.length && !parsing_error) {
 		idset = talloc_zero(mem_ctx, struct idset);
 		if (prev_idset) {
 			prev_idset->next = idset;
@@ -396,12 +454,19 @@ _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, bool i
 		globset.length = buffer.length - id_length;
 		globset.data = (uint8_t *) buffer.data + id_length;
 		idset->ranges = GLOBSET_parse(idset, globset, &idset->range_count, &byte_count);
-		
-		total_bytes += byte_count;
+		if (idset->ranges != NULL) {
+			total_bytes += byte_count;
+			check_idset(idset);
+			prev_idset = idset;
+		} else {
+			parsing_error = true;
+		}
+	}
 
-		check_idset(idset);
-
-		prev_idset = idset;
+	if (parsing_error) {
+		IDSET_dump(idset, "incomplete parsing");
+		talloc_free(idset);
+		return NULL;
 	}
 
 	IDSET_dump(idset, "freshly parsed");
@@ -504,7 +569,7 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 	qsort(work_array, length, sizeof(uint64_t), IDSET_globcnt_compar);
 
 	if (length == 2) {
-		OC_DEBUG(5, "work_array[0]: %.16Lx, %.16Lx", (unsigned long long) work_array[0], (unsigned long long) work_array[1]);
+		OC_DEBUG(5, "work_array [0x%" PRIx64 ", 0x%" PRIx64 " ...]", work_array[0], work_array[1]);
 		if (work_array[0] != array[0]) {
 			OC_DEBUG(5, "elements were reordered");
 		}
@@ -512,10 +577,9 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 
 	current_globset->low = work_array[0];
 
-	if (single || length < 3) {
+	if (single) {
 		current_globset->high = work_array[length-1];
-	}
-	else {
+	} else {
 		last_consequent = exchange_globcnt(current_globset->low);
 		for (i = 1; i < length; i++) {
 			if ((exchange_globcnt(work_array[i]) != last_consequent) && (exchange_globcnt(work_array[i]) != (last_consequent + 1))) {
@@ -667,8 +731,25 @@ static void IDSET_reorder_ranges(struct idset *idset)
 	talloc_free(ranges);
 }
 
+/* Compact already sorted ranges from an idset.
+
+   Following cases are done:
+
+   * If single = true, then all ranges are collapsed into a single one
+   * If single = false, then three cases are considered:
+      * If a range B is within other range A, then range B is removed
+        A[ B[...]B ]A -> A[ ... ]A
+      * If a range B intersects other range B, then range B upper bound is set
+        as new range upper bound and remove B
+        A[ B[...]A ]B -> A[ ... ]B
+      * If a range B starts right after the end of range A, then
+        range B upper bound is set as merged range upper bound and remove B
+        A[ .. ]AB[ .. B] -> A[ ... ]B
+
+*/
 static void IDSET_compact_ranges(struct idset *idset)
 {
+	bool compact = false;
 	struct globset_range *range, *next_range, *prev_range;
 
 	if (!idset || idset->range_count < 2) return;
@@ -690,17 +771,26 @@ static void IDSET_compact_ranges(struct idset *idset)
 		range->next = NULL;
 		range->prev = range;
 		idset->range_count = 1;
-	}
-	else {
+	} else {
 		range = idset->ranges;
 		while (range) {
 			next_range = range->next;
 			while (next_range) {
+				compact = false;
 				if (exchange_globcnt(next_range->low) >= exchange_globcnt(range->low)
 				    && exchange_globcnt(next_range->low) <= exchange_globcnt(range->high)) {		/* A[  B[...  ]A */
-					if (exchange_globcnt(next_range->high) > exchange_globcnt(range->high)) {	/* A[  B[  ]A  ]B -> A[  B[  ]AB */
+					if (exchange_globcnt(next_range->high) > exchange_globcnt(range->high)) {	/* A[  B[  ]A  ]B -> A[	 B[  ]AB */
 						range->high = next_range->high;
 					}
+					compact = true;
+				} else if (exchange_globcnt(next_range->low) >= exchange_globcnt(range->low)
+					   && exchange_globcnt(range->high) + 1 == exchange_globcnt(next_range->low)) { /* A[ ... ]AB[ ... ]B */
+					range->high = next_range->high;
+					compact = true;
+				} else {
+					next_range = NULL;
+				}
+				if (compact) {
 					range->next = next_range->next;
 					if (range->next) {
 						range->next->prev = range;
@@ -711,9 +801,6 @@ static void IDSET_compact_ranges(struct idset *idset)
 					idset->range_count--;
 					talloc_free(next_range);
 					next_range = range->next;
-				}
-				else {
-					next_range = NULL;
 				}
 			}
 			range = range->next;
@@ -772,7 +859,19 @@ static struct idset *IDSET_clone(TALLOC_CTX *mem_ctx, const struct idset *source
 }
 
 /**
-  \details merge two idsets structures into a third one
+  \details merge two idsets structures into a third one. That is,
+  putting the GLOBSET ranges from the same REPLID/REPLGUID in the same
+  subset to, afterwards, reorder and compact ranges.
+
+  \param mem_ctx pointer to the memory context where merged idset is allocated
+  \param left the left idset to merge
+  \param right the right idset to merge
+
+  \return pointer to the new merged idset
+
+  \note It only takes into account those idsets whose all GLOBSET
+  ranges are correct, ie, the high value is greater than the low
+  value.
 */
 _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *left, const struct idset *right)
 {
@@ -782,8 +881,14 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	bool added_ranges = false, same_id, idbased;
 	struct globset_range *range;
 
-	if (!left || left->range_count == 0) return IDSET_clone(mem_ctx, right);
-	if (!right || right->range_count == 0) return IDSET_clone(mem_ctx, left);
+	if (!left || left->range_count == 0
+	    || (IDSET_check_ranges(left) != MAPI_E_SUCCESS)) {
+		return IDSET_clone(mem_ctx, right);
+	}
+	if (!right || right->range_count == 0
+	    || (IDSET_check_ranges(right) != MAPI_E_SUCCESS)) {
+		return IDSET_clone(mem_ctx, left);
+	}
 
 	merged_idset = IDSET_clone(mem_ctx, left);
 	clone_right = IDSET_clone(mem_ctx, right);
@@ -1072,12 +1177,14 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
   \param idset pointer to the idset structure to check
 
   \return MAPI_E_SUCCESS on success, ecRpcFormat if any range is incorrect (low > high)
-          or any range is NULL.
+          ,or any range is NULL, or the idset is NULL.
 */
 _PUBLIC_ enum MAPISTATUS IDSET_check_ranges(const struct idset *idset)
 {
 	struct globset_range *range;
 	uint32_t	     i;
+
+	OPENCHANGE_RETVAL_IF(!idset, ecRpcFormat, NULL);
 
 	while (idset) {
 		range = idset->ranges;
@@ -1180,7 +1287,15 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 	uint16_t eid_id;
 	uint64_t eid_globcnt;
 
-	if (!rawidset) return;
+	if (!rawidset) {
+		oc_log(OC_LOG_ERROR, "RAWIDSET is empty. Skipping.");
+		return;
+	}
+
+	if (!rawidset->idbased) {
+		oc_log(OC_LOG_ERROR, "Attempting to push an ID into a GUID-based RAWIDSET. Skipping.");
+		return;
+	}
 
 	eid_id = eid & 0xffff;
 	eid_globcnt = eid >> 16;
@@ -1211,7 +1326,15 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 	struct rawidset		*last_glob_idset = NULL;
 	static struct GUID	*zero_guid = NULL;
 
-	if (!rawidset) return;
+	if (!rawidset) {
+		oc_log(OC_LOG_ERROR, "RAWIDSET is empty. Skipping.");
+		return;
+	}
+
+	if (rawidset->idbased) {
+		oc_log(OC_LOG_ERROR, "Attempting to push a GUID into an ID-based RAWIDSET. Skipping.");
+		return;
+	}
 
 	/* OC_DEBUG(0, "pushing %.16"PRIx64" into idset...", globcnt); */
 

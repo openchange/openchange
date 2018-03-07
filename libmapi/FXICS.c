@@ -3,6 +3,7 @@
 
    Copyright (C) Julien Kerihuel 2007-2011.
    Copyright (C) Brad Hards <bradh@openchange.org> 2010-2011.
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +21,8 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+
+#include <gen_ndr/ndr_exchange.h>
 
 
 /**
@@ -1596,4 +1599,218 @@ _PUBLIC_ enum MAPISTATUS ICSSyncGetTransferState(mapi_object_t *obj, mapi_object
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Import message read state changes.
+
+   \param collector the ICS collector to use to upload changes
+   \param message_ids the message XIDs using Binary_r type to import the read state
+   \param read_states the values specify whether to mark the message
+   as read (true) or unread (false)
+   \param messages_num the number of messages to change the read state
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: If any dynamic memory allocated
+   did not succeed
+ */
+_PUBLIC_ enum MAPISTATUS SyncImportReadStateChanges(mapi_object_t *collector,
+						    struct Binary_r *message_ids,
+						    bool *read_states,
+						    uint16_t messages_num)
+{
+	struct EcDoRpc_MAPI_REQ		       *mapi_req;
+	enum MAPISTATUS			       retval;
+	struct mapi_request		       *mapi_request;
+	struct mapi_response		       *mapi_response;
+	struct mapi_session		       *session;
+	NTSTATUS			       status;
+	size_t				       i;
+	struct SyncImportReadStateChanges_req  request;
+	TALLOC_CTX			       *local_mem_ctx;
+	uint8_t				       logon_id = 0;
+	uint32_t			       size = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!collector, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!message_ids, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!read_states, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(messages_num == 0, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(collector);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(collector, &logon_id)) != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	local_mem_ctx = talloc_new(session);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Fill the SyncImportReadStateChanges operation */
+	request.MessageReadStateSize = 0;
+	request.MessageReadStates.cValues = messages_num;
+	request.MessageReadStates.lpMessageReadState = talloc_zero_array(local_mem_ctx, struct MessageReadState, messages_num);
+	OPENCHANGE_RETVAL_IF(!request.MessageReadStates.lpMessageReadState,
+			     MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	for (i = 0; i < messages_num; i++) {
+		request.MessageReadStates.lpMessageReadState[i].MessageIdSize = (uint16_t) message_ids[i].cb;
+		request.MessageReadStateSize += sizeof(uint16_t);
+		request.MessageReadStates.lpMessageReadState[i].MessageId = message_ids[i].lpb;
+		request.MessageReadStateSize += message_ids[i].cb;
+		request.MessageReadStates.lpMessageReadState[i].MarkAsRead = read_states[i];
+		request.MessageReadStateSize += sizeof(uint8_t);
+	}
+	size += request.MessageReadStateSize + sizeof(uint16_t);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(local_mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	mapi_req->opnum = op_MAPI_SyncImportReadStateChanges;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncImportReadStateChanges = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(local_mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(local_mem_ctx, uint32_t, 2);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY,
+			     local_mem_ctx);
+	mapi_request->handles[0] = mapi_object_get_handle(collector);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, local_mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, local_mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, local_mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+
+	talloc_free(mapi_response);
+	talloc_free(local_mem_ctx);
+
+	return retval;
+}
+
+/**
+   \details Import message or folder deletions.
+
+   \param collector the ICS collector to use to upload changes
+   \param flags the sync import delete flags. Accepted values are in SyncImportDeletesFlags enum type
+   \param source_keys the GID array from which we import their deletions
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: If any dynamic memory allocated
+   did not succeed
+ */
+_PUBLIC_ enum MAPISTATUS SyncImportDeletes(mapi_object_t *collector,
+					   uint8_t flags,
+					   struct BinaryArray_r *source_keys)
+{
+	bool				       ret;
+	struct EcDoRpc_MAPI_REQ		       *mapi_req;
+	enum MAPISTATUS			       retval;
+	struct mapi_request		       *mapi_request;
+	struct mapi_response		       *mapi_response;
+	struct mapi_session		       *session;
+	struct mapi_SBinaryArray	       property_values;
+	struct mapi_SPropValue		       *lp_prop;
+	NTSTATUS			       status;
+	size_t				       i;
+	struct SyncImportDeletes_req	       request;
+	TALLOC_CTX			       *local_mem_ctx;
+	uint8_t				       logon_id = 0;
+	uint32_t			       size = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!collector, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!source_keys, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(source_keys->cValues < 1, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(collector);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	retval = mapi_object_get_logon_id(collector, &logon_id);
+	if (retval != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	local_mem_ctx = talloc_new(session);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Fill the SyncImportDeletes operation */
+	request.Flags = flags;
+	size += sizeof(uint8_t);
+	request.PropertyValues.cValues = 1;
+	size += sizeof(uint16_t);
+
+	property_values.cValues = source_keys->cValues;
+	size += sizeof(uint32_t);
+	property_values.bin = talloc_zero_array(local_mem_ctx, struct SBinary_short, source_keys->cValues);
+	OPENCHANGE_RETVAL_IF(!property_values.bin, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	for (i = 0; i < property_values.cValues; i++) {
+		property_values.bin[i].cb = (uint16_t)source_keys->lpbin[i].cb;
+		size += sizeof(uint16_t);
+		property_values.bin[i].lpb = source_keys->lpbin[i].lpb;
+		size += source_keys->lpbin[i].cb;
+	}
+
+	lp_prop = talloc_zero(local_mem_ctx, struct mapi_SPropValue);
+	OPENCHANGE_RETVAL_IF(!lp_prop, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	size += sizeof(uint32_t);
+
+	ret = set_mapi_SPropValue_proptag(local_mem_ctx, lp_prop,
+					  PT_MV_BINARY, (const void*)&property_values);
+	OPENCHANGE_RETVAL_IF(!ret, MAPI_E_CALL_FAILED, local_mem_ctx);
+	request.PropertyValues.lpProps = lp_prop;
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(local_mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	mapi_req->opnum = op_MAPI_SyncImportDeletes;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncImportDeletes = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(local_mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(local_mem_ctx, uint32_t, 2);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY,
+			     local_mem_ctx);
+	mapi_request->handles[0] = mapi_object_get_handle(collector);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, local_mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, local_mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, local_mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+
+	talloc_free(mapi_response);
+	talloc_free(local_mem_ctx);
+
+	return retval;
 }

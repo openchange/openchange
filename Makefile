@@ -778,6 +778,8 @@ libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
 	rm -f mapiproxy/util/*.po mapiproxy/util/*.o
+	rm -f mapiproxy/util/ccan/hash/*.po mapiproxy/util/ccan/hash/*.o
+	rm -f mapiproxy/util/ccan/htable/*.po mapiproxy/util/ccan/htable/*.o
 	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
 	rm -f mapiproxy/libmapiproxy/backends/*.o mapiproxy/libmapiproxy/backends/*.po
 
@@ -806,15 +808,20 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
 							mapiproxy/libmapiproxy/backends/openchangedb_logger.po	\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
+							mapiproxy/libmapiproxy/mapi_logon.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
 							mapiproxy/libmapiproxy/modules.po			\
 							mapiproxy/libmapiproxy/fault_util.po			\
 							mapiproxy/util/mysql.po					\
+							mapiproxy/util/oc_timer.po				\
+							mapiproxy/util/samba_util_backport.po			\
+							mapiproxy/util/samdb.po					\
 							mapiproxy/util/schema_migration.po			\
 							mapiproxy/util/ccan/htable/htable.po			\
+							mapiproxy/util/ccan/hash/hash.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS)
 
 libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -954,7 +961,6 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
-							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
 							mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.po	\
 							mapiproxy/libmapistore/mapistore_notification.po		\
@@ -963,6 +969,9 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/backends/indexing_tdb.po			\
 							mapiproxy/libmapistore/backends/indexing_mysql.po		\
 							mapiproxy/util/mysql.po						\
+							mapiproxy/util/samdb.po						\
+							mapiproxy/util/oc_memcached.po					\
+							mapiproxy/util/oc_timer.po					\
 							mapiproxy/util/ccan/htable/htable.po				\
 							mapiproxy/util/ccan/hash/hash.po				\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
@@ -1116,6 +1125,8 @@ mapiproxy-servers-clean::
 	rm -f mapiproxy/servers/default/emsmdb/*.gcno mapiproxy/servers/default/emsmdb/*.gcda
 	rm -f mapiproxy/servers/default/rfr/*.o mapiproxy/servers/default/rfr/*.po
 	rm -f mapiproxy/servers/default/rfr/*.gcno mapiproxy/servers/default/rfr/*.gcda
+	rm -f mapiproxy/servers/default/asyncemsmdb/*.o mapiproxy/servers/default/asyncemsmdb/*.po
+	rm -f mapiproxy/servers/default/asyncemsmdb/*.gcno mapiproxy/servers/default/asyncemsmdb/*.gcda
 	rm -f mapiproxy/servers/*.so
 
 clean:: mapiproxy-servers-clean
@@ -1439,6 +1450,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
 				testsuite/libmapistore/mapistore_indexing.c		\
 				testsuite/libmapistore/mapistore_notification.c		\
+				testsuite/libmapiproxy/logon_table.c			\
 				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c			\

@@ -78,6 +78,33 @@ interface property
 		CAL_LUNAR_KOREAN		= 0x14
 	} CalendarType;
 
+	/* [MS-OXOCAL] 2.2.2.4 */
+	typedef [v1_enum] enum {
+		CI_MANAGER			= 0x00000001,
+		CI_DELEGATE			= 0x00000002,
+		CI_DEL_NO_RESPONSE		= 0x00000004,
+		CI_DEL_EXCEPTION_NO_RESPONSE	= 0x00000008,
+		CI_RESP_TENTATIVE		= 0x00000010,
+		CI_RESP_ACCEPT			= 0x00000020,
+		CI_RESP_DECLINE			= 0x00000040,
+		CI_MOD_START_TIME		= 0x00000080,
+		CI_MOD_END_TIME			= 0x00000100,
+		CI_MOD_LOCATION			= 0x00000200,
+		CI_RESP_EXCEPTION_DECLINE	= 0x00000400,
+		CI_CANCELED			= 0x00000800,
+		CI_EXCEPTION_CANCELED		= 0x00001000
+	} ClientIntent;
+
+	/* [MS-OXOCAL] 2.2.6.5 */
+	typedef [v1_enum] enum {
+		mtgEmpty	    = 0x00000000,
+		mtgRequest	    = 0x00000001,
+		mtgFull		    = 0x00010000,
+		mtgInfo		    = 0x00020000,
+		mtgOutOfDate	    = 0x00080000,
+		mtgDelegatorCopy    = 0x00100000
+	} MeetingType;
+
 	typedef [bitmap32bit] bitmap {
 		Su		= 0x00000001,
 		M		= 0x00000002,
@@ -271,9 +298,9 @@ interface property
 
 	/* pidLidTimeZoneStruct */
 	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint32			lBias;
-		uint32			lStandardBias;
-		uint32			lDaylightBias;
+		int32			lBias;
+		int32			lStandardBias;
+		int32			lDaylightBias;
 		uint16			wStandardYear;
 		SYSTEMTIME     		stStandardDate;
 		uint16			wDaylightYear;
@@ -295,9 +322,9 @@ interface property
 		TZRuleFlag	flags;
 		uint16		wYear;
 		uint8		X[14]; /* all zeroes */
-		uint32		lBias;
-		uint32		lStandardBias;
-		uint32		lDaylightBias;
+		int32		lBias;
+		int32		lStandardBias;
+		int32		lDaylightBias;
 		SYSTEMTIME	stStandardDate;
 		SYSTEMTIME	stDaylightDate;
 	} TZRule;

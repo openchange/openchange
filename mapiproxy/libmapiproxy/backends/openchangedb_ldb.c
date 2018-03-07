@@ -5,6 +5,7 @@
 
    Copyright (C) Julien Kerihuel 2009-2014
    Copyright (C) Jesús García Sáez 2014
+   Copyright (C) Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,10 +29,19 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
-#define	OPENCHANGE_LDB_NAME "openchange.ldb"
+#include <tdb.h>
+
+#define OPENCHANGE_LDB_NAME      "openchange.ldb"
+#define REPLICA_MAPPING_TDB_NAME "replica_mapping.tdb"
 
 extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
 
+struct ldb_backend_contexts {
+        /* OpenChangeDB LDB file */
+        struct ldb_context *ldb_ctx;
+        /* OpenChangeDB Replica Mapping table */
+        struct tdb_context *repl_mapping_tdb_ctx;
+};
 
 static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
 					  const char *recipient, uint32_t system_idx,
@@ -43,7 +53,7 @@ static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
 	int				ret;
 	const char			*dn;
 	struct ldb_dn			*ldb_dn = NULL;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_SpecialFolderID");
 
@@ -92,7 +102,7 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 	int				ret;
 	const char			*dn;
 	struct ldb_dn			*ldb_dn = NULL;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_SystemFolderID");
 
@@ -140,7 +150,7 @@ static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
 	struct ldb_result		*res = NULL;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
 
@@ -168,7 +178,7 @@ static enum MAPISTATUS get_distinguishedName(TALLOC_CTX *parent_ctx,
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_distinguishedName");
 
@@ -193,7 +203,7 @@ static enum MAPISTATUS get_mailboxDN(TALLOC_CTX *parent_ctx,
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_mailboxDN");
 
@@ -218,7 +228,7 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "get_MailboxGuid");
 
@@ -247,7 +257,7 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_MailboxReplica");
 
@@ -284,7 +294,7 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderReplica");
 
@@ -321,7 +331,7 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
@@ -354,7 +364,7 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "set_mapistoreURI");
 
@@ -383,7 +393,7 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "PidTagParentFolderId", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_parent_fid");
 
@@ -413,7 +423,7 @@ static enum MAPISTATUS get_fid(struct openchangedb_context *self,
 	char			*slashLessURL;
 	size_t			len;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_ldb get_fid");
 
@@ -449,7 +459,7 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 	char			*dnstr;
 	int			i, elements, ret;
 	struct StringArrayW_r	*uris;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	local_mem_ctx = talloc_named(NULL, 0, "openchangedb_ldb get_MAPIStoreURIs");
 
@@ -503,7 +513,7 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	int				ret;
 	unsigned int			i, j;
 	size_t				length;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
 
@@ -591,7 +601,7 @@ static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folder_count");
 	*RowCount = 0;
@@ -621,7 +631,7 @@ static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,
 	const char * const     	attrs[] = { "*", NULL };
 	const char	       	*PidTagAttr = NULL;
 	int		       	ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "lookup_folder_property");
 
@@ -949,7 +959,7 @@ static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self, c
 	struct ldb_result	*res;
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Get the current GlobalCount */
 	mem_ctx = talloc_named(NULL, 0, "get_next_changeNumber");
@@ -987,7 +997,7 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 	const char * const	attrs[] = { "*", NULL };
 	uint64_t		cn, count;
 	struct UI8Array_r	*cns;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Get the current GlobalCount */
 	local_mem_ctx = talloc_named(NULL, 0, "get_new_changeNumber");
@@ -1027,7 +1037,7 @@ static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
 	int			ret;
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "ChangeNumber", NULL };
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Get the current GlobalCount */
 	mem_ctx = talloc_named(NULL, 0, "get_next_changeNumber");
@@ -1055,7 +1065,7 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
@@ -1101,7 +1111,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	NTTIME			nt_time;
 	uint32_t		i;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	unix_time = time(NULL);
 
@@ -1183,7 +1193,7 @@ static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_table_property");
 
@@ -1226,7 +1236,7 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_fid_by_name");
 
@@ -1259,7 +1269,7 @@ static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
 	struct ldb_dn		*base_dn;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_mid_by_subject");
 
@@ -1295,7 +1305,7 @@ static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
 	struct ldb_dn	*dn;
 	int		retval;
 	enum MAPISTATUS	ret;
-	struct ldb_context *ldb_ctx = (struct ldb_context *)self->data;
+	struct ldb_context *ldb_ctx = (struct ldb_context *)((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -1329,7 +1339,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	char				*dnstr;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "set_ReceiveFolder");
 
@@ -1423,7 +1433,7 @@ static enum MAPISTATUS get_fid_from_partial_uri(struct openchangedb_context *sel
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_fid_from_partial_uri");
 
@@ -1457,7 +1467,7 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 	const char		*tmp;
 	int			i;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_users_from_partial_uri");
 
@@ -1505,7 +1515,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	NTTIME			now;
 	uint64_t		changeNum;
 	struct GUID		guid;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	unix_to_nt_time(&now, time(NULL));
 
@@ -1573,7 +1583,7 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 	struct ldb_message	*msg;
 	int			error;
 	NTTIME			now;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	unix_to_nt_time(&now, time(NULL));
 
@@ -1654,7 +1664,7 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 	const char * const	attrs[] = { "*", NULL };
 	const char		*objectClass;
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1685,7 +1695,7 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "SystemIdx", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
@@ -1709,7 +1719,7 @@ static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	struct ldb_context	*ldb_ctx = self->data;
+	struct ldb_context	*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	mem_ctx = talloc_named(NULL, 0, "set_system_idx");
 
@@ -1732,13 +1742,13 @@ static enum MAPISTATUS set_system_idx(struct openchangedb_context *self,
 
 static enum MAPISTATUS transaction_start(struct openchangedb_context *self)
 {
-	ldb_transaction_start(self->data);
+	ldb_transaction_start(((struct ldb_backend_contexts *)self->data)->ldb_ctx);
 	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
 {
-	ldb_transaction_commit(self->data);
+	ldb_transaction_commit(((struct ldb_backend_contexts *)self->data)->ldb_ctx);
 	return MAPI_E_SUCCESS;
 }
 
@@ -1771,6 +1781,219 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct openchangedb_c
 	return NULL;
 }
 // ^ openchangedb -------------------------------------------------------------
+
+// v openchangedb replica mapping ---------------------------------------------
+
+static enum MAPISTATUS replica_mapping_add_pair(struct tdb_context *tdb, const struct GUID *guid, uint16_t replid)
+{
+	int		ret;
+	TDB_DATA	guid_key;
+	TDB_DATA	replid_key;
+	TALLOC_CTX	*mem_ctx;
+
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* GUID to ReplID */
+	guid_key.dptr = (unsigned char *) GUID_string(mem_ctx, guid);
+	OPENCHANGE_RETVAL_IF(!guid_key.dptr, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	guid_key.dsize = strlen((const char *) guid_key.dptr);
+
+	replid_key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.4x", replid);
+	OPENCHANGE_RETVAL_IF(!replid_key.dptr, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	replid_key.dsize = strlen((const char *) replid_key.dptr);
+
+	ret = tdb_transaction_start(tdb);
+	OPENCHANGE_RETVAL_IF(ret != 0, MAPI_E_CALL_FAILED, mem_ctx);
+
+	ret = tdb_store(tdb, guid_key, replid_key, TDB_INSERT);
+	if (ret != 0) {
+		tdb_transaction_cancel(tdb);
+		talloc_free(mem_ctx);
+		return MAPI_E_CALL_FAILED;
+	}
+	ret = tdb_store(tdb, replid_key, guid_key, TDB_INSERT);
+	if (ret != 0) {
+		ret = tdb_transaction_cancel(tdb);
+		talloc_free(mem_ctx);
+		return MAPI_E_CALL_FAILED;
+	}
+
+	ret = tdb_transaction_commit(tdb);
+	OPENCHANGE_RETVAL_IF(ret != 0, MAPI_E_CALL_FAILED,mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS replica_mapping_search_guid(struct tdb_context *tdb, const struct GUID *guid, uint16_t *replid_p)
+{
+	TALLOC_CTX	*mem_ctx;
+	TDB_DATA	guid_key;
+	TDB_DATA	replid_key;
+	int		ret;
+
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	guid_key.dptr = (unsigned char *) GUID_string(mem_ctx, guid);
+	OPENCHANGE_RETVAL_IF(!guid_key.dptr, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	guid_key.dsize = strlen((const char *) guid_key.dptr);
+
+	ret = tdb_exists(tdb, guid_key);
+	if (!ret) {
+		talloc_free(mem_ctx);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	replid_key = tdb_fetch(tdb, guid_key);
+	OPENCHANGE_RETVAL_IF(!replid_key.dptr, MAPI_E_CALL_FAILED, mem_ctx);
+	*replid_p = strtoul((char *) replid_key.dptr + 2, NULL, 16);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS replica_mapping_set_next_replid(struct tdb_context *tdb, uint16_t replid) {
+	TALLOC_CTX	*mem_ctx;
+	TDB_DATA	key;
+	TDB_DATA	replid_data;
+	int		ret, op;
+
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* GUID to ReplID */
+	key.dptr = (unsigned char *) "next_replid";
+	key.dsize = strlen((const char *) key.dptr);
+
+	replid_data.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.4x", replid);
+	OPENCHANGE_RETVAL_IF(!replid_data.dptr, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	replid_data.dsize = strlen((const char *) replid_data.dptr);
+
+	ret = tdb_exists(tdb, key);
+	op = (ret) ? TDB_MODIFY : TDB_INSERT;
+	ret = tdb_store(tdb, key, replid_data, op);
+
+	talloc_free(mem_ctx);
+
+	if (ret != 0) {
+		return MAPI_E_CALL_FAILED;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+static uint16_t replica_mapping_get_next_replid(struct tdb_context *tdb) {
+	TDB_DATA	key;
+	TDB_DATA	replid_data;
+	int		ret;
+	char		*tmp_data;
+	uint16_t	replid;
+
+	/* GUID to ReplID */
+	key.dptr = (unsigned char *) "next_replid";
+	key.dsize = strlen((const char *) key.dptr);
+
+	ret = tdb_exists(tdb, key);
+	if (!ret) {
+		return 0xffff;
+	}
+
+	replid_data = tdb_fetch(tdb, key);
+	if (!replid_data.dptr) {
+		return 0xffff;
+	}
+
+	tmp_data = talloc_strndup(NULL, (char *) replid_data.dptr, replid_data.dsize);
+	if (!tmp_data) {
+		return 0xffff;
+	}
+	replid = strtoul(tmp_data, NULL, 16);
+	talloc_free(tmp_data);
+
+	return replid;
+}
+
+static enum MAPISTATUS replica_mapping_guid_to_replid(struct openchangedb_context *self, const char *username, const struct GUID *guid, uint16_t *replid_p)
+{
+	enum MAPISTATUS	       ret;
+	uint16_t	       new_replid;
+	struct tdb_context     *tdb_ctx;
+
+	tdb_ctx = ((struct ldb_backend_contexts *)self->data)->repl_mapping_tdb_ctx;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!tdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	ret = replica_mapping_search_guid(tdb_ctx, guid, replid_p);
+	if (ret == MAPI_E_SUCCESS) {
+		return ret;
+	}
+
+	new_replid = replica_mapping_get_next_replid(tdb_ctx);
+	if (new_replid == 0xffff) { /* should never occur */
+		oc_log(OC_LOG_FATAL, "next replica id is not configured for this database");
+		return MAPI_E_UNCONFIGURED;
+	}
+
+	ret = replica_mapping_add_pair(tdb_ctx, guid, new_replid);
+	if (ret != MAPI_E_SUCCESS) {
+		oc_log(OC_LOG_ERROR, "Impossible to add pair: %s", mapi_get_errstr(ret));
+		return ret;
+	}
+	ret = replica_mapping_set_next_replid(tdb_ctx, new_replid + 1);
+	if (ret != MAPI_E_SUCCESS) {
+		oc_log(OC_LOG_ERROR, "Impossible to set next replid: %s", mapi_get_errstr(ret));
+		return ret;
+	}
+
+	*replid_p = new_replid;
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS replica_mapping_replid_to_guid(struct openchangedb_context *self, const char *username, uint16_t replid, struct GUID *guid)
+{
+	char		   *guid_str;
+	int		   ret;
+	NTSTATUS	   status;
+	TALLOC_CTX	   *mem_ctx;
+	struct tdb_context *tdb_ctx;
+	TDB_DATA	   guid_key, replid_key;
+
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	replid_key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.4x", replid);
+	OPENCHANGE_RETVAL_IF(!replid_key.dptr, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	replid_key.dsize = strlen((const char *) replid_key.dptr);
+
+	tdb_ctx = ((struct ldb_backend_contexts *)self->data)->repl_mapping_tdb_ctx;
+	OPENCHANGE_RETVAL_IF(!tdb_ctx, MAPI_E_NOT_INITIALIZED, mem_ctx);
+	ret = tdb_exists(tdb_ctx, replid_key);
+	if (!ret) {
+		talloc_free(mem_ctx);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	guid_key = tdb_fetch(tdb_ctx, replid_key);
+	OPENCHANGE_RETVAL_IF(!guid_key.dptr, MAPI_E_CALL_FAILED, mem_ctx);
+
+	guid_str = talloc_strndup(mem_ctx, (char *)guid_key.dptr, guid_key.dsize);
+	OPENCHANGE_RETVAL_IF(!guid_str, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	status = GUID_from_string(guid_str, guid);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_BAD_VALUE, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+// ^ openchangedb replica mapping ---------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
 
@@ -1949,7 +2172,7 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 	const char			*PidTagAttr = NULL, *childIdAttr;
 	uint64_t			*row_fmid;
 	int				ret;
-	struct ldb_context 		*ldb_ctx = self->data;
+	struct ldb_context 		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Fetch results */
 	if (!table->res) {
@@ -2070,7 +2293,7 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 	char				*parentDN;
 	char				*mailboxDN;
 	int				i;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	/* Retrieve distinguishedName of parent folder */
 	retval = get_distinguishedName(mem_ctx, self, folderID, &parentDN);
@@ -2192,7 +2415,7 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
 	char				*ldb_filter;
-	struct ldb_context		*ldb_ctx = self->data;
+	struct ldb_context		*ldb_ctx = ((struct ldb_backend_contexts *)self->data)->ldb_ctx;;
 
 	msg = talloc_zero(mem_ctx, struct openchangedb_message);
 	if (!msg) {
@@ -2368,8 +2591,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 						     const char *private_dir,
 						     struct openchangedb_context **ctx)
 {
-	struct openchangedb_context 	*oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
+	struct openchangedb_context	*oc_ctx;
 	char				*ldb_path;
+	char				*tdb_path;
 	struct tevent_context		*ev;
 	int				ret;
 	struct ldb_result		*res;
@@ -2380,6 +2604,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 		NULL
 	};
 	struct ldb_context		*ldb_ctx;
+	enum MAPISTATUS			retval;
+	struct tdb_context		*tdb_ctx;
+	struct ldb_backend_contexts	*ldb_backend_ctx;
+
+	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	// Connect to ldb
 	ev = tevent_context_init(talloc_autofree_context());
@@ -2410,10 +2640,33 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 					 "defaultNamingContext");
 	ldb_set_opaque(ldb_ctx, "defaultNamingContext", tmp_dn);
 
-	oc_ctx->data = ldb_ctx;
+	/* Replica mapping management */
+	/* Step 1. Open/Create the replica mapping database */
+	tdb_path = talloc_asprintf(mem_ctx, "%s/%s", private_dir, REPLICA_MAPPING_TDB_NAME);
+	OPENCHANGE_RETVAL_IF(!tdb_path, MAPI_E_NOT_ENOUGH_MEMORY, oc_ctx);
+
+	tdb_ctx = tdb_open(tdb_path, 0, 0, O_RDWR|O_CREAT, 0600);
+	if (!tdb_ctx) {
+		OC_DEBUG(1, "%s (%s)", strerror(errno), tdb_path);
+		talloc_free(oc_ctx);
+		return MAPI_E_NOT_INITIALIZED;
+	}
+
+	/* Step 2. Initialize database if it freshly created */
+	if (replica_mapping_get_next_replid(tdb_ctx) == 0xffff) {
+		retval = replica_mapping_set_next_replid(tdb_ctx, FIRST_REPL_ID);
+		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, oc_ctx);
+	}
+
+	ldb_backend_ctx = talloc_zero(mem_ctx, struct ldb_backend_contexts);
+	OPENCHANGE_RETVAL_IF(!ldb_backend_ctx, MAPI_E_NOT_ENOUGH_MEMORY, oc_ctx);
+	ldb_backend_ctx->ldb_ctx = ldb_ctx;
+	ldb_backend_ctx->repl_mapping_tdb_ctx = tdb_ctx;
+	oc_ctx->data = ldb_backend_ctx;
 
 	// Initialize struct with function pointers
 	oc_ctx->backend_type = talloc_strdup(mem_ctx, "ldb");
+	OPENCHANGE_RETVAL_IF(!oc_ctx->backend_type, MAPI_E_NOT_ENOUGH_MEMORY, oc_ctx);
 
 	oc_ctx->get_new_changeNumber = get_new_changeNumber;
 	oc_ctx->get_new_changeNumbers = get_new_changeNumbers;
@@ -2470,6 +2723,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_indexing_url = get_indexing_url;
 	oc_ctx->set_locale = set_locale;
 	oc_ctx->get_folders_names = get_folders_names;
+
+	oc_ctx->replica_mapping_guid_to_replid = replica_mapping_guid_to_replid;
+	oc_ctx->replica_mapping_replid_to_guid = replica_mapping_replid_to_guid;
 
 	*ctx = oc_ctx;
 

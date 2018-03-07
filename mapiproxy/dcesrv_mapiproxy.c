@@ -134,10 +134,18 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 
 		switch (dce_call->pkt.ptype) {
 		case DCERPC_PKT_BIND:
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
+			dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.bind.assoc_group_id);
+#else
 			b->assoc_group_id = dce_call->pkt.u.bind.assoc_group_id;
+#endif
 			break;
 		case DCERPC_PKT_ALTER:
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
+			dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.alter.assoc_group_id);
+#else
 			b->assoc_group_id = dce_call->pkt.u.alter.assoc_group_id;
+#endif
 			break;
 		default:
 			break;
@@ -154,7 +162,11 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
+		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+#else
 		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
+#endif
 		
 	} else {
 		status = dcerpc_pipe_connect(dce_call->context,
@@ -169,7 +181,11 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR >= 2
+		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+#else
 		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
+#endif
 	}
 
 	private->connected = true;
@@ -222,16 +238,14 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
  */
 static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
-	struct dcesrv_mapiproxy_private		*private;
-	bool					server_mode;
-	bool					ndrdump;
-	char					*server_id_printable = NULL;
-	
-	server_id_printable = server_id_str(NULL, &(dce_call->conn->server_id));
+	struct dcesrv_mapiproxy_private	*private;
+	bool				server_mode;
+	bool				ndrdump;
+	struct server_id_buf		tmp;
+
 	OC_DEBUG(5, "[session = 0x%x] [session server id = %s]\n",
 		  dce_call->context->context_id,
-		  server_id_printable);
-	talloc_free(server_id_printable);
+		  server_id_str_buf(dce_call->conn->server_id, &tmp));
 
 	OC_DEBUG(5, "mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]", dce_call->context->context_id,
 		  dce_call->conn->server_id.pid, dce_call->conn->server_id.task_id, dce_call->conn->server_id.vnn);

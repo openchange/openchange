@@ -73,22 +73,29 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
+	uint32_t		usernames_count;
 
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (usernames_count = 0; usernames[usernames_count]; usernames_count++);
+	OPENCHANGE_RETVAL_IF(!usernames_count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
 	mem_ctx = talloc_named(session, 0, "ResolveNames");
 
 	switch (flags) {
 	case MAPI_UNICODE:
-		retval = nspi_ResolveNamesW(nspi, mem_ctx, usernames, props, &rowset, &flaglist);
+		retval = nspi_ResolveNamesW(nspi, mem_ctx, usernames, usernames_count,
+					    props, &rowset, &flaglist);
 		break;
 	default:
-		retval = nspi_ResolveNames(nspi, mem_ctx, usernames, props, &rowset, &flaglist);
+		retval = nspi_ResolveNames(nspi, mem_ctx, usernames, usernames_count,
+					   props, &rowset, &flaglist);
 		break;
 	}
 
@@ -327,8 +334,8 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 
 	/* Step 2. Map recipient DN to MId */
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-	pNames.Strings[0] = email;
+	pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+	pNames.Strings[0] = (uint8_t *) email;
 	pMId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi_ctx, mem_ctx, &pNames, &pMId);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);

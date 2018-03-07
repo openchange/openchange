@@ -56,8 +56,8 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	if (server == false) {
 		/* Step 1. Retrieve a MID for our legacyDN */
 		pNames.Count = 0x1;
-		pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
+		pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+		pNames.Strings[0] = (uint8_t *) talloc_strdup(pNames.Strings, legacyDN);
 
 		MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
@@ -82,8 +82,8 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 
 	/* Step 3. Retrieve the MId for this server DN */
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
-	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
+	pNames.Strings = (uint8_t **) talloc_array(mem_ctx, uint8_t *, 1);
+	pNames.Strings[0] = (uint8_t *) talloc_strdup(pNames.Strings, server_dn);
 	MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 	MAPIFreeBuffer(pNames.Strings);
@@ -102,8 +102,8 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	MVszA = (struct StringArray_r *) find_PropertyValue_data(&(PropertyRowSet->aRow[0]), PR_EMS_AB_NETWORK_ADDRESS);
 	OPENCHANGE_RETVAL_IF(!MVszA, MAPI_E_NOT_FOUND, mem_ctx);
 	for (i = 0; i != MVszA->cValues; i++) {
-		if (!strncasecmp(MVszA->lppszA[i], "ncacn_ip_tcp:", 13)) {
-			binding = MVszA->lppszA[i] + 13;
+		if (!strncasecmp((const char *) MVszA->lppszA[i], "ncacn_ip_tcp:", 13)) {
+			binding = (const char *) MVszA->lppszA[i] + 13;
 			break;
 		}
 	}
@@ -336,6 +336,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 
 retry:
 	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	size = 0;
 
 	if (!username) {

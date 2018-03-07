@@ -304,6 +304,12 @@
 #define PR_EMS_AB_DISPLAY_TYPE_EX_ERROR                                      PROP_TAG(PT_ERROR     , 0x8C93)  /* 0x8C93000A */
 #define PR_EMS_AB_DL_EXTERNAL_MEMBER_COUNT                                   PidTagAddressBookDistributionListExternalMemberCount
 #define PR_EMS_AB_DL_EXTERNAL_MEMBER_COUNT_ERROR                             PROP_TAG(PT_ERROR     , 0x8CE3)  /* 0x8CE3000A */
+#define PR_EMS_AB_DL_MEM_REJECT_PERMS                                        PidTagAddressBookDistributionListRejectMessagesFromDLMembers
+#define PR_EMS_AB_DL_MEM_REJECT_PERMS_ERROR                                  PROP_TAG(PT_ERROR     , 0x8CDB)  /* 0x8CDB000A */
+#define PR_EMS_AB_DL_MEM_SUBMIT_PERMS                                        PidTagAddressBookDistributionListMemberSubmitRejected
+#define PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O                                   PidTagAddressBookDistributionListMemberSubmitAccepted
+#define PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O_ERROR                             PROP_TAG(PT_ERROR     , 0x8073)  /* 0x8073000A */
+#define PR_EMS_AB_DL_MEM_SUBMIT_PERMS_ERROR                                  PROP_TAG(PT_ERROR     , 0x8CDA)  /* 0x8CDA000A */
 #define PR_EMS_AB_DL_TOTAL_MEMBER_COUNT                                      PidTagAddressBookDistributionListMemberCount
 #define PR_EMS_AB_DL_TOTAL_MEMBER_COUNT_ERROR                                PROP_TAG(PT_ERROR     , 0x8CE2)  /* 0x8CE2000A */
 #define PR_EMS_AB_ENABLE_MODERATION                                          PidTagAddressBookModerationEnabled
@@ -484,6 +490,8 @@
 #define PR_FOLDER_ASSOCIATED_CONTENTS                                        PidTagFolderAssociatedContents
 #define PR_FOLDER_ASSOCIATED_CONTENTS_ERROR                                  PROP_TAG(PT_ERROR     , 0x3610)  /* 0x3610000A */
 #define PR_FOLDER_CHILD_COUNT                                                0x66380003
+#define PR_FOLDER_FLAGS                                                      PidTagFolderFlags
+#define PR_FOLDER_FLAGS_ERROR                                                PROP_TAG(PT_ERROR     , 0x66A8)  /* 0x66A8000A */
 #define PR_FOLDER_TYPE                                                       PidTagFolderType
 #define PR_FOLDER_TYPE_ERROR                                                 PROP_TAG(PT_ERROR     , 0x3601)  /* 0x3601000A */
 #define PR_FOLDER_VIEWLIST							  0x36EB0102
@@ -540,6 +548,8 @@
 #define PR_HAS_RULES_ERROR                                                   PROP_TAG(PT_ERROR     , 0x663A)  /* 0x663A000A */
 #define PR_HIERARCHY_CHANGE_NUM                                              PidTagHierarchyChangeNumber
 #define PR_HIERARCHY_CHANGE_NUM_ERROR                                        PROP_TAG(PT_ERROR     , 0x663E)  /* 0x663E000A */
+#define PR_HIER_REV                                                          PidTagHierRev
+#define PR_HIER_REV_ERROR                                                    PROP_TAG(PT_ERROR     , 0x4082)  /* 0x4082000A */
 #define PR_HOBBIES                                                           PROP_TAG(PT_STRING8   , 0x3A43)  /* 0x3A43001E */
 #define PR_HOBBIES_ERROR                                                     PROP_TAG(PT_ERROR     , 0x3A43)  /* 0x3A43000A */
 #define PR_HOBBIES_UNICODE                                                   PROP_TAG(PT_UNICODE   , 0x3A43)  /* 0x3A43001F */
@@ -1023,6 +1033,8 @@
 #define PR_RETENTION_PERIOD_ERROR                                            PROP_TAG(PT_ERROR     , 0x301A)  /* 0x301A000A */
 #define PR_RIGHTS                                                            PidTagRights
 #define PR_RIGHTS_ERROR                                                      PROP_TAG(PT_ERROR     , 0x6639)  /* 0x6639000A */
+#define PR_ROAMING_BINARYSTREAM                                              PidTagRoamingBinary
+#define PR_ROAMING_BINARYSTREAM_ERROR                                        PROP_TAG(PT_ERROR     , 0x7C09)  /* 0x7C09000A */
 #define PR_ROAMING_DATATYPES                                                 PidTagRoamingDatatypes
 #define PR_ROAMING_DATATYPES_ERROR                                           PROP_TAG(PT_ERROR     , 0x7C06)  /* 0x7C06000A */
 #define PR_ROAMING_DICTIONARY                                                PidTagRoamingDictionary
@@ -1259,12 +1271,16 @@
 #define PR_WB_SF_EFP_FLAGS_ERROR                                             PROP_TAG(PT_ERROR     , 0x6848)  /* 0x6848000A */
 #define PR_WB_SF_EXPIRATION                                                  PidTagSearchFolderExpiration
 #define PR_WB_SF_EXPIRATION_ERROR                                            PROP_TAG(PT_ERROR     , 0x683A)  /* 0x683A000A */
+#define PR_WB_SF_ID                                                          PidTagSearchFolderId
+#define PR_WB_SF_ID_ERROR                                                    PROP_TAG(PT_ERROR     , 0x6842)  /* 0x6842000A */
 #define PR_WB_SF_LAST_USED                                                   PidTagSearchFolderLastUsed
 #define PR_WB_SF_LAST_USED_ERROR                                             PROP_TAG(PT_ERROR     , 0x6834)  /* 0x6834000A */
 #define PR_WB_SF_RECREATE_INFO                                               PidTagSearchFolderRecreateInfo
 #define PR_WB_SF_RECREATE_INFO_ERROR                                         PROP_TAG(PT_ERROR     , 0x6844)  /* 0x6844000A */
 #define PR_WB_SF_STORAGE_TYPE                                                PidTagSearchFolderStorageType
 #define PR_WB_SF_STORAGE_TYPE_ERROR                                          PROP_TAG(PT_ERROR     , 0x6846)  /* 0x6846000A */
+#define PR_WB_SF_TAG                                                         PidTagSearchFolderTag
+#define PR_WB_SF_TAG_ERROR                                                   PROP_TAG(PT_ERROR     , 0x6847)  /* 0x6847000A */
 #define PR_WB_SF_TEMPLATE_ID                                                 PidTagSearchFolderTemplateId
 #define PR_WB_SF_TEMPLATE_ID_ERROR                                           PROP_TAG(PT_ERROR     , 0x6841)  /* 0x6841000A */
 #define PR_WEDDING_ANNIVERSARY                                               PidTagWeddingAnniversary

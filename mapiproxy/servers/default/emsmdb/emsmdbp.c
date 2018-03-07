@@ -4,17 +4,18 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Enrique J. Hernandez 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,17 +31,10 @@
 #include "dcesrv_exchange_emsmdb.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
+#include "mapiproxy/util/samdb.h"
 
 #include <ldap_ndr.h>
 
-/* Expose samdb_connect prototype */
-struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
-				  struct loadparm_context *,
-				  struct auth_session_info *,
-				  unsigned int);
-
-/* Single connection to samdb */
-static struct ldb_context *samdb_ctx = NULL;
 
 static struct GUID MagicGUID = {
 	.time_low = 0xbeefface,
@@ -51,40 +45,6 @@ static struct GUID MagicGUID = {
 };
 const struct GUID *const MagicGUIDp = &MagicGUID;
 
-/**
-   \details Initialize ldb_context to samdb, creates one for all emsmdbp
-   contexts
-
-   \param lp_ctx pointer to the loadparm context
- */
-static struct ldb_context *samdb_init(struct loadparm_context *lp_ctx)
-{
-	TALLOC_CTX		*mem_ctx;
-	struct tevent_context	*ev;
-	const char		*samdb_url;
-
-	if (samdb_ctx) return samdb_ctx;
-
-	mem_ctx = talloc_autofree_context();
-	ev = tevent_context_init(mem_ctx);
-	if (!ev) {
-		OC_PANIC(false, ("Fail to initialize tevent_context\n"));
-		return NULL;
-	}
-	tevent_loop_allow_nesting(ev);
-
-	/* Retrieve samdb url (local or external) */
-	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-
-	if (!samdb_url) {
-		samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
-	} else {
-		samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
-					      LDB_FLG_RECONNECT, samdb_url);
-	}
-
-	return samdb_ctx;
-}
 
 /**
    \details Release the MAPISTORE context used by EMSMDB provider
@@ -123,8 +83,27 @@ static int emsmdbp_mapi_handles_destructor(void *data)
 }
 
 /**
+   \details Release the MAPI logon context used by EMSMDB provider
+   context
+
+   \param data pointer on data to destroy
+
+   \return 0 on success, otherwise -1
+ */
+static int emsmdbp_mapi_logon_destructor(void *data)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_logon_context	*logon_ctx = (struct mapi_logon_context *) data;
+
+	retval = mapi_logon_release(logon_ctx);
+	OC_DEBUG(6, "MAPI logon context released (%s)", mapi_get_errstr(retval));
+
+	return (retval == MAPI_E_SUCCESS) ? 0 : -1;
+}
+
+/**
    \details Initialize the EMSMDBP context and open connections to
-   Samba databases.
+   the databases.
 
    \param lp_ctx pointer to the loadparm_context
    \param username account name for current session
@@ -157,7 +136,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
-	emsmdbp_ctx->samdb_ctx = samdb_init(lp_ctx);
+	emsmdbp_ctx->samdb_ctx = samdb_init(emsmdbp_ctx);
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		OC_DEBUG(0, "Connection to \"sam.ldb\" failed\n");
@@ -191,6 +170,15 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->handles_ctx, (int (*)(void *))emsmdbp_mapi_handles_destructor);
+
+	/* Initialise MAPI logon context */
+	emsmdbp_ctx->logon_ctx = mapi_logon_init(mem_ctx);
+	if (!emsmdbp_ctx->logon_ctx) {
+		OC_DEBUG(1, "MAPI logon context initialisation failed");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+	talloc_set_destructor((void *)emsmdbp_ctx->logon_ctx, (int (*)(void *))emsmdbp_mapi_logon_destructor);
 
 	return emsmdbp_ctx;
 }
@@ -266,10 +254,10 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 
 	username = dcesrv_call_account_name(dce_call);
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
-			 ldb_binary_encode_string(emsmdbp_ctx, username));
+	ret = safe_ldb_search (&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			       ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			       LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
+			       ldb_binary_encode_string(emsmdbp_ctx, username));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -288,8 +276,8 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Get a copy of the username for later use and setup missing conn_info components */
-	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
+	emsmdbp_ctx->auth_user = talloc_strdup(emsmdbp_ctx, username);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->auth_user, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
 
 	return true;
 }
@@ -322,10 +310,10 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	/* Sanity Checks */
 	if (!legacyExchangeDN) return false;
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
-			 ldb_binary_encode_string(emsmdbp_ctx, legacyExchangeDN));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+			      ldb_binary_encode_string(emsmdbp_ctx, legacyExchangeDN));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -389,11 +377,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs,
-			 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-			 ldb_binary_encode_string(mem_ctx, recipient));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, recipient_attrs,
+			      "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
+			      ldb_binary_encode_string(mem_ctx, recipient));
 
 	/* If the search failed, build an external recipient: very basic for the moment */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -419,7 +407,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			}
 
 			libmapiserver_push_property(mem_ctx,
-						    property, (const void *)data, &row->prop_values, 
+						    property, (const void *)data, &row->prop_values,
 						    row->layout, 0, 0);
 		}
 
@@ -491,7 +479,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			break;
 		}
 		libmapiserver_push_property(mem_ctx,
-					    property, (const void *)data, &row->prop_values, 
+					    property, (const void *)data, &row->prop_values,
 					    row->layout, 0, 0);
 	}
 
@@ -514,7 +502,7 @@ _PUBLIC_ int emsmdbp_guid_to_replid(struct emsmdbp_context *emsmdbp_ctx, const c
 		return MAPI_E_SUCCESS;
 	}
 
-	if (mapistore_replica_mapping_guid_to_replid(emsmdbp_ctx->mstore_ctx, username, guidP, &replid) == MAPISTORE_SUCCESS) {
+	if (openchangedb_replica_mapping_guid_to_replid(emsmdbp_ctx->oc_ctx, username, guidP, &replid) == MAPI_E_SUCCESS) {
 		*replidP = replid;
 		return MAPI_E_SUCCESS;
 	}
@@ -538,7 +526,7 @@ _PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const c
 		return MAPI_E_SUCCESS;
 	}
 
-	if (mapistore_replica_mapping_replid_to_guid(emsmdbp_ctx->mstore_ctx, username, replid, &guid) == MAPISTORE_SUCCESS) {
+	if (openchangedb_replica_mapping_replid_to_guid(emsmdbp_ctx->oc_ctx, username, replid, &guid) == MAPI_E_SUCCESS) {
 		*guidP = guid;
 		return MAPI_E_SUCCESS;
 	}
@@ -650,11 +638,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 	retval = emsmdbp_fetch_organizational_units(emsmdbp_ctx, emsmdbp_ctx, &org_name, NULL);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
-                         LDB_SCOPE_SUBTREE, NULL,
-                         "(&(objectClass=msExchOrganizationContainer)(cn=%s))",
-                         ldb_binary_encode_string(emsmdbp_ctx, org_name));
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			      ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, NULL,
+			      "(&(objectClass=msExchOrganizationContainer)(cn=%s))",
+			      ldb_binary_encode_string(emsmdbp_ctx, org_name));
 	talloc_free(org_name);
 
 	/* If the search failed */
@@ -666,4 +654,61 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 	*basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
 			     ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
 	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Get the email of current user.
+
+   \param emsmdbp_ctx pointer to the EMSMDBP context
+   \param email pointer to return the email
+
+   \note The email is obtained from proxyAddresses attribute, the one that
+   starts with "SMTP:" which is the one used to authenticate on external
+   smtp service.
+
+   \return MAPI_E_SUCCESS or an error if something happens
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_get_external_email(struct emsmdbp_context *emsmdbp_ctx, const char **email)
+{
+	const char * const		attrs[] = { "proxyAddresses", NULL };
+	const char			*prefix = "SMTP:";
+	size_t				prefix_len;
+	int				ret, i;
+	struct ldb_result		*res = NULL;
+	struct ldb_message_element	*el = NULL;
+	const struct ldb_val		*value = NULL;
+	bool				found = false;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!email, MAPI_E_INVALID_PARAMETER, NULL);
+
+	ret = safe_ldb_search(&emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			      ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			      LDB_SCOPE_SUBTREE, attrs,
+			      "(&(objectClass=user)(sAMAccountName=%s))",
+			      ldb_binary_encode_string(emsmdbp_ctx, emsmdbp_ctx->auth_user));
+
+	if (ret != LDB_SUCCESS || res->count == 0) {
+		OC_DEBUG(5, "Couldn't find %s using ldb_search", emsmdbp_ctx->auth_user);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], attrs[0]);
+	if (!el) return MAPI_E_NOT_FOUND;
+
+	prefix_len = strlen(prefix);
+	for (i = 0; !found && i < el->num_values; i++) {
+		value = (struct ldb_val *) &el->values[i];
+		if (!value || value->length <= prefix_len || value->data[value->length] != '\0')
+			continue;
+
+		/* Searching for SMTP:some@email.com entry */
+		if (strncmp((const char *)value->data, prefix, prefix_len) == 0) {
+			*email = (char *)(value->data + prefix_len);
+			found = true;
+		}
+	}
+
+	return found ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND;
 }

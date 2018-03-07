@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Kamen Mazdrashki <kamenim@openchange.org> 2014
+                 Enrique J. Hernández 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -58,6 +59,8 @@ struct openchangedb_context_checker {
         int set_mapistoreURI;
         int get_fid;
         int get_ReceiveFolder;
+        int guid_to_replid;
+        int replid_to_guid;
 };
 
 
@@ -104,20 +107,25 @@ START_TEST (test_call_get_distinguishedName) {
 } END_TEST
 
 START_TEST(test_call_get_MailboxGuid) {
+	struct GUID local_guid = GUID_zero();
 	struct GUID MailboxGUID;
 
 	CHECK_SUCCESS(openchangedb_get_MailboxGuid(oc_ctx, "recipient", &MailboxGUID));
 
 	ck_assert_int_eq(functions_called.get_MailboxGuid, 1);
+	ck_assert(GUID_equal(&MailboxGUID, &local_guid));
 } END_TEST
 
 START_TEST(test_call_get_MailboxReplica) {
 	uint16_t ReplID;
+	struct GUID local_guid = GUID_zero();
 	struct GUID ReplGUID;
 
 	CHECK_SUCCESS(openchangedb_get_MailboxReplica(oc_ctx, "recipient", &ReplID, &ReplGUID));
 
 	ck_assert_int_eq(functions_called.get_MailboxReplica, 1);
+	ck_assert_int_eq(ReplID, 0x03);
+	ck_assert(GUID_equal(&ReplGUID, &local_guid));
 } END_TEST
 
 START_TEST(test_call_get_PublicFolderReplica) {
@@ -184,8 +192,31 @@ START_TEST(test_call_get_ReceiveFolder) {
 	ck_assert_int_eq(fid, FOLDER_ID_EXPECTED);
 	ck_assert(!strcmp(ExplicitMessageClass, DFT_MESSAGE_CLASS));
 } END_TEST
-// ^ Unit test ----------------------------------------------------------------
 
+START_TEST(test_call_replica_mapping_guid_to_replid) {
+        struct GUID guid = GUID_random();
+	uint16_t    replid = 0;
+
+	CHECK_SUCCESS(openchangedb_replica_mapping_guid_to_replid(oc_ctx, "recipient",
+                                                                  &guid, &replid));
+
+	ck_assert_int_eq(functions_called.guid_to_replid, 1);
+        ck_assert_int_eq(replid, 0x03);
+} END_TEST
+
+START_TEST(test_call_replica_mapping_replid_to_guid) {
+        struct GUID *guid;
+        struct GUID local_guid = GUID_zero();
+
+        guid = talloc_zero(mem_ctx, struct GUID);
+	CHECK_SUCCESS(openchangedb_replica_mapping_replid_to_guid(oc_ctx, "recipient",
+                                                                  0x03, guid));
+        talloc_free(guid);
+	ck_assert_int_eq(functions_called.replid_to_guid, 1);
+	ck_assert(GUID_equal(guid, &local_guid));
+} END_TEST
+
+// ^ Unit test ----------------------------------------------------------------
 
 // v Mocked backend ----------------------------------------------------------------
 static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
@@ -235,6 +266,7 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       struct GUID *MailboxGUID)
 {
 	functions_called.get_MailboxGuid++;
+	*MailboxGUID = GUID_zero();
 
 	return MAPI_E_SUCCESS;
 }
@@ -244,6 +276,8 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 					  struct GUID *ReplGUID)
 {
 	functions_called.get_MailboxReplica++;
+	*ReplID = 0x03;
+	*ReplGUID = GUID_zero();
 
 	return MAPI_E_SUCCESS;
 }
@@ -514,6 +548,23 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct openchangedb_c
 }
 // ^ openchangedb -------------------------------------------------------------
 
+// v replica mapping
+
+static enum MAPISTATUS replica_mapping_guid_to_replid(struct openchangedb_context *self, const char *username, const struct GUID *guid, uint16_t *replid_p)
+{
+        functions_called.guid_to_replid++;
+        *replid_p = 0x03;
+        return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS replica_mapping_replid_to_guid(struct openchangedb_context *self, const char *username, uint16_t replid, struct GUID *guid)
+{
+        functions_called.replid_to_guid++;
+        return MAPI_E_SUCCESS;
+}
+
+// ^ replica mapping
+
 // v openchangedb table -------------------------------------------------------
 
 static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
@@ -661,6 +712,9 @@ static enum MAPISTATUS mock_backend_init(TALLOC_CTX *mem_ctx,
 	oc_ctx->set_locale = set_locale;
 	oc_ctx->get_folders_names = get_folders_names;
 
+	oc_ctx->replica_mapping_guid_to_replid = replica_mapping_guid_to_replid;
+	oc_ctx->replica_mapping_replid_to_guid = replica_mapping_replid_to_guid;
+
 	*ctx = oc_ctx;
 
 	return MAPI_E_SUCCESS;
@@ -718,6 +772,8 @@ static Suite *openchangedb_create_suite(SFun setup, SFun teardown)
 	tcase_add_test(tc, test_call_get_fid);
 	tcase_add_test(tc, test_call_get_MAPIStoreURIs);
 	tcase_add_test(tc, test_call_get_ReceiveFolder);
+	tcase_add_test(tc, test_call_replica_mapping_guid_to_replid);
+	tcase_add_test(tc, test_call_replica_mapping_replid_to_guid);
 
 	suite_add_tcase(s, tc);
 	return s;

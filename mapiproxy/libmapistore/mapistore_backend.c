@@ -181,6 +181,7 @@ static init_backend_fn *load_backends(TALLOC_CTX *mem_ctx, const char *path)
 
 	dir = opendir(path);
 	if (dir == NULL) {
+		OC_DEBUG(3, "Cannot open backend store path '%s': %s", path, strerror(errno));
 		talloc_free(ret);
 		return NULL;
 	}
@@ -327,10 +328,15 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
    \details Create backend context
 
    \param mem_ctx pointer to the memory context
+   \param conn_info the connection information available for this context
+                    (database connections, connected user, replica server info)
+   \param ictx indexing database connection object
    \param namespace the backend namespace
-   \param uri the backend parameters which can be passes inline
+   \param uri the backend URI
+   \param fid the folder identifier for this context
+   \param context_p pointer where the new context is created on success stored in mem_ctx
 
-   \return a valid backend_context pointer on success, otherwise NULL
+   \return MAPISTORE_SUCCESS on success, otherwise a mapistore error
  */
 enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct indexing_context *ictx,
 						      const char *namespace, const char *uri, uint64_t fid, struct backend_context **context_p)

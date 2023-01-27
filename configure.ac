@@ -142,6 +142,7 @@ fi[]
 AC_DEFUN([OC_CHECK_SAMBA_VERSION], [
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <samba/version.h>
+#include <string.h>
 int main() { if (!strcmp(SAMBA_VERSION_STRING, "$1") || !strcmp(SAMBA_VERSION_STRING, "$2")) {return 0; } else { return -1;} }
 ]])],[$3],[
 	ifelse([$4],[],[AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements ($1 or $2).])],[$4])],[$5])
